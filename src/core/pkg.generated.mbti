@@ -1,0 +1,92 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "enanandesu/symoon/src/core"
+
+// Values
+fn add(Expr, Expr) -> Expr
+
+fn cos(Expr) -> Expr
+
+fn differentiate(Expr, String) -> Expr
+
+fn div(Expr, Expr) -> Expr
+
+fn double(Double) -> Expr
+
+fn evaluate(Expr, (String) -> Double?) -> Result[Double, SymbolicError]
+
+fn exp(Expr) -> Expr
+
+fn int(Int) -> Expr
+
+fn log(Expr) -> Expr
+
+fn mul(Expr, Expr) -> Expr
+
+fn neg(Expr) -> Expr
+
+fn pow(Expr, Expr) -> Expr
+
+fn simplify(Expr) -> Expr
+
+fn sin(Expr) -> Expr
+
+fn sub(Expr, Expr) -> Expr
+
+fn sym(String) -> Expr
+
+// Errors
+
+// Types and methods
+pub enum BinaryOp {
+  Add
+  Sub
+  Mul
+  Div
+  Pow
+}
+impl Eq for BinaryOp
+impl Hash for BinaryOp
+impl Show for BinaryOp
+
+pub enum Expr {
+  Int(Int)
+  Double(Double)
+  Symbol(Symbol)
+  Unary(UnaryOp, Expr)
+  Binary(BinaryOp, Expr, Expr)
+  FunctionCall(String, Array[Expr])
+}
+impl Eq for Expr
+impl Show for Expr
+
+pub struct Symbol {
+  name : String
+}
+fn Symbol::new(String) -> Self
+impl Eq for Symbol
+impl Hash for Symbol
+impl Show for Symbol
+
+pub enum SymbolicError {
+  UndefinedSymbol(String)
+  DomainViolation(String, String)
+  UnsupportedOperation(String)
+}
+impl Eq for SymbolicError
+impl Show for SymbolicError
+
+pub enum UnaryOp {
+  Neg
+  Sin
+  Cos
+  Exp
+  Log
+}
+impl Eq for UnaryOp
+impl Hash for UnaryOp
+impl Show for UnaryOp
+
+// Type aliases
+
+// Traits
+
