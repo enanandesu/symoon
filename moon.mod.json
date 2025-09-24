@@ -1,0 +1,9 @@
+{
+  "name": "enanandesu/symoon",
+  "version": "0.1.0",
+  "readme": "README.md",
+  "repository": "https://github.com/enanandesu/symoon",
+  "license": "Apache-2.0",
+  "keywords": ["math", "symbolic", "solver"],
+  "description": "MoonBit symbolic math solver"
+}
