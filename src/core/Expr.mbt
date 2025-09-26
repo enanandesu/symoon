@@ -23,7 +23,7 @@ pub enum Expr {
   Unary(UnaryOp, Expr)
   Binary(BinaryOp, Expr, Expr)
   FunctionCall(String, Array[Expr])
-} derive(Eq, Show)
+} derive(Eq)
 
 ///|
 pub fn int(value : Int) -> Expr {

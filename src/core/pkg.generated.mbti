@@ -6,6 +6,8 @@ fn add(Expr, Expr) -> Expr
 
 fn cos(Expr) -> Expr
 
+fn count_ops(Expr) -> Double
+
 fn differentiate(Expr, String) -> Expr
 
 fn div(Expr, Expr) -> Expr
@@ -26,7 +28,7 @@ fn neg(Expr) -> Expr
 
 fn pow(Expr, Expr) -> Expr
 
-fn simplify(Expr) -> Expr
+fn simplify(Expr, ratio? : Double, measure? : (Expr) -> Double, rational? : Bool, inverse? : Bool, doit? : Bool) -> Expr
 
 fn sin(Expr) -> Expr
 
@@ -89,4 +91,3 @@ impl Show for UnaryOp
 // Type aliases
 
 // Traits
-

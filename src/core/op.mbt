@@ -16,8 +16,6 @@ pub enum BinaryOp {
   Pow
 } derive(Eq, Show, Hash)
 
-//TODO:重载运算符
-
 ///|
 pub fn neg(expr : Expr) -> Expr {
   Expr::Unary(UnaryOp::Neg, expr)
@@ -66,4 +64,29 @@ pub fn div(lhs : Expr, rhs : Expr) -> Expr {
 ///|
 pub fn pow(base : Expr, exponent : Expr) -> Expr {
   Expr::Binary(BinaryOp::Pow, base, exponent)
+}
+
+///|
+pub impl Add for Expr with add(self, other) {
+  add(self, other)
+}
+
+///|
+pub impl Sub for Expr with sub(self, other) {
+  sub(self, other)
+}
+
+///|
+pub impl Mul for Expr with mul(self, other) {
+  mul(self, other)
+}
+
+///|
+pub impl Div for Expr with div(self, other) {
+  div(self, other)
+}
+
+///|
+pub impl Neg for Expr with neg(self) {
+  neg(self)
 }

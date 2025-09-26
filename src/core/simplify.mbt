@@ -2,34 +2,25 @@
 pub fn simplify(
   expr : Expr,
   ratio? : Double = 1.7,
-  measure? : ((Expr) -> Double) = count_ops,
+  measure? : (Expr) -> Double = count_ops,
   rational? : Bool = false,
   inverse? : Bool = false,
   doit? : Bool = true,
 ) -> Expr {
-  let preprocessed = if inverse {
-    inverse_cancellation(expr)
-  } else {
-    expr
-  }
-
+  let preprocessed = if inverse { inverse_cancellation(expr) } else { expr }
   let simplified_once = simplify_reduce(preprocessed)
-
   let rationalized = if rational {
     rationalize_expr(simplified_once)
   } else {
     simplified_once
   }
-
   let candidate = if doit {
     simplify_reduce(rationalized)
   } else {
     rationalized
   }
-
   let original_measure = measure(expr)
   let candidate_measure = measure(candidate)
-
   if should_preserve_original(original_measure, candidate_measure, ratio) {
     expr
   } else {
@@ -53,13 +44,16 @@ pub fn count_ops(expr : Expr) -> Double {
 ///|
 /// 特殊函数情况
 fn count_ops_args(args : Array[Expr]) -> Double {
-  args.fold(init = 0, (acc : Double, item : Expr) => acc + count_ops(item))
+  args.fold(init=0, (acc : Double, item : Expr) => acc + count_ops(item))
 }
-
 
 ///|
 /// 看看是保存之前的还是用新的替换
-fn should_preserve_original(original : Double, candidate : Double, ratio : Double) -> Bool {
+fn should_preserve_original(
+  original : Double,
+  candidate : Double,
+  ratio : Double,
+) -> Bool {
   if ratio <= 0.0 {
     candidate > 0.0
   } else if original == 0.0 {
@@ -183,7 +177,6 @@ fn combine_polynomial_terms(terms : Array[Expr]) -> Expr {
       coefficients[index] = add_coefficients(existing, coeff)
     }
   }
-
   let mut result : Expr? = None
   let len = monomials.length()
   for i in 0..<len {
@@ -198,15 +191,11 @@ fn combine_polynomial_terms(terms : Array[Expr]) -> Expr {
       continue
     }
     match result {
-      Some(current) => {
+      Some(current) =>
         result = Some(Expr::Binary(BinaryOp::Add, current, term_expr))
-      }
-      None => {
-        result = Some(term_expr)
-      }
+      None => result = Some(term_expr)
     }
   }
-
   match result {
     Some(expr) => expr
     None => Expr::Int(0)
@@ -313,19 +302,20 @@ fn find_monomial_index(monomials : Array[Expr], target : Expr) -> Int {
 /// 系数加法穷举
 fn add_coefficients(lhs : Expr, rhs : Expr) -> Expr {
   match (lhs, rhs) {
-    (Expr::Int(left_val), Expr::Int(right_val)) => Expr::Int(left_val + right_val)
-    (Expr::Double(left_val), Expr::Double(right_val)) => Expr::Double(left_val + right_val)
-    (Expr::Int(left_val), Expr::Double(right_val)) => {
+    (Expr::Int(left_val), Expr::Int(right_val)) =>
+      Expr::Int(left_val + right_val)
+    (Expr::Double(left_val), Expr::Double(right_val)) =>
+      Expr::Double(left_val + right_val)
+    (Expr::Int(left_val), Expr::Double(right_val)) =>
       Expr::Double(left_val.to_double() + right_val)
-    }
-    (Expr::Double(left_val), Expr::Int(right_val)) => {
+    (Expr::Double(left_val), Expr::Int(right_val)) =>
       Expr::Double(left_val + right_val.to_double())
-    }
     (Expr::Int(0), other) => other
     (other, Expr::Int(0)) => other
     (Expr::Double(0.0), other) => other
     (other, Expr::Double(0.0)) => other
-    (left_expr, right_expr) => Expr::Binary(BinaryOp::Add, left_expr, right_expr)
+    (left_expr, right_expr) =>
+      Expr::Binary(BinaryOp::Add, left_expr, right_expr)
   }
 }
 
@@ -333,19 +323,20 @@ fn add_coefficients(lhs : Expr, rhs : Expr) -> Expr {
 /// 系数乘法穷举
 fn multiply_coefficients(lhs : Expr, rhs : Expr) -> Expr {
   match (lhs, rhs) {
-    (Expr::Int(left_val), Expr::Int(right_val)) => Expr::Int(left_val * right_val)
-    (Expr::Double(left_val), Expr::Double(right_val)) => Expr::Double(left_val * right_val)
-    (Expr::Int(left_val), Expr::Double(right_val)) => {
+    (Expr::Int(left_val), Expr::Int(right_val)) =>
+      Expr::Int(left_val * right_val)
+    (Expr::Double(left_val), Expr::Double(right_val)) =>
+      Expr::Double(left_val * right_val)
+    (Expr::Int(left_val), Expr::Double(right_val)) =>
       Expr::Double(left_val.to_double() * right_val)
-    }
-    (Expr::Double(left_val), Expr::Int(right_val)) => {
+    (Expr::Double(left_val), Expr::Int(right_val)) =>
       Expr::Double(left_val * right_val.to_double())
-    }
     (Expr::Int(1), other) => other
     (other, Expr::Int(1)) => other
     (Expr::Double(1.0), other) => other
     (other, Expr::Double(1.0)) => other
-    (left_expr, right_expr) => Expr::Binary(BinaryOp::Mul, left_expr, right_expr)
+    (left_expr, right_expr) =>
+      Expr::Binary(BinaryOp::Mul, left_expr, right_expr)
   }
 }
 
@@ -389,10 +380,15 @@ fn expr_signature(expr : Expr) -> String {
     Expr::Int(value) => value.to_string()
     Expr::Double(value) => value.to_string()
     Expr::Symbol(symbol) => "sym:".to_string() + symbol.name
-    Expr::Unary(op, inner) => unary_signature(op) + "(" + expr_signature(inner) + ")"
-    Expr::Binary(op, left, right) => {
-      binary_signature(op) + "(" + expr_signature(left) + "," + expr_signature(right) + ")"
-    }
+    Expr::Unary(op, inner) =>
+      unary_signature(op) + "(" + expr_signature(inner) + ")"
+    Expr::Binary(op, left, right) =>
+      binary_signature(op) +
+      "(" +
+      expr_signature(left) +
+      "," +
+      expr_signature(right) +
+      ")"
     Expr::FunctionCall(name, args) => {
       let mut result = "call:".to_string() + name + "("
       let len = args.length()

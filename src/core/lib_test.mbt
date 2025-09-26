@@ -21,7 +21,7 @@ test "simplify keeps double neg without inverse flag" {
 ///|
 test "simplify cancels double neg with inverse flag" {
   let expr = neg(neg(sym("z")))
-  let result = simplify(expr, rational = true)
+  let result = simplify(expr, rational=true)
   assert_eq(result, sym("z"))
 }
 
@@ -39,7 +39,7 @@ test "simplify respects custom measure" {
     Expr::Int(_) => 100.0
     _ => count_ops(candidate)
   }
-  let result = simplify(expr, measure = measure)
+  let result = simplify(expr, measure~)
   assert_eq(result, expr)
 }
 
@@ -52,7 +52,10 @@ test "simplify combines duplicate addends" {
 
 ///|
 test "simplify combines linear coefficients" {
-  let expr = add(mul(int(2), mul(sym("x"), sym("y"))), mul(int(3), mul(sym("x"), sym("y"))))
+  let expr = add(
+    mul(int(2), mul(sym("x"), sym("y"))),
+    mul(int(3), mul(sym("x"), sym("y"))),
+  )
   let result = simplify(expr)
   assert_eq(result, mul(int(5), mul(sym("x"), sym("y"))))
 }
@@ -132,12 +135,16 @@ test "simplifyer normalizes factors across addition" {
     mul(sym("x"), mul(sym("y"), sym("z"))),
     add(
       mul(sym("z"), mul(sym("x"), sym("y"))),
-      mul(sym("y"), mul(sym("z"), sym("x")))
-    )
+      mul(sym("y"), mul(sym("z"), sym("x"))),
+    ),
   )
   let result = simplify(expr)
-  inspect(result, content = (#|Binary(Mul, Int(3), Binary(Mul, Binary(Mul, Symbol({name: "x"}), Symbol({name: "y"})), Symbol({name: "z"})))
-  ))
+  inspect(
+    result,
+    content=(
+      #|Binary(Mul, Int(3), Binary(Mul, Binary(Mul, Symbol({name: "x"}), Symbol({name: "y"})), Symbol({name: "z"})))
+    ),
+  )
 }
 
 ///|
@@ -148,7 +155,7 @@ test "simplifyer respects measure when candidate larger" {
     Expr::Binary(BinaryOp::Mul, _, _) => 99.0
     _ => count_ops(candidate)
   }
-  let result = simplify(expr, measure = measure)
+  let result = simplify(expr, measure~)
   assert_eq(result, expr)
 }
 
@@ -164,7 +171,6 @@ test "simplifyer cascades through pow and mul" {
     ),
   )
 }
-
 
 ///|
 test "product rule differentiation" {

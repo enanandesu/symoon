@@ -1,7 +1,7 @@
 ///|
 pub fn evaluate(
   expr : Expr,
-  lookup : (String) -> Double?,//TODO:再包装
+  lookup : (String) -> Double?, //TODO:再包装
 ) -> Result[Double, SymbolicError] {
   match expr {
     Expr::Int(value) => Ok(value.to_double())
