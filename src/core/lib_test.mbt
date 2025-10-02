@@ -170,3 +170,10 @@ test "evaluation with lookup" {
   })
   inspect(result, content="Ok(11)")
 }
+
+///|
+test "inverse cancellation handles trig pair" {
+  let expr = atan(tan(cos(acos(cos(sin(asin(exp(log(sym("x"))))))))))
+  let result = simplify(expr, inverse=true)
+  inspect(result, content="cos(x)")
+}

@@ -1,4 +1,4 @@
-///|
+﻿///|
 pub fn simplify(
   expr : Expr,
   ratio? : Double = 1.7,
@@ -67,14 +67,19 @@ fn should_preserve_original(
 ///|
 /// 反函数消去
 fn inverse_cancellation(expr : Expr) -> Expr {
-  // TODO:仅仅处理双重取反，可以增加更多的反函数消去方法
   match expr {
-    Expr::Unary(UnaryOp::Neg, inner) =>
-      match inner {
-        Expr::Unary(UnaryOp::Neg, deeper) => inverse_cancellation(deeper)
-        _ => Expr::Unary(UnaryOp::Neg, inverse_cancellation(inner))
+    Expr::Unary(op, inner) => {
+      let inner_simplified = inverse_cancellation(inner)
+      match inner_simplified {
+        Expr::Unary(inner_op, inner_arg) =>
+          if unary_inverse_pair(op, inner_op) {
+            inverse_cancellation(inner_arg)
+          } else {
+            Expr::Unary(op, Expr::Unary(inner_op, inner_arg))
+          }
+        other => Expr::Unary(op, other)
       }
-    Expr::Unary(op, inner) => Expr::Unary(op, inverse_cancellation(inner))
+    }
     Expr::Binary(op, left, right) =>
       Expr::Binary(op, inverse_cancellation(left), inverse_cancellation(right))
     Expr::FunctionCall(name, args) => {
@@ -257,8 +262,8 @@ fn normalize_factors(factors : Array[Expr]) -> Array[Expr] {
   let len = normalized.length()
   for i = 0; i < len; i = i + 1 {
     for j = i + 1; j < len; j = j + 1 {
-      let sig_i = expr_signature(normalized[i])
-      let sig_j = expr_signature(normalized[j])
+      let sig_i = normalized[i].to_string()
+      let sig_j = normalized[j].to_string()
       if sig_j < sig_i {
         let temp_expr = normalized[i]
         normalized[i] = normalized[j]
@@ -370,58 +375,6 @@ fn simplify_is_minus_one_literal(expr : Expr) -> Bool {
     Expr::Int(value) => value == -1
     Expr::Double(value) => value == -1.0
     _ => false
-  }
-}
-
-///|
-/// 输出，在排序中使用
-fn expr_signature(expr : Expr) -> String {
-  match expr {
-    Expr::Int(value) => value.to_string()
-    Expr::Double(value) => value.to_string()
-    Expr::Symbol(symbol) => "sym:".to_string() + symbol.name
-    Expr::Unary(op, inner) =>
-      unary_signature(op) + "(" + expr_signature(inner) + ")"
-    Expr::Binary(op, left, right) =>
-      binary_signature(op) +
-      "(" +
-      expr_signature(left) +
-      "," +
-      expr_signature(right) +
-      ")"
-    Expr::FunctionCall(name, args) => {
-      let mut result = "call:".to_string() + name + "("
-      let len = args.length()
-      for i in 0..<len {
-        result = result + expr_signature(args[i])
-        if i + 1 < len {
-          result = result + ","
-        }
-      }
-      result + ")"
-    }
-  }
-}
-
-///|
-fn unary_signature(op : UnaryOp) -> String {
-  match op {
-    UnaryOp::Neg => "neg".to_string()
-    UnaryOp::Sin => "sin".to_string()
-    UnaryOp::Cos => "cos".to_string()
-    UnaryOp::Exp => "exp".to_string()
-    UnaryOp::Log => "log".to_string()
-  }
-}
-
-///|
-fn binary_signature(op : BinaryOp) -> String {
-  match op {
-    BinaryOp::Add => "add".to_string()
-    BinaryOp::Sub => "sub".to_string()
-    BinaryOp::Mul => "mul".to_string()
-    BinaryOp::Div => "div".to_string()
-    BinaryOp::Pow => "pow".to_string()
   }
 }
 
@@ -542,5 +495,27 @@ fn simplify_is_one_literal(expr : Expr) -> (Bool, Expr) {
         (false, Expr::Double(value))
       }
     other => (false, other)
+  }
+}
+
+///|
+fn unary_inverse_pair(outer : UnaryOp, inner : UnaryOp) -> Bool {
+  match (outer, inner) {
+    (UnaryOp::Neg, UnaryOp::Neg)
+    | (UnaryOp::Sin, UnaryOp::Asin)
+    | (UnaryOp::Asin, UnaryOp::Sin)
+    | (UnaryOp::Cos, UnaryOp::Acos)
+    | (UnaryOp::Acos, UnaryOp::Cos)
+    | (UnaryOp::Tan, UnaryOp::Atan)
+    | (UnaryOp::Atan, UnaryOp::Tan)
+    | (UnaryOp::Sinh, UnaryOp::Asinh)
+    | (UnaryOp::Asinh, UnaryOp::Sinh)
+    | (UnaryOp::Cosh, UnaryOp::Acosh)
+    | (UnaryOp::Acosh, UnaryOp::Cosh)
+    | (UnaryOp::Tanh, UnaryOp::Atanh)
+    | (UnaryOp::Atanh, UnaryOp::Tanh)
+    | (UnaryOp::Exp, UnaryOp::Log)
+    | (UnaryOp::Log, UnaryOp::Exp) => true
+    _ => false
   }
 }

@@ -1,28 +1,46 @@
 ///|
 test "show prints constants and symbols" {
-  assert_eq(int(42).to_string(), "42")
-  assert_eq(double(3.5).to_string(), "3.5")
-  assert_eq(sym("x").to_string(), "x")
+  inspect(int(42), content="42")
+  inspect(double(3.5), content="3.5")
+  inspect(sym("x"), content="x")
 }
 
 ///|
 test "show respects operator precedence" {
   let expr = add(sym("x"), mul(sym("y"), sym("z")))
-  assert_eq(expr.to_string(), "x + y * z")
+  inspect(expr, content="x + y * z")
 }
 
 ///|
 test "show formats unary operations" {
-  let expr = neg(add(sym("x"), sym("y")))
-  assert_eq(expr.to_string(), "-(x + y)")
-  let sin_expr = sin(sym("theta"))
-  assert_eq(sin_expr.to_string(), "sin(theta)")
+  inspect(neg(add(sym("x"), sym("y"))), content="-(x + y)")
+  inspect(sin(sym("theta")), content="sin(theta)")
+}
+
+///|
+test "show formats extended trig operations" {
+  inspect(tan(sym("x")), content="tan(x)")
+  inspect(asin(sym("x")), content="asin(x)")
+  inspect(acos(sym("x")), content="acos(x)")
+  inspect(atan(sym("x")), content="atan(x)")
+  inspect(sinh(sym("x")), content="sinh(x)")
+  inspect(cosh(sym("x")), content="cosh(x)")
+  inspect(tanh(sym("x")), content="tanh(x)")
+  inspect(asinh(sym("x")), content="asinh(x)")
+  inspect(acosh(sym("x")), content="acosh(x)")
+  inspect(atanh(sym("x")), content="atanh(x)")
+  inspect(abs(sym("x")), content="abs(x)")
+}
+
+///|
+test "show formats function calls" {
+  let fallback = differentiate(tan(sym("x")), "y")
+  inspect(fallback, content="diff_unary(y, x)")
 }
 
 ///|
 test "show adds parentheses for powers" {
-  let expr = pow(add(sym("x"), sym("y")), int(2))
-  assert_eq(expr.to_string(), "(x + y) ^ 2")
+  inspect(pow(add(sym("x"), sym("y")), int(2)), content="(x + y) ^ 2")
 }
 
 ///|
@@ -38,11 +56,11 @@ test "show more complicated expressions" {
   let expr2 = -(x + y + int(3) * x) * (x - y) / log(x + y) * sin(x / y)
   inspect(
     expr2,
-    content="(-(x + y + 3 * x) * (x - y)) / ln(x + y) * sin(x / y)",
+    content="(-(x + y + 3 * x) * (x - y)) / log(x + y) * sin(x / y)",
   )
   inspect(
     simplify(expr2),
-    content="(-(4 * x + y) * (x - y)) / ln(x + y) * sin(x / y)",
+    content="(-(4 * x + y) * (x - y)) / log(x + y) * sin(x / y)",
   )
   let expr3 = -(-x)
   inspect(expr3, content="-(-x)")

@@ -3,8 +3,19 @@ pub enum UnaryOp {
   Neg
   Sin
   Cos
+  Tan
+  Asin
+  Acos
+  Atan
+  Sinh
+  Cosh
+  Tanh
+  Asinh
+  Acosh
+  Atanh
   Exp
   Log
+  Abs
 } derive(Eq, Show, Hash)
 
 ///|
@@ -32,6 +43,56 @@ pub fn cos(expr : Expr) -> Expr {
 }
 
 ///|
+pub fn tan(expr : Expr) -> Expr {
+  Expr::Unary(UnaryOp::Tan, expr)
+}
+
+///|
+pub fn asin(expr : Expr) -> Expr {
+  Expr::Unary(UnaryOp::Asin, expr)
+}
+
+///|
+pub fn acos(expr : Expr) -> Expr {
+  Expr::Unary(UnaryOp::Acos, expr)
+}
+
+///|
+pub fn atan(expr : Expr) -> Expr {
+  Expr::Unary(UnaryOp::Atan, expr)
+}
+
+///|
+pub fn sinh(expr : Expr) -> Expr {
+  Expr::Unary(UnaryOp::Sinh, expr)
+}
+
+///|
+pub fn cosh(expr : Expr) -> Expr {
+  Expr::Unary(UnaryOp::Cosh, expr)
+}
+
+///|
+pub fn tanh(expr : Expr) -> Expr {
+  Expr::Unary(UnaryOp::Tanh, expr)
+}
+
+///|
+pub fn asinh(expr : Expr) -> Expr {
+  Expr::Unary(UnaryOp::Asinh, expr)
+}
+
+///|
+pub fn acosh(expr : Expr) -> Expr {
+  Expr::Unary(UnaryOp::Acosh, expr)
+}
+
+///|
+pub fn atanh(expr : Expr) -> Expr {
+  Expr::Unary(UnaryOp::Atanh, expr)
+}
+
+///|
 pub fn exp(expr : Expr) -> Expr {
   Expr::Unary(UnaryOp::Exp, expr)
 }
@@ -39,6 +100,11 @@ pub fn exp(expr : Expr) -> Expr {
 ///|
 pub fn log(expr : Expr) -> Expr {
   Expr::Unary(UnaryOp::Log, expr)
+}
+
+///|
+pub fn abs(expr : Expr) -> Expr {
+  Expr::Unary(UnaryOp::Abs, expr)
 }
 
 ///|

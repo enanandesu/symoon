@@ -1,4 +1,4 @@
-﻿///|
+///|
 fn binary_precedence(op : BinaryOp) -> Int {
   match op {
     BinaryOp::Add => 1
@@ -71,8 +71,19 @@ fn format_expr(expr : Expr, wrap : Bool) -> String {
       let func = match op {
         UnaryOp::Sin => "sin"
         UnaryOp::Cos => "cos"
+        UnaryOp::Tan => "tan"
+        UnaryOp::Asin => "asin"
+        UnaryOp::Acos => "acos"
+        UnaryOp::Atan => "atan"
+        UnaryOp::Sinh => "sinh"
+        UnaryOp::Cosh => "cosh"
+        UnaryOp::Tanh => "tanh"
+        UnaryOp::Asinh => "asinh"
+        UnaryOp::Acosh => "acosh"
+        UnaryOp::Atanh => "atanh"
         UnaryOp::Exp => "exp"
-        UnaryOp::Log => "ln"
+        UnaryOp::Log => "log"
+        UnaryOp::Abs => "abs"
         UnaryOp::Neg => abort("unexpected neg unary formatting")
       }
       let argument = format_expr(inner, false)
