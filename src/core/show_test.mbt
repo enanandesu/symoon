@@ -52,7 +52,7 @@ test "show more complicated expressions" {
     y /
     (int(1) + pow(y, int(4)))
   inspect(expr, content="(x ^ (3 + 4.1 + y) * 2 * y) / (1 + y ^ 4)")
-  inspect(simplify(expr), content="(x ^ (7.1 + y) * 2 * y) / (1 + y ^ 4)")
+  inspect(simplify(expr), content="(2 * y * x ^ (7.1 + y)) / (1 + y ^ 4)")
   let expr2 = -(x + y + int(3) * x) * (x - y) / log(x + y) * sin(x / y)
   inspect(
     expr2,
@@ -60,7 +60,7 @@ test "show more complicated expressions" {
   )
   inspect(
     simplify(expr2),
-    content="(-(4 * x + y) * (x - y)) / log(x + y) * sin(x / y)",
+    content="-((4 * x + y) * (x - y)) / log(x + y) * sin(x / y)",
   )
   let expr3 = -(-x)
   inspect(expr3, content="-(-x)")

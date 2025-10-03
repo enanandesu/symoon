@@ -396,30 +396,164 @@ fn simplify_sub(left : Expr, right : Expr) -> Expr {
 }
 
 ///|
+/// 针对乘法处理（合并系数，合并幂）
 fn simplify_mul(left : Expr, right : Expr) -> Expr {
   let left_s = simplify_reduce(left)
   let right_s = simplify_reduce(right)
   let (left_zero, left_clean) = simplify_is_zero_literal(left_s)
   let (right_zero, right_clean) = simplify_is_zero_literal(right_s)
   if left_zero || right_zero {
-    Expr::Int(0)
-  } else {
-    let (left_one, left_value) = simplify_is_one_literal(left_clean)
-    if left_one {
-      right_clean
-    } else {
-      let (right_one, right_value) = simplify_is_one_literal(right_clean)
-      if right_one {
-        left_value
-      } else {
-        match (left_value, right_value) {
-          (Expr::Int(lhs), Expr::Int(rhs)) => Expr::Int(lhs * rhs)
-          (Expr::Double(lhs), Expr::Double(rhs)) => Expr::Double(lhs * rhs)
-          (lhs, rhs) => Expr::Binary(BinaryOp::Mul, lhs, rhs)
+    return Expr::Int(0)
+  }
+  let mut factors = Array::new()
+  factors = collect_mul_factors(left_clean, factors)
+  factors = collect_mul_factors(right_clean, factors)
+  let mut coeff_int = 1
+  let mut has_int = false
+  let mut coeff_double : Double? = None
+  let mut symbol_counts : Array[(Expr, Int)] = Array::new()
+  let other_factors : Array[Expr] = Array::new()
+  let mut is_negative = false
+  for factor in factors {
+    match factor {
+      Expr::Int(value) => {
+        if value == 0 {
+          return Expr::Int(0)
+        }
+        coeff_int = coeff_int * value
+        has_int = true
+      }
+      Expr::Double(value) => {
+        if value == 0.0 {
+          return Expr::Double(0.0)
+        }
+        coeff_double = match coeff_double {
+          Some(current) => Some(current * value)
+          None => Some(value)
         }
       }
+      Expr::Binary(BinaryOp::Pow, Expr::Symbol(symbol), Expr::Int(exp)) => {
+        let base = Expr::Symbol(symbol)
+        symbol_counts = add_symbol_power(symbol_counts, base, exp)
+      }
+      Expr::Symbol(symbol) => {
+        let base = Expr::Symbol(symbol)
+        symbol_counts = add_symbol_power(symbol_counts, base, 1)
+      }
+      other => other_factors.push(other)
     }
   }
+  if has_int && coeff_int == 0 {
+    return Expr::Int(0)
+  }
+  let final_factors = Array::new()
+  match coeff_double {
+    Some(value) => {
+      let combined = if has_int { value * coeff_int.to_double() } else { value }
+      if combined == 0.0 {
+        return Expr::Double(0.0)
+      }
+      let magnitude = if combined < 0.0 {
+        is_negative = !is_negative
+        -combined
+      } else {
+        combined
+      }
+      if magnitude != 1.0 {
+        final_factors.push(Expr::Double(magnitude))
+      }
+      has_int = false
+      coeff_int = 1
+    }
+    None => ()
+  }
+  if has_int {
+    let magnitude = if coeff_int < 0 {
+      is_negative = !is_negative
+      -coeff_int
+    } else {
+      coeff_int
+    }
+    if magnitude != 1 {
+      final_factors.push(Expr::Int(magnitude))
+    }
+  }
+  for entry in symbol_counts {
+    let (base, power) = entry
+    if power == 0 {
+      continue
+    }
+    if power == 1 {
+      final_factors.push(base)
+    } else {
+      final_factors.push(Expr::Binary(BinaryOp::Pow, base, Expr::Int(power)))
+    }
+  }
+  for factor in other_factors {
+    final_factors.push(factor)
+  }
+  let len = final_factors.length()
+  let base_expr = if len == 0 {
+    Expr::Int(1)
+  } else if len == 1 {
+    final_factors[0]
+  } else {
+    build_monomial_from_factors(final_factors)
+  }
+  if is_negative {
+    match base_expr {
+      Expr::Int(value) => Expr::Int(-value)
+      Expr::Double(value) => Expr::Double(-value)
+      Expr::Unary(UnaryOp::Neg, inner) => inner
+      Expr::Binary(BinaryOp::Mul, Expr::Int(-1), rest) => rest
+      Expr::Binary(BinaryOp::Mul, rest, Expr::Int(-1)) => rest
+      other => Expr::Unary(UnaryOp::Neg, other)
+    }
+  } else {
+    base_expr
+  }
+}
+
+///|
+/// 收集乘法因子
+fn collect_mul_factors(expr : Expr, factors : Array[Expr]) -> Array[Expr] {
+  match expr {
+    Expr::Binary(BinaryOp::Mul, left, right) => {
+      let collected = collect_mul_factors(left, factors)
+      collect_mul_factors(right, collected)
+    }
+    Expr::Unary(UnaryOp::Neg, inner) => {
+      let updated = factors
+      updated.push(Expr::Int(-1))
+      collect_mul_factors(inner, updated)
+    }
+    other => {
+      let updated = factors
+      updated.push(other)
+      updated
+    }
+  }
+}
+
+///|
+/// 合并相同符号的幂
+fn add_symbol_power(
+  symbol_counts : Array[(Expr, Int)],
+  base : Expr,
+  delta : Int,
+) -> Array[(Expr, Int)] {
+  let len = symbol_counts.length()
+  for i in 0..<len {
+    let (existing_base, existing_power) = symbol_counts[i]
+    if existing_base == base {
+      symbol_counts[i] = (existing_base, existing_power + delta)
+      return symbol_counts
+    } else {
+      symbol_counts[i] = (existing_base, existing_power)
+    }
+  }
+  symbol_counts.push((base, delta))
+  symbol_counts
 }
 
 ///|
