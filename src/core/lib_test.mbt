@@ -142,7 +142,7 @@ test "simplifyer cascades through pow and mul" {
   // (x + x)^2 * (y + y) -> (2*x)^2 * (2*y) -> 4*x^2 * 2*y -> final 8*x^2*y
   let expr = mul(pow(add(sym("x"), sym("x")), int(2)), add(sym("y"), sym("y")))
   let result = simplify(expr)
-  inspect(result, content="2 * y * (2 * x) ^ 2")
+  inspect(result, content="8 * x ^ 2 * y")
 }
 
 ///|
@@ -201,4 +201,64 @@ test "simplify mixes integer and double coefficients" {
   let x = sym("x")
   let expr = x * double(2.5) * int(4) * x * double(1.5) + x * int(2) * x
   inspect(simplify(expr), content="17 * x ^ 2")
+}
+
+///|
+test "simplify pow collapses nested exponent" {
+  let expr = pow(pow(sym("x"), int(2)), int(3))
+  inspect(simplify(expr), content="x ^ 6")
+}
+
+///|
+test "simplify pow distributes coefficient with float exponent" {
+  let expr = pow(mul(double(2.0), sym("x")), double(2.5))
+  inspect(simplify(expr), content="5.65685424949238 * x ^ 2.5")
+}
+
+///|
+test "simplify pow handles negative float exponent" {
+  let expr = pow(mul(double(3.0), sym("x")), double(-1.5))
+  inspect(simplify(expr), content="1 / (5.196152422706632 * x ^ 1.5)")
+}
+
+///|
+test "simplify pow distributes coefficient" {
+  let expr = pow(mul(int(3), sym("x")), int(2))
+  inspect(simplify(expr), content="9 * x ^ 2")
+}
+
+///|
+test "simplify pow with integer base" {
+  inspect(simplify(pow(int(2), int(3))), content="8")
+  inspect(simplify(pow(int(-1), int(4))), content="1")
+}
+
+///|
+test "simplify pow with double base" {
+  inspect(simplify(pow(double(2.0), int(3))), content="8")
+}
+
+///|
+test "simplify pow handles negative integer exponent" {
+  inspect(simplify(pow(int(2), int(-3))), content="1 / 8")
+  inspect(simplify(pow(int(-1), int(-3))), content="-1")
+}
+
+///|
+test "simplify pow handles negative double exponent" {
+  inspect(simplify(pow(double(2.0), int(-2))), content="0.25")
+}
+
+///|
+test {
+  let x = sym("x")
+  let expr = pow(pow(x + int(5) + x * int(2), double(-1.5)), int(2))
+  inspect(simplify(expr), content="(3 * x + 5) ^ -3")
+}
+
+///|
+test {
+  let x = sym("x")
+  let expr = pow(double(2.0) * x, double(2.5))
+  inspect(simplify(expr), content="5.65685424949238 * x ^ 2.5")
 }
