@@ -5,6 +5,61 @@ test "simplify removes additive zero" {
 }
 
 ///|
+test "rationalize expr maps well-known constants" {
+  let pi_expr = rationalize_expr(double(3.141592653589793))
+  inspect(pi_expr, content="pi")
+  let golden_expr = rationalize_expr(double(1.618033988749895))
+  inspect(golden_expr, content="GoldenRatio")
+}
+
+///|
+test "rationalize expr finds constant multiples" {
+  let value = double(1.5707963267948966) // pi / 2
+  inspect(rationalize_expr(value), content="1 / 2 * pi")
+}
+
+///|
+test "rationalize expr finds constant offsets" {
+  let value = double(3.641592653589793) // pi + 1 / 2
+  inspect(rationalize_expr(value), content="pi + 1 / 2")
+}
+
+test {
+  let value = double(3.618033988749895) // GoldenRatio + 2
+  inspect(rationalize_expr(value), content="GoldenRatio + 2")
+}
+
+///|
+test "rationalize expr keeps recurring decimals with base10" {
+  let value = double(1.0 / 8192.0)
+  let result = rationalize_expr(value)
+  inspect(result, content="0.0001220703125")
+}
+
+///|
+test "rationalize expr exact mode returns binary fraction" {
+  let value = double(1.0 / 8192.0)
+  let result = rationalize_expr(value, rational_conversion="exact")
+  inspect(result, content="1 / 8192")
+}
+
+///|
+test "rationalize expr full search finds simple fraction" {
+  let value = double(0.333333333)
+  let default_expr = rationalize_expr(value, tolerance=1.0e-6)
+  inspect(default_expr, content="333333333 / 1000000000")
+  let full_expr = rationalize_expr(value, tolerance=1.0e-6, full=true)
+  inspect(full_expr, content="1 / 3")
+  match full_expr {
+    Expr::Binary(BinaryOp::Div, Expr::Int(numerator), Expr::Int(denominator)) => {
+      assert_eq(numerator, 1)
+      assert_eq(denominator, 3)
+    }
+    other => abort("expected 1/3, got " + other.to_string())
+  }
+}
+
+///|
 test "simplify mirrors simplify by default" {
   let expr = add(int(0), sym("y"))
   let result = simplify(expr)

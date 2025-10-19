@@ -91,14 +91,68 @@ fn inverse_cancellation(expr : Expr) -> Expr {
 }
 
 ///|
-/// 仅仅实现结构遍历，本意是实现结构有理化。
-fn rationalize_expr(expr : Expr) -> Expr {
+/// 实现结构有理化。
+pub fn rationalize_expr(
+  expr : Expr,
+  constants? : Array[RationalConstant] = default_rational_constants(),
+  tolerance? : Double = 1.0e-10,
+  full? : Bool = false,
+  rational? : Bool = true,
+  rational_conversion? : String = "base10",
+) -> Expr {
+  if !rational {
+    return expr
+  }
   match expr {
-    Expr::Unary(op, inner) => Expr::Unary(op, rationalize_expr(inner))
+    Expr::Double(value) =>
+      match
+        rationalize_double_value(
+          value, constants, tolerance, full, rational_conversion,
+        ) {
+        Some(expr) => expr
+        None => Expr::Double(value)
+      }
+    Expr::Unary(op, inner) =>
+      Expr::Unary(
+        op,
+        rationalize_expr(
+          inner,
+          constants~,
+          tolerance~,
+          full~,
+          rational~,
+          rational_conversion~,
+        ),
+      )
     Expr::Binary(op, left, right) =>
-      Expr::Binary(op, rationalize_expr(left), rationalize_expr(right))
+      Expr::Binary(
+        op,
+        rationalize_expr(
+          left,
+          constants~,
+          tolerance~,
+          full~,
+          rational~,
+          rational_conversion~,
+        ),
+        rationalize_expr(
+          right,
+          constants~,
+          tolerance~,
+          full~,
+          rational~,
+          rational_conversion~,
+        ),
+      )
     Expr::FunctionCall(name, args) => {
-      let transformed = args.map(arg => rationalize_expr(arg))
+      let transformed = args.map(arg => rationalize_expr(
+        arg,
+        constants~,
+        tolerance~,
+        full~,
+        rational~,
+        rational_conversion~,
+      ))
       Expr::FunctionCall(name, transformed)
     }
     other => other
