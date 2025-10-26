@@ -211,6 +211,32 @@ fn build_constant_multiple(
 }
 
 ///|
+fn build_constant_linear_combination_terms(
+  terms : Array[(Expr, Int, Int)],
+) -> Expr {
+  let len = terms.length()
+  let mut result : Expr? = None
+  for i in 0..<len {
+    let (symbol, numerator, denominator) = terms[i]
+    let term = build_constant_multiple(symbol, numerator, denominator)
+    if is_zero_expr(term) {
+      continue
+    }
+    match result {
+      Some(current) => {
+        let combined = Expr::Binary(BinaryOp::Add, current, term)
+        result = Some(combined)
+      }
+      None => result = Some(term)
+    }
+  }
+  match result {
+    Some(expr) => expr
+    None => Expr::Int(0)
+  }
+}
+
+///|
 fn build_constant_with_offset(
   constant : Expr,
   numerator : Int,
@@ -231,6 +257,30 @@ fn build_constant_with_offset(
     Expr::Binary(BinaryOp::Sub, constant, offset)
   } else {
     Expr::Binary(BinaryOp::Add, constant, offset)
+  }
+}
+
+///|
+fn build_constant_linear_combination(
+  constant1 : Expr,
+  numerator1 : Int,
+  denominator1 : Int,
+  constant2 : Expr,
+  numerator2 : Int,
+  denominator2 : Int,
+) -> Expr {
+  let terms : Array[(Expr, Int, Int)] = Array::new()
+  terms.push((constant1, numerator1, denominator1))
+  terms.push((constant2, numerator2, denominator2))
+  build_constant_linear_combination_terms(terms)
+}
+
+///|
+fn is_zero_expr(expr : Expr) -> Bool {
+  match expr {
+    Expr::Int(value) => value == 0
+    Expr::Double(value) => value == 0.0
+    _ => false
   }
 }
 
@@ -328,6 +378,263 @@ fn rationalize_double_value(
         }
       }
       None => ()
+    }
+  }
+  let combination_limit : Int = 12
+  for i in 0..<len {
+    let constant_i = constants[i]
+    match constant_i.numeric {
+      Some(approx_i) =>
+        if abs_double(approx_i) <= tolerance {
+          ()
+        } else {
+          let mut j = i + 1
+          while j < len {
+            let constant_j = constants[j]
+            match constant_j.numeric {
+              Some(approx_j) =>
+                if abs_double(approx_j) <= tolerance {
+                  ()
+                } else {
+                  let mut denom1 : Int = 1
+                  while denom1 <= combination_limit {
+                    let mut num1 : Int = -combination_limit
+                    while num1 <= combination_limit {
+                      if num1 == 0 && denom1 > 1 {
+                        num1 = num1 + 1
+                        continue
+                      }
+                      if num1 == 0 {
+                        num1 = num1 + 1
+                        continue
+                      }
+                      if !within_constant_ratio_limit(num1, denom1) {
+                        num1 = num1 + 1
+                        continue
+                      }
+                      let gcd1 = gcd_int(abs_int(num1), denom1)
+                      if gcd1 > 1 {
+                        num1 = num1 + 1
+                        continue
+                      }
+                      let ratio1 = num1.to_double() / denom1.to_double()
+                      let remainder = value - ratio1 * approx_i
+                      match
+                        double_to_rational_pair(
+                          remainder / approx_j,
+                          tolerance,
+                          full,
+                          conversion,
+                        ) {
+                        Some((num2, denom2)) =>
+                          if within_constant_ratio_limit(num2, denom2) {
+                            if num2 == 0 {
+                              num1 = num1 + 1
+                              continue
+                            }
+                            let ratio2 = rational_pair_to_double(num2, denom2)
+                            let candidate = ratio1 * approx_i +
+                              ratio2 * approx_j
+                            let error = abs_double(candidate - value)
+                            if error <= tolerance {
+                              let expr = build_constant_linear_combination(
+                                constant_i.symbol,
+                                num1,
+                                denom1,
+                                constant_j.symbol,
+                                num2,
+                                denom2,
+                              )
+                              let complexity = 30 +
+                                rational_complexity(abs_int(num1), denom1) +
+                                rational_complexity(abs_int(num2), denom2)
+                              let (
+                                updated_expr,
+                                updated_complexity,
+                                updated_error,
+                              ) = update_best_candidate(
+                                best_expr, best_complexity, best_error, expr, complexity,
+                                error,
+                              )
+                              best_expr = updated_expr
+                              best_complexity = updated_complexity
+                              best_error = updated_error
+                            }
+                          }
+                        None => ()
+                      }
+                      num1 = num1 + 1
+                    }
+                    denom1 = denom1 + 1
+                  }
+                }
+              None => ()
+            }
+            j = j + 1
+          }
+        }
+      None => ()
+    }
+  }
+  if full {
+    let mut i = 0
+    while i < len {
+      let constant_i = constants[i]
+      match constant_i.numeric {
+        Some(approx_i) =>
+          if abs_double(approx_i) <= tolerance {
+            ()
+          } else {
+            let mut j = i + 1
+            while j < len {
+              let constant_j = constants[j]
+              match constant_j.numeric {
+                Some(approx_j) =>
+                  if abs_double(approx_j) <= tolerance {
+                    ()
+                  } else {
+                    let mut k = j + 1
+                    while k < len {
+                      let constant_k = constants[k]
+                      match constant_k.numeric {
+                        Some(approx_k) =>
+                          if abs_double(approx_k) <= tolerance {
+                            ()
+                          } else {
+                            let mut denom1 : Int = 1
+                            while denom1 <= combination_limit {
+                              let mut num1 : Int = -combination_limit
+                              while num1 <= combination_limit {
+                                if num1 == 0 {
+                                  num1 = num1 + 1
+                                  continue
+                                }
+                                if !within_constant_ratio_limit(num1, denom1) {
+                                  num1 = num1 + 1
+                                  continue
+                                }
+                                let gcd1 = gcd_int(abs_int(num1), denom1)
+                                if gcd1 > 1 {
+                                  num1 = num1 + 1
+                                  continue
+                                }
+                                let ratio1 = num1.to_double() /
+                                  denom1.to_double()
+                                let remainder_after_first = value -
+                                  ratio1 * approx_i
+                                let mut denom2 : Int = 1
+                                while denom2 <= combination_limit {
+                                  let mut num2 : Int = -combination_limit
+                                  while num2 <= combination_limit {
+                                    if num2 == 0 {
+                                      num2 = num2 + 1
+                                      continue
+                                    }
+                                    if !within_constant_ratio_limit(
+                                        num2, denom2,
+                                      ) {
+                                      num2 = num2 + 1
+                                      continue
+                                    }
+                                    let gcd2 = gcd_int(abs_int(num2), denom2)
+                                    if gcd2 > 1 {
+                                      num2 = num2 + 1
+                                      continue
+                                    }
+                                    let ratio2 = num2.to_double() /
+                                      denom2.to_double()
+                                    let remainder_after_second = remainder_after_first -
+                                      ratio2 * approx_j
+                                    match
+                                      double_to_rational_pair(
+                                        remainder_after_second / approx_k,
+                                        tolerance,
+                                        full,
+                                        conversion,
+                                      ) {
+                                      Some((num3, denom3)) =>
+                                        if within_constant_ratio_limit(
+                                            num3, denom3,
+                                          ) {
+                                          if num3 == 0 {
+                                            num2 = num2 + 1
+                                            continue
+                                          }
+                                          let ratio3 = rational_pair_to_double(
+                                            num3, denom3,
+                                          )
+                                          let candidate = ratio1 * approx_i +
+                                            ratio2 * approx_j +
+                                            ratio3 * approx_k
+                                          let error = abs_double(
+                                            candidate - value,
+                                          )
+                                          if error <= tolerance {
+                                            let terms : Array[(Expr, Int, Int)] = Array::new()
+                                            terms.push(
+                                              (constant_i.symbol, num1, denom1),
+                                            )
+                                            terms.push(
+                                              (constant_j.symbol, num2, denom2),
+                                            )
+                                            terms.push(
+                                              (constant_k.symbol, num3, denom3),
+                                            )
+                                            let expr = build_constant_linear_combination_terms(
+                                              terms,
+                                            )
+                                            let base_complexity = 20 +
+                                              (3 - 1) * 10
+                                            let complexity = base_complexity +
+                                              rational_complexity(
+                                                abs_int(num1),
+                                                denom1,
+                                              ) +
+                                              rational_complexity(
+                                                abs_int(num2),
+                                                denom2,
+                                              ) +
+                                              rational_complexity(
+                                                abs_int(num3),
+                                                denom3,
+                                              )
+                                            let (
+                                              updated_expr,
+                                              updated_complexity,
+                                              updated_error,
+                                            ) = update_best_candidate(
+                                              best_expr, best_complexity, best_error,
+                                              expr, complexity, error,
+                                            )
+                                            best_expr = updated_expr
+                                            best_complexity = updated_complexity
+                                            best_error = updated_error
+                                          }
+                                        }
+                                      None => ()
+                                    }
+                                    num2 = num2 + 1
+                                  }
+                                  denom2 = denom2 + 1
+                                }
+                                num1 = num1 + 1
+                              }
+                              denom1 = denom1 + 1
+                            }
+                          }
+                        None => ()
+                      }
+                      k = k + 1
+                    }
+                  }
+                None => ()
+              }
+              j = j + 1
+            }
+          }
+        None => ()
+      }
+      i = i + 1
     }
   }
   match double_to_rational_pair(value, tolerance, full, conversion) {

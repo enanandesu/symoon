@@ -1,4 +1,4 @@
-﻿///|
+///|
 test "simplify removes additive zero" {
   let expr = add(int(0), sym("x"))
   inspect(simplify(expr), content="x")
@@ -24,9 +24,28 @@ test "rationalize expr finds constant offsets" {
   inspect(rationalize_expr(value), content="pi + 1 / 2")
 }
 
+///|
 test {
   let value = double(3.618033988749895) // GoldenRatio + 2
   inspect(rationalize_expr(value), content="GoldenRatio + 2")
+}
+
+///|
+test "rationalize expr finds two constant combination" {
+  let value = double(0.5 * 3.141592653589793 + 0.25 * 0.6931471805599453)
+  inspect(
+    rationalize_expr(value, tolerance=1.0e-6),
+    content="1 / 2 * pi + 1 / 4 * Log2",
+  )
+}
+
+///|
+test "rationalize expr finds triple constant combination with full search" {
+  let value = double(1.9364883435687271)
+  inspect(
+    rationalize_expr(value, tolerance=1.0e-6, full=true),
+    content="1 / 2 * pi + 1 / 3 * EulerGamma + 1 / 4 * Log2",
+  )
 }
 
 ///|
