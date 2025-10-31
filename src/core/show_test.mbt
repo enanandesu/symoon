@@ -35,7 +35,7 @@ test "show formats extended trig operations" {
 ///|
 test "show formats function calls" {
   let fallback = differentiate(tan(sym("x")), "y")
-  inspect(fallback, content="diff_unary(y, x)")
+  inspect(fallback, content="1 / cos(x) ^ 2 * 0")
 }
 
 ///|
