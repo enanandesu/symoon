@@ -14,7 +14,10 @@ test "differentiate unary operations" {
   inspect(simplify(differentiate(tan(x), "x")), content="1 / cos(x) ^ 2")
   inspect(simplify(differentiate(exp(x), "x")), content="exp(x)")
   inspect(simplify(differentiate(log(x), "x")), content="1 / x")
-  inspect(simplify(differentiate(asin(x), "x")), content="1 / (1 - x ^ 2) ^ 0.5")
+  inspect(
+    simplify(differentiate(asin(x), "x")),
+    content="1 / (1 - x ^ 2) ^ 0.5",
+  )
   inspect(
     simplify(differentiate(acos(x), "x")),
     content="-1 / (1 - x ^ 2) ^ 0.5",
@@ -46,8 +49,7 @@ test "differentiate binary operations" {
   let quotient = simplify(differentiate(div(sin(sym("x")), sym("x")), "x"))
   inspect(quotient, content="(x * cos(x) - sin(x)) / x ^ 2")
   let reciprocal = simplify(differentiate(div(int(1), sym("x")), "x"))
-  let reciprocal_expected = simplify(div(int(-1), pow(sym("x"), int(2))))
-  assert_eq(reciprocal, reciprocal_expected)
+  inspect(reciprocal, content="-1 / x ^ 2")
 }
 
 ///|
@@ -60,16 +62,11 @@ test "differentiate fallback unary" {
 ///|
 test "differentiate power with integer exponent" {
   let result = simplify(differentiate(pow(sym("x"), int(5)), "x"))
-  let expected = simplify(pow(sym("x"), int(5)) * (int(5) * div(int(1), sym("x"))))
-  assert_eq(result, expected)
+  inspect(result, content="5 * x ^ 4")
 }
 
 ///|
 test "differentiate power with variable exponent" {
   let result = simplify(differentiate(pow(sym("x"), sym("x")), "x"))
-  let expected = simplify(
-    pow(sym("x"), sym("x")) *
-      (log(sym("x")) + sym("x") * div(int(1), sym("x"))),
-  )
-  assert_eq(result, expected)
+  inspect(result, content="x ^ x * (log(x) + 1)")
 }

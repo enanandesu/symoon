@@ -467,6 +467,7 @@ fn simplify_mul(left : Expr, right : Expr) -> Expr {
   let mut coeff_double : Double? = None
   let mut symbol_counts : Array[(Expr, Int)] = Array::new()
   let other_factors : Array[Expr] = Array::new()
+  let denominator_factors : Array[Expr] = Array::new()
   let mut is_negative = false
   for factor in factors {
     match factor {
@@ -493,6 +494,12 @@ fn simplify_mul(left : Expr, right : Expr) -> Expr {
       Expr::Symbol(symbol) => {
         let base = Expr::Symbol(symbol)
         symbol_counts = add_symbol_power(symbol_counts, base, 1)
+      }
+      Expr::Binary(BinaryOp::Div, Expr::Int(1), denominator) =>
+        denominator_factors.push(simplify_reduce(denominator))
+      Expr::Binary(BinaryOp::Div, Expr::Int(-1), denominator) => {
+        is_negative = !is_negative
+        denominator_factors.push(simplify_reduce(denominator))
       }
       other => other_factors.push(other)
     }
@@ -554,7 +561,7 @@ fn simplify_mul(left : Expr, right : Expr) -> Expr {
   } else {
     build_monomial_from_factors(final_factors)
   }
-  if is_negative {
+  let signed_expr = if is_negative {
     match base_expr {
       Expr::Int(value) => Expr::Int(-value)
       Expr::Double(value) => Expr::Double(-value)
@@ -566,6 +573,16 @@ fn simplify_mul(left : Expr, right : Expr) -> Expr {
   } else {
     base_expr
   }
+  if denominator_factors.length() == 0 {
+    signed_expr
+  } else {
+    let denom_expr = if denominator_factors.length() == 1 {
+      denominator_factors[0]
+    } else {
+      build_monomial_from_factors(denominator_factors)
+    }
+    simplify_div(signed_expr, denom_expr)
+  }
 }
 
 ///|
@@ -576,6 +593,10 @@ fn collect_mul_factors(expr : Expr, factors : Array[Expr]) -> Array[Expr] {
       let collected = collect_mul_factors(left, factors)
       collect_mul_factors(right, collected)
     }
+    Expr::Binary(BinaryOp::Div, numerator, denominator) => {
+      let collected = collect_mul_factors(numerator, factors)
+      collect_divisor_factors(denominator, collected)
+    }
     Expr::Unary(UnaryOp::Neg, inner) => {
       let updated = factors
       updated.push(Expr::Int(-1))
@@ -584,6 +605,70 @@ fn collect_mul_factors(expr : Expr, factors : Array[Expr]) -> Array[Expr] {
     other => {
       let updated = factors
       updated.push(other)
+      updated
+    }
+  }
+}
+
+///|
+fn collect_divisor_factors(expr : Expr, factors : Array[Expr]) -> Array[Expr] {
+  match expr {
+    Expr::Binary(BinaryOp::Mul, left, right) => {
+      let collected = collect_divisor_factors(left, factors)
+      collect_divisor_factors(right, collected)
+    }
+    Expr::Binary(BinaryOp::Div, numerator, denominator) => {
+      let collected = collect_divisor_factors(numerator, factors)
+      collect_divisor_factors(denominator, collected)
+    }
+    Expr::Unary(UnaryOp::Neg, inner) => {
+      let updated = factors
+      updated.push(Expr::Int(-1))
+      collect_divisor_factors(inner, updated)
+    }
+    Expr::Binary(BinaryOp::Pow, Expr::Symbol(symbol), Expr::Int(exp)) => {
+      let base = Expr::Symbol(symbol)
+      let updated = factors
+      updated.push(Expr::Binary(BinaryOp::Pow, base, Expr::Int(-exp)))
+      updated
+    }
+    Expr::Binary(BinaryOp::Pow, base, Expr::Int(exp)) => {
+      let updated = factors
+      updated.push(Expr::Binary(BinaryOp::Pow, base, Expr::Int(-exp)))
+      updated
+    }
+    Expr::Symbol(_) => {
+      let updated = factors
+      updated.push(Expr::Binary(BinaryOp::Pow, expr, Expr::Int(-1)))
+      updated
+    }
+    Expr::Int(value) =>
+      if value == 0 {
+        let updated = factors
+        updated.push(Expr::Binary(BinaryOp::Div, Expr::Int(1), Expr::Int(0)))
+        updated
+      } else {
+        let updated = factors
+        updated.push(
+          Expr::Binary(BinaryOp::Div, Expr::Int(1), Expr::Int(value)),
+        )
+        updated
+      }
+    Expr::Double(value) =>
+      if value == 0.0 {
+        let updated = factors
+        updated.push(
+          Expr::Binary(BinaryOp::Div, Expr::Int(1), Expr::Double(0.0)),
+        )
+        updated
+      } else {
+        let updated = factors
+        updated.push(Expr::Double(1.0 / value))
+        updated
+      }
+    other => {
+      let updated = factors
+      updated.push(Expr::Binary(BinaryOp::Div, Expr::Int(1), other))
       updated
     }
   }

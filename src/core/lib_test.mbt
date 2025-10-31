@@ -49,6 +49,13 @@ test "rationalize expr finds triple constant combination with full search" {
 }
 
 ///|
+test "simplify cancels reciprocal powers inside products" {
+  let x = sym("x")
+  let expr = pow(x, int(3)) * div(int(1), x)
+  inspect(simplify(expr), content="x ^ 2")
+}
+
+///|
 test "rationalize expr keeps recurring decimals with base10" {
   let value = double(1.0 / 8192.0)
   let result = rationalize_expr(value)
