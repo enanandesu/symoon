@@ -228,6 +228,30 @@ test "product rule differentiation" {
 }
 
 ///|
+test "differentiate unary operations" {
+  let x = sym("x")
+  let sin_derivative = simplify(differentiate(sin(x), "x"))
+  inspect(sin_derivative, content="cos(x)")
+  let cos_derivative = simplify(differentiate(cos(x), "x"))
+  inspect(cos_derivative, content="-(sin(x))")
+  let exp_derivative = simplify(differentiate(exp(neg(x)), "x"))
+  inspect(exp_derivative, content="-(exp(-x))")
+  let log_derivative = simplify(differentiate(log(x), "x"))
+  inspect(log_derivative, content="1 / x")
+}
+
+///|
+test "differentiate power function" {
+  let x = sym("x")
+  let cubic = simplify(differentiate(pow(x, int(3)), "x"))
+  inspect(cubic, content="3 * x ^ 3 * (1 / x)")
+  let fractional = simplify(differentiate(pow(x, double(2.5)), "x"))
+  inspect(fractional, content="2.5 * x ^ 2.5 * (1 / x)")
+  let exp_derivative = simplify(differentiate(pow(int(2), x), "x"))
+  inspect(exp_derivative, content="2 ^ x * log(2)")
+}
+
+///|
 test "evaluation with lookup" {
   let expr = add(mul(sym("x"), sym("x")), double(2.0))
   let result = evaluate(expr, (name : String) => if name == "x" {
