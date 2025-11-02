@@ -13,6 +13,11 @@ pub fn RationalConstant::new(
 }
 
 ///|
+pub fn RationalConstant::copy(self : RationalConstant) -> RationalConstant {
+  { symbol: self.symbol.copy(), numeric: self.numeric }
+}
+
+///|
 pub fn default_rational_constants() -> Array[RationalConstant] {
   let constants : Array[RationalConstant] = Array::new()
   constants.push(RationalConstant::new(sym("pi"), Some(3.141592653589793)))

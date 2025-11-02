@@ -40,13 +40,47 @@ fn int(Int) -> Expr
 
 fn log(Expr) -> Expr
 
+fn match_expr(Pattern, Expr) -> PatternBindings?
+
+fn matches(Pattern, Expr) -> Bool
+
 fn mul(Expr, Expr) -> Expr
 
 fn neg(Expr) -> Expr
 
+fn pattern_all_of(Array[Pattern]) -> Pattern
+
+fn pattern_any() -> Pattern
+
+fn pattern_binary(Pattern, Pattern, op? : BinaryOp?) -> Pattern
+
+fn pattern_call(name? : String?, Array[Pattern]) -> Pattern
+
+fn pattern_double(value? : Double?) -> Pattern
+
+fn pattern_exact(Expr) -> Pattern
+
+fn pattern_guard(Pattern, (Expr, PatternBindings) -> Bool) -> Pattern
+
+fn pattern_guarded(String, (Expr) -> Bool) -> Pattern
+
+fn pattern_int(value? : Int?) -> Pattern
+
+fn pattern_one_of(Array[Pattern]) -> Pattern
+
+fn pattern_symbol(name? : String?) -> Pattern
+
+fn pattern_unary(Pattern, op? : UnaryOp?) -> Pattern
+
+fn pattern_wildcard(String) -> Pattern
+
 fn pow(Expr, Expr) -> Expr
 
 fn rationalize_expr(Expr, constants? : Array[RationalConstant], tolerance? : Double, full? : Bool, rational? : Bool, rational_conversion? : String) -> Expr
+
+fn rewrite(Expr, Array[RewriteRule], max_iterations? : Int) -> Expr
+
+fn rewrite_once(Expr, Array[RewriteRule]) -> Expr?
 
 fn simplify(Expr, ratio? : Double, measure? : (Expr) -> Double, rational? : Bool, inverse? : Bool, doit? : Bool) -> Expr
 
@@ -62,6 +96,8 @@ fn tan(Expr) -> Expr
 
 fn tanh(Expr) -> Expr
 
+fn try_apply_rule(RewriteRule, Expr) -> Expr?
+
 // Errors
 
 // Types and methods
@@ -72,6 +108,7 @@ pub enum BinaryOp {
   Div
   Pow
 }
+fn BinaryOp::copy(Self) -> Self
 impl Eq for BinaryOp
 impl Hash for BinaryOp
 impl Show for BinaryOp
@@ -84,6 +121,7 @@ pub enum Expr {
   Binary(BinaryOp, Expr, Expr)
   FunctionCall(String, Array[Expr])
 }
+fn Expr::copy(Self) -> Self
 impl Add for Expr
 impl Div for Expr
 impl Eq for Expr
@@ -92,15 +130,54 @@ impl Neg for Expr
 impl Show for Expr
 impl Sub for Expr
 
+pub enum Pattern {
+  Any
+  Wildcard(String)
+  GuardedWildcard(String, (Expr) -> Bool)
+  Exact(Expr)
+  Symbol(String?)
+  IntLiteral(Int?)
+  DoubleLiteral(Double?)
+  Unary(UnaryOp?, Pattern)
+  Binary(BinaryOp?, Pattern, Pattern)
+  FunctionCall(String?, Array[Pattern])
+  OneOf(Array[Pattern])
+  All(Array[Pattern])
+  Guard(Pattern, (Expr, PatternBindings) -> Bool)
+}
+fn Pattern::copy(Self) -> Self
+
+pub struct PatternBindings {
+  entries : Array[(String, Expr)]
+}
+fn PatternBindings::bind_expr(Self, String, Expr) -> Self?
+fn PatternBindings::contains(Self, String) -> Bool
+fn PatternBindings::copy(Self) -> Self
+fn PatternBindings::get(Self, String) -> Expr?
+fn PatternBindings::is_empty(Self) -> Bool
+fn PatternBindings::len(Self) -> Int
+fn PatternBindings::new() -> Self
+fn PatternBindings::to_array(Self) -> Array[(String, Expr)]
+
 pub struct RationalConstant {
   symbol : Expr
   numeric : Double?
 }
+fn RationalConstant::copy(Self) -> Self
 fn RationalConstant::new(Expr, Double?) -> Self
+
+pub struct RewriteRule {
+  pattern : Pattern
+  builder : (PatternBindings) -> Expr
+  condition : ((PatternBindings) -> Bool)?
+}
+fn RewriteRule::new(Pattern, (PatternBindings) -> Expr) -> Self
+fn RewriteRule::with_condition(Self, (PatternBindings) -> Bool) -> Self
 
 pub struct Symbol {
   name : String
 }
+fn Symbol::copy(Self) -> Self
 fn Symbol::new(String) -> Self
 impl Eq for Symbol
 impl Hash for Symbol
@@ -111,6 +188,7 @@ pub enum SymbolicError {
   DomainViolation(String, String)
   UnsupportedOperation(String)
 }
+fn SymbolicError::copy(Self) -> Self
 impl Eq for SymbolicError
 impl Show for SymbolicError
 
@@ -132,6 +210,7 @@ pub enum UnaryOp {
   Log
   Abs
 }
+fn UnaryOp::copy(Self) -> Self
 impl Eq for UnaryOp
 impl Hash for UnaryOp
 impl Show for UnaryOp
