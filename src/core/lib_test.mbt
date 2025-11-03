@@ -56,6 +56,48 @@ test "simplify cancels reciprocal powers inside products" {
 }
 
 ///|
+test "simplify collapses odd root power" {
+  let x = sym("x")
+  let expr = pow(pow(x, int(3)), div(int(1), int(3)))
+  inspect(simplify(expr), content="x")
+}
+
+///|
+test "simplify collapses even root power to absolute" {
+  let x = sym("x")
+  let expr = pow(pow(x, int(2)), div(int(1), int(2)))
+  inspect(simplify(expr), content="abs(x)")
+}
+
+///|
+test "simplify log of exponential" {
+  let x = sym("x")
+  inspect(simplify(log(exp(x))), content="x")
+}
+
+///|
+test "simplify exponential of logarithm" {
+  let x = sym("x")
+  inspect(simplify(exp(log(x))), content="x")
+}
+
+///|
+test "simplify log addition to multiplication" {
+  let a = sym("a")
+  let b = sym("b")
+  let expr = log(a) + log(b)
+  inspect(simplify(expr), content="log(a * b)")
+}
+
+///|
+test "simplify log subtraction to division" {
+  let a = sym("a")
+  let b = sym("b")
+  let expr = log(a) - log(b)
+  inspect(simplify(expr), content="log(a / b)")
+}
+
+///|
 test "rationalize expr keeps recurring decimals with base10" {
   let value = double(1.0 / 8192.0)
   let result = rationalize_expr(value)

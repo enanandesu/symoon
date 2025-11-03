@@ -1,4 +1,105 @@
 ///|
+fn unwrap_binding(bindings : PatternBindings, name : String) -> Expr {
+  match PatternBindings::get(bindings, name) {
+    Some(expr) => expr
+    None => abort("missing binding: " + name)
+  }
+}
+
+///|
+fn pow_root_guard(_expr : Expr, bindings : PatternBindings) -> Bool {
+  match PatternBindings::get(bindings, "n_expr") {
+    Some(Expr::Int(value)) => value > 0
+    _ => false
+  }
+}
+
+///|
+fn identity_rewrite_rules() -> Array[RewriteRule] {
+  let rules : Array[RewriteRule] = Array::new()
+  let pow_root_pattern = pattern_guard(
+    pattern_binary(
+      pattern_binary(
+        pattern_wildcard("inner_base"),
+        pattern_wildcard("n_expr"),
+        op=Some(BinaryOp::Pow),
+      ),
+      pattern_binary(
+        pattern_int(value=Some(1)),
+        pattern_wildcard("n_expr"),
+        op=Some(BinaryOp::Div),
+      ),
+      op=Some(BinaryOp::Pow),
+    ),
+    pow_root_guard,
+  )
+  let pow_root_rule = RewriteRule::new(pow_root_pattern, (
+    bindings : PatternBindings,
+  ) => {
+    let base_expr = unwrap_binding(bindings.copy(), "inner_base")
+    let exponent_expr = unwrap_binding(bindings, "n_expr")
+    match exponent_expr {
+      Expr::Int(value) =>
+        if value % 2 == 0 {
+          abs(base_expr)
+        } else {
+          base_expr
+        }
+      _ => base_expr
+    }
+  })
+  rules.push(pow_root_rule)
+  let log_exp_pattern = pattern_unary(
+    pattern_unary(pattern_wildcard("inner"), op=Some(UnaryOp::Exp)),
+    op=Some(UnaryOp::Log),
+  )
+  rules.push(
+    RewriteRule::new(log_exp_pattern, (bindings : PatternBindings) => unwrap_binding(
+      bindings, "inner",
+    )),
+  )
+  let exp_log_pattern = pattern_unary(
+    pattern_unary(pattern_wildcard("inner"), op=Some(UnaryOp::Log)),
+    op=Some(UnaryOp::Exp),
+  )
+  rules.push(
+    RewriteRule::new(exp_log_pattern, (bindings : PatternBindings) => unwrap_binding(
+      bindings, "inner",
+    )),
+  )
+  let log_add_pattern = pattern_binary(
+    pattern_unary(pattern_wildcard("log_a"), op=Some(UnaryOp::Log)),
+    pattern_unary(pattern_wildcard("log_b"), op=Some(UnaryOp::Log)),
+    op=Some(BinaryOp::Add),
+  )
+  rules.push(
+    RewriteRule::new(log_add_pattern, (bindings : PatternBindings) => {
+      let a = unwrap_binding(bindings.copy(), "log_a")
+      let b = unwrap_binding(bindings, "log_b")
+      log(mul(a, b))
+    }),
+  )
+  let log_sub_pattern = pattern_binary(
+    pattern_unary(pattern_wildcard("log_a"), op=Some(UnaryOp::Log)),
+    pattern_unary(pattern_wildcard("log_b"), op=Some(UnaryOp::Log)),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(log_sub_pattern, (bindings : PatternBindings) => {
+      let a = unwrap_binding(bindings.copy(), "log_a")
+      let b = unwrap_binding(bindings, "log_b")
+      log(div(a, b))
+    }),
+  )
+  rules
+}
+
+///|
+fn apply_identity_rewrites(expr : Expr) -> Expr {
+  rewrite(expr, identity_rewrite_rules())
+}
+
+///|
 pub fn simplify(
   expr : Expr,
   ratio? : Double = 1.7,
@@ -8,16 +109,16 @@ pub fn simplify(
   doit? : Bool = true,
 ) -> Expr {
   let preprocessed = if inverse { inverse_cancellation(expr) } else { expr }
-  let simplified_once = simplify_reduce(preprocessed)
+  let simplified_once = apply_identity_rewrites(simplify_reduce(preprocessed))
   let rationalized = if rational {
     rationalize_expr(simplified_once)
   } else {
     simplified_once
   }
   let candidate = if doit {
-    simplify_reduce(rationalized)
+    apply_identity_rewrites(simplify_reduce(rationalized))
   } else {
-    rationalized
+    apply_identity_rewrites(rationalized)
   }
   let original_measure = measure(expr)
   let candidate_measure = measure(candidate)
@@ -989,6 +1090,20 @@ fn simplify_pow(base : Expr, exponent : Expr) -> Expr {
           }
       }
     Expr::Binary(BinaryOp::Pow, inner_base, inner_exp) => {
+      match (inner_exp, exp_value) {
+        (
+          Expr::Int(inner_n),
+          Expr::Binary(BinaryOp::Div, Expr::Int(1), Expr::Int(outer_n)),
+        ) =>
+          if inner_n > 0 && outer_n > 0 && inner_n == outer_n {
+            if inner_n % 2 == 0 {
+              return abs(inner_base)
+            } else {
+              return inner_base
+            }
+          }
+        _ => ()
+      }
       let combined_exp = simplify_mul(inner_exp, exp_value)
       return simplify_pow(inner_base, combined_exp)
     }
