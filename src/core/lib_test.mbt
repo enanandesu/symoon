@@ -98,6 +98,267 @@ test "simplify log subtraction to division" {
 }
 
 ///|
+test "simplify sin square plus cos square" {
+  let x = sym("x")
+  let expr = add(pow(sin(x), int(2)), pow(cos(x), int(2)))
+  inspect(simplify(expr), content="1")
+}
+
+///|
+test "simplify cos square plus sin square" {
+  let x = sym("x")
+  let expr = add(pow(cos(x), int(2)), pow(sin(x), int(2)))
+  inspect(simplify(expr), content="1")
+}
+
+///|
+test "simplify one plus tan square" {
+  let x = sym("x")
+  let expr = add(int(1), pow(tan(x), int(2)))
+  inspect(simplify(expr), content="1 / cos(x) ^ 2")
+}
+
+///|
+test "simplify tan square plus one" {
+  let x = sym("x")
+  let expr = add(pow(tan(x), int(2)), int(1))
+  inspect(simplify(expr), content="1 / cos(x) ^ 2")
+}
+
+///|
+test "simplify one plus tan inverse square" {
+  let x = sym("x")
+  let expr = add(int(1), pow(tan(x), int(-2)))
+  inspect(simplify(expr), content="1 / sin(x) ^ 2")
+}
+
+///|
+test "simplify tan inverse square plus one" {
+  let x = sym("x")
+  let expr = add(pow(tan(x), int(-2)), int(1))
+  inspect(simplify(expr), content="1 / sin(x) ^ 2")
+}
+
+///|
+test "simplify sine addition formula" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = add(mul(sin(x), cos(y)), mul(cos(x), sin(y)))
+  inspect(simplify(expr), content="sin(x + y)")
+}
+
+///|
+test "simplify sine subtraction formula" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = sub(mul(sin(x), cos(y)), mul(cos(x), sin(y)))
+  inspect(simplify(expr), content="sin(x - y)")
+}
+
+///|
+test "simplify sine subtraction swapped order" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = sub(mul(cos(x), sin(y)), mul(sin(x), cos(y)))
+  inspect(simplify(expr), content="sin(y - x)")
+}
+
+///|
+test "simplify cosine addition formula" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = sub(mul(cos(x), cos(y)), mul(sin(x), sin(y)))
+  inspect(simplify(expr), content="cos(x + y)")
+}
+
+///|
+test "simplify cosine subtraction formula" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = add(mul(cos(x), cos(y)), mul(sin(x), sin(y)))
+  inspect(simplify(expr), content="cos(x - y)")
+}
+
+///|
+test "simplify double angle from product" {
+  let x = sym("x")
+  let expr = mul(int(2), mul(sin(x), cos(x)))
+  inspect(simplify(expr), content="sin(2 * x)")
+}
+
+///|
+test "simplify cosine double angle difference" {
+  let x = sym("x")
+  let expr = sub(pow(cos(x), int(2)), pow(sin(x), int(2)))
+  inspect(simplify(expr), content="cos(2 * x)")
+}
+
+///|
+test {
+  let x = sym("x")
+  let expr = int(1) - int(2) * pow(sin(x), int(2))
+  inspect(simplify(expr), content="cos(2 * x)")
+}
+
+///|
+test "simplify cosine double angle negative difference" {
+  let x = sym("x")
+  let expr = sub(pow(sin(x), int(2)), pow(cos(x), int(2)))
+  inspect(simplify(expr), content="-(cos(2 * x))")
+}
+
+///|
+test "simplify one minus double sine square" {
+  let x = sym("x")
+  let expr = sub(int(1), mul(int(2), pow(sin(x), int(2))))
+  inspect(simplify(expr), content="cos(2 * x)")
+}
+
+///|
+test {
+  let x = sym("x")
+  let expr = int(1) - int(2) * pow(cos(x), int(2))
+  inspect(simplify(expr), content="-(cos(2 * x))")
+}
+
+///|
+test "simplify double cosine square minus one" {
+  let x = sym("x")
+  let expr = sub(mul(int(2), pow(cos(x), int(2))), int(1))
+  inspect(simplify(expr), content="cos(2 * x)")
+}
+
+///|
+test "simplify double sine square minus one" {
+  let x = sym("x")
+  let expr = sub(mul(int(2), pow(sin(x), int(2))), int(1))
+  inspect(simplify(expr), content="-(cos(2 * x))")
+}
+
+///|
+test "simplify one minus double cosine square" {
+  let x = sym("x")
+  let expr = sub(int(1), mul(int(2), pow(cos(x), int(2))))
+  inspect(simplify(expr), content="-(cos(2 * x))")
+}
+
+///|
+test "simplify tangent addition formula" {
+  let x = sym("x")
+  let y = sym("y")
+  let numerator = add(tan(x), tan(y))
+  let denominator = sub(int(1), mul(tan(x), tan(y)))
+  let expr = div(numerator, denominator)
+  inspect(simplify(expr), content="tan(x + y)")
+}
+
+///|
+test "simplify tangent subtraction formula" {
+  let x = sym("x")
+  let y = sym("y")
+  let numerator = sub(tan(x), tan(y))
+  let denominator = add(int(1), mul(tan(x), tan(y)))
+  let expr = div(numerator, denominator)
+  inspect(simplify(expr), content="tan(x - y)")
+}
+
+///|
+test "simplify tangent double angle" {
+  let x = sym("x")
+  let numerator = mul(int(2), tan(x))
+  let denominator = sub(int(1), pow(tan(x), int(2)))
+  let expr = div(numerator, denominator)
+  inspect(simplify(expr), content="tan(2 * x)")
+}
+
+///|
+test "simplify sine sum to product" {
+  let x = sym("x")
+  let y = sym("y")
+  inspect(simplify(add(sin(x), sin(y))), content="sin(x) + sin(y)")
+}
+
+///|
+test "simplify sine difference to product" {
+  let x = sym("x")
+  let y = sym("y")
+  inspect(simplify(sub(sin(x), sin(y))), content="sin(x) - sin(y)")
+}
+
+///|
+test "simplify sine difference swapped to product" {
+  let x = sym("x")
+  let y = sym("y")
+  inspect(simplify(sub(sin(y), sin(x))), content="sin(y) - sin(x)")
+}
+
+///|
+test "simplify cosine sum to product" {
+  let x = sym("x")
+  let y = sym("y")
+  inspect(simplify(add(cos(x), cos(y))), content="cos(x) + cos(y)")
+}
+
+///|
+test "simplify cosine difference to product" {
+  let x = sym("x")
+  let y = sym("y")
+  inspect(simplify(sub(cos(x), cos(y))), content="cos(x) - cos(y)")
+}
+
+///|
+test "simplify cosine difference swapped to product" {
+  let x = sym("x")
+  let y = sym("y")
+  inspect(simplify(sub(cos(y), cos(x))), content="cos(y) - cos(x)")
+}
+
+///|
+test "simplify sine sum special" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = add(sin(add(x, y)), sin(sub(x, y)))
+  inspect(expr, content="sin(x + y) + sin(x - y)")
+  inspect(simplify(expr), content="2 * sin(x) * cos(y)")
+}
+
+///|
+test "simplify sine difference special" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = sub(sin(add(x, y)), sin(sub(x, y)))
+  inspect(expr, content="sin(x + y) - sin(x - y)")
+  inspect(simplify(expr), content="2 * cos(x) * sin(y)")
+}
+
+///|
+test "simplify cosine sum special" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = add(cos(add(x, y)), cos(sub(x, y)))
+  inspect(expr, content="cos(x + y) + cos(x - y)")
+  inspect(simplify(expr), content="2 * cos(x) * cos(y)")
+}
+
+///|
+test "simplify cosine difference special" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = sub(cos(add(x, y)), cos(sub(x, y)))
+  inspect(expr, content="cos(x + y) - cos(x - y)")
+  inspect(simplify(expr), content="-(2 * sin(x) * sin(y))")
+}
+
+///|
+test "simplify cosine difference special swapped" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = sub(cos(sub(x, y)), cos(add(x, y)))
+  inspect(expr, content="cos(x - y) - cos(x + y)")
+  inspect(simplify(expr), content="2 * sin(x) * sin(y)")
+}
+
+///|
 test "rationalize expr keeps recurring decimals with base10" {
   let value = double(1.0 / 8192.0)
   let result = rationalize_expr(value)

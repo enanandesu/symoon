@@ -91,6 +91,680 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
       log(div(a, b))
     }),
   )
+  let one_literal = pattern_int(value=Some(1))
+  let two_literal = pattern_int(value=Some(2))
+  let neg_two_literal = pattern_int(value=Some(-2))
+  let py_theta = pattern_wildcard("py_theta")
+  let sin_py = pattern_unary(py_theta.copy(), op=Some(UnaryOp::Sin))
+  let cos_py = pattern_unary(py_theta.copy(), op=Some(UnaryOp::Cos))
+  let sin_sq = pattern_binary(
+    sin_py.copy(),
+    two_literal.copy(),
+    op=Some(BinaryOp::Pow),
+  )
+  let cos_sq = pattern_binary(
+    cos_py.copy(),
+    two_literal.copy(),
+    op=Some(BinaryOp::Pow),
+  )
+  let sin_sq_plus_cos_sq = pattern_binary(
+    sin_sq.copy(),
+    cos_sq.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  rules.push(
+    RewriteRule::new(sin_sq_plus_cos_sq, (_ : PatternBindings) => int(1)),
+  )
+  let cos_sq_plus_sin_sq = pattern_binary(
+    cos_sq.copy(),
+    sin_sq.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  rules.push(
+    RewriteRule::new(cos_sq_plus_sin_sq, (_ : PatternBindings) => int(1)),
+  )
+  let cos_sq_minus_sin_sq = pattern_binary(
+    cos_sq.copy(),
+    sin_sq.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(cos_sq_minus_sin_sq, (bindings : PatternBindings) => {
+      let angle = unwrap_binding(bindings, "py_theta")
+      cos(mul(int(2), angle))
+    }),
+  )
+  let sin_sq_minus_cos_sq = pattern_binary(
+    sin_sq.copy(),
+    cos_sq.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(sin_sq_minus_cos_sq, (bindings : PatternBindings) => {
+      let angle = unwrap_binding(bindings, "py_theta")
+      neg(cos(mul(int(2), angle)))
+    }),
+  )
+  let tan_theta = pattern_wildcard("tan_theta")
+  let tan_expr = pattern_unary(tan_theta.copy(), op=Some(UnaryOp::Tan))
+  let tan_sq = pattern_binary(
+    tan_expr.copy(),
+    two_literal.copy(),
+    op=Some(BinaryOp::Pow),
+  )
+  let tan_neg_sq = pattern_binary(
+    tan_expr.copy(),
+    neg_two_literal.copy(),
+    op=Some(BinaryOp::Pow),
+  )
+  let one_plus_tan_sq = pattern_binary(
+    one_literal.copy(),
+    tan_sq.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  rules.push(
+    RewriteRule::new(one_plus_tan_sq, (bindings : PatternBindings) => {
+      let angle = unwrap_binding(bindings, "tan_theta")
+      pow(cos(angle), int(-2))
+    }),
+  )
+  let tan_sq_plus_one = pattern_binary(
+    tan_sq.copy(),
+    one_literal.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  rules.push(
+    RewriteRule::new(tan_sq_plus_one, (bindings : PatternBindings) => {
+      let angle = unwrap_binding(bindings, "tan_theta")
+      pow(cos(angle), int(-2))
+    }),
+  )
+  let one_plus_tan_neg_sq = pattern_binary(
+    one_literal.copy(),
+    tan_neg_sq.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  rules.push(
+    RewriteRule::new(one_plus_tan_neg_sq, (bindings : PatternBindings) => {
+      let angle = unwrap_binding(bindings, "tan_theta")
+      pow(sin(angle), int(-2))
+    }),
+  )
+  let tan_neg_sq_plus_one = pattern_binary(
+    tan_neg_sq.copy(),
+    one_literal.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  rules.push(
+    RewriteRule::new(tan_neg_sq_plus_one, (bindings : PatternBindings) => {
+      let angle = unwrap_binding(bindings, "tan_theta")
+      pow(sin(angle), int(-2))
+    }),
+  )
+  let tan_sq_div = pattern_binary(
+    one_literal.copy(),
+    pattern_binary(tan_expr.copy(), two_literal.copy(), op=Some(BinaryOp::Pow)),
+    op=Some(BinaryOp::Div),
+  )
+  let one_plus_tan_sq_div = pattern_binary(
+    one_literal.copy(),
+    tan_sq_div.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  rules.push(
+    RewriteRule::new(one_plus_tan_sq_div, (bindings : PatternBindings) => {
+      let angle = unwrap_binding(bindings, "tan_theta")
+      pow(sin(angle), int(-2))
+    }),
+  )
+  let tan_sq_div_plus_one = pattern_binary(
+    tan_sq_div.copy(),
+    one_literal.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  rules.push(
+    RewriteRule::new(tan_sq_div_plus_one, (bindings : PatternBindings) => {
+      let angle = unwrap_binding(bindings, "tan_theta")
+      pow(sin(angle), int(-2))
+    }),
+  )
+  let tan_sum_a = pattern_wildcard("tan_sum_a")
+  let tan_sum_b = pattern_wildcard("tan_sum_b")
+  let tan_a = pattern_unary(tan_sum_a.copy(), op=Some(UnaryOp::Tan))
+  let tan_b = pattern_unary(tan_sum_b.copy(), op=Some(UnaryOp::Tan))
+  let tan_add_numer_options : Array[Pattern] = Array::new(capacity=2)
+  tan_add_numer_options.push(
+    pattern_binary(tan_a.copy(), tan_b.copy(), op=Some(BinaryOp::Add)),
+  )
+  tan_add_numer_options.push(
+    pattern_binary(tan_b.copy(), tan_a.copy(), op=Some(BinaryOp::Add)),
+  )
+  let tan_add_numer = pattern_one_of(tan_add_numer_options)
+  let tan_product_options : Array[Pattern] = Array::new(capacity=2)
+  tan_product_options.push(
+    pattern_binary(tan_a.copy(), tan_b.copy(), op=Some(BinaryOp::Mul)),
+  )
+  tan_product_options.push(
+    pattern_binary(tan_b.copy(), tan_a.copy(), op=Some(BinaryOp::Mul)),
+  )
+  let tan_product = pattern_one_of(tan_product_options)
+  let tan_add_denom = pattern_binary(
+    one_literal.copy(),
+    tan_product.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  let tan_add_fraction = pattern_binary(
+    tan_add_numer.copy(),
+    tan_add_denom.copy(),
+    op=Some(BinaryOp::Div),
+  )
+  rules.push(
+    RewriteRule::new(tan_add_fraction, (bindings : PatternBindings) => {
+      let a = unwrap_binding(bindings.copy(), "tan_sum_a")
+      let b = unwrap_binding(bindings, "tan_sum_b")
+      tan(add(a, b))
+    }),
+  )
+  let tan_sub_numer_options : Array[Pattern] = Array::new(capacity=2)
+  tan_sub_numer_options.push(
+    pattern_binary(tan_a.copy(), tan_b.copy(), op=Some(BinaryOp::Sub)),
+  )
+  tan_sub_numer_options.push(
+    pattern_binary(tan_b.copy(), tan_a.copy(), op=Some(BinaryOp::Sub)),
+  )
+  let tan_sub_numer = pattern_one_of(tan_sub_numer_options)
+  let tan_sub_denom = pattern_binary(
+    one_literal.copy(),
+    tan_product.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  let tan_sub_fraction = pattern_binary(
+    tan_sub_numer.copy(),
+    tan_sub_denom.copy(),
+    op=Some(BinaryOp::Div),
+  )
+  rules.push(
+    RewriteRule::new(tan_sub_fraction, (bindings : PatternBindings) => {
+      let a = unwrap_binding(bindings.copy(), "tan_sum_a")
+      let b = unwrap_binding(bindings, "tan_sum_b")
+      tan(sub(a, b))
+    }),
+  )
+  let tan_double_num_options : Array[Pattern] = Array::new(capacity=2)
+  tan_double_num_options.push(
+    pattern_binary(two_literal.copy(), tan_expr.copy(), op=Some(BinaryOp::Mul)),
+  )
+  tan_double_num_options.push(
+    pattern_binary(tan_expr.copy(), two_literal.copy(), op=Some(BinaryOp::Mul)),
+  )
+  let tan_double_num = pattern_one_of(tan_double_num_options)
+  let tan_double_denom = pattern_binary(
+    one_literal.copy(),
+    tan_sq.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  let tan_double_fraction = pattern_binary(
+    tan_double_num.copy(),
+    tan_double_denom.copy(),
+    op=Some(BinaryOp::Div),
+  )
+  rules.push(
+    RewriteRule::new(tan_double_fraction, (bindings : PatternBindings) => {
+      let angle = unwrap_binding(bindings, "tan_theta")
+      tan(mul(int(2), angle))
+    }),
+  )
+  let sum_a = pattern_wildcard("sum_a")
+  let sum_b = pattern_wildcard("sum_b")
+  let sin_a_base = pattern_unary(sum_a.copy(), op=Some(UnaryOp::Sin))
+  let cos_a_base = pattern_unary(sum_a.copy(), op=Some(UnaryOp::Cos))
+  let sin_b_base = pattern_unary(sum_b.copy(), op=Some(UnaryOp::Sin))
+  let cos_b_base = pattern_unary(sum_b.copy(), op=Some(UnaryOp::Cos))
+  let sin_cos_options : Array[Pattern] = Array::new(capacity=2)
+  sin_cos_options.push(
+    pattern_binary(sin_a_base.copy(), cos_b_base.copy(), op=Some(BinaryOp::Mul)),
+  )
+  sin_cos_options.push(
+    pattern_binary(cos_b_base.copy(), sin_a_base.copy(), op=Some(BinaryOp::Mul)),
+  )
+  let sin_a_cos_b = pattern_one_of(sin_cos_options)
+  let cos_sin_options : Array[Pattern] = Array::new(capacity=2)
+  cos_sin_options.push(
+    pattern_binary(cos_a_base.copy(), sin_b_base.copy(), op=Some(BinaryOp::Mul)),
+  )
+  cos_sin_options.push(
+    pattern_binary(sin_b_base.copy(), cos_a_base.copy(), op=Some(BinaryOp::Mul)),
+  )
+  let cos_a_sin_b = pattern_one_of(cos_sin_options)
+  let cos_cos_options : Array[Pattern] = Array::new(capacity=2)
+  cos_cos_options.push(
+    pattern_binary(cos_a_base.copy(), cos_b_base.copy(), op=Some(BinaryOp::Mul)),
+  )
+  cos_cos_options.push(
+    pattern_binary(cos_b_base.copy(), cos_a_base.copy(), op=Some(BinaryOp::Mul)),
+  )
+  let cos_a_cos_b = pattern_one_of(cos_cos_options)
+  let sin_sin_options : Array[Pattern] = Array::new(capacity=2)
+  sin_sin_options.push(
+    pattern_binary(sin_a_base.copy(), sin_b_base.copy(), op=Some(BinaryOp::Mul)),
+  )
+  sin_sin_options.push(
+    pattern_binary(sin_b_base.copy(), sin_a_base.copy(), op=Some(BinaryOp::Mul)),
+  )
+  let sin_a_sin_b = pattern_one_of(sin_sin_options)
+  let sin_sum_pattern = pattern_binary(
+    sin_a_cos_b.copy(),
+    cos_a_sin_b.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  rules.push(
+    RewriteRule::new(sin_sum_pattern, (bindings : PatternBindings) => {
+      let a = unwrap_binding(bindings.copy(), "sum_a")
+      let b = unwrap_binding(bindings, "sum_b")
+      sin(add(a, b))
+    }),
+  )
+  let sin_sum_pattern_swapped = pattern_binary(
+    cos_a_sin_b.copy(),
+    sin_a_cos_b.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  rules.push(
+    RewriteRule::new(sin_sum_pattern_swapped, (bindings : PatternBindings) => {
+      let a = unwrap_binding(bindings.copy(), "sum_a")
+      let b = unwrap_binding(bindings, "sum_b")
+      sin(add(a, b))
+    }),
+  )
+  let sin_diff_pattern = pattern_binary(
+    sin_a_cos_b.copy(),
+    cos_a_sin_b.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(sin_diff_pattern, (bindings : PatternBindings) => {
+      let a = unwrap_binding(bindings.copy(), "sum_a")
+      let b = unwrap_binding(bindings, "sum_b")
+      sin(sub(a, b))
+    }),
+  )
+  let sin_diff_pattern_swapped = pattern_binary(
+    cos_a_sin_b.copy(),
+    sin_a_cos_b.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(sin_diff_pattern_swapped, (bindings : PatternBindings) => {
+      let a = unwrap_binding(bindings.copy(), "sum_a")
+      let b = unwrap_binding(bindings, "sum_b")
+      sin(sub(b, a))
+    }),
+  )
+  let sum_prod_primary = pattern_wildcard("sum_prod_primary")
+  let sum_prod_secondary = pattern_wildcard("sum_prod_secondary")
+  let sin_add_pattern = pattern_unary(
+    pattern_binary(
+      sum_prod_primary.copy(),
+      sum_prod_secondary.copy(),
+      op=Some(BinaryOp::Add),
+    ),
+    op=Some(UnaryOp::Sin),
+  )
+  let sin_sub_pattern = pattern_unary(
+    pattern_binary(
+      sum_prod_primary.copy(),
+      sum_prod_secondary.copy(),
+      op=Some(BinaryOp::Sub),
+    ),
+    op=Some(UnaryOp::Sin),
+  )
+  let cos_add_pattern = pattern_unary(
+    pattern_binary(
+      sum_prod_primary.copy(),
+      sum_prod_secondary.copy(),
+      op=Some(BinaryOp::Add),
+    ),
+    op=Some(UnaryOp::Cos),
+  )
+  let cos_sub_pattern = pattern_unary(
+    pattern_binary(
+      sum_prod_primary.copy(),
+      sum_prod_secondary.copy(),
+      op=Some(BinaryOp::Sub),
+    ),
+    op=Some(UnaryOp::Cos),
+  )
+  let sin_plus_special = pattern_binary(
+    sin_add_pattern.copy(),
+    sin_sub_pattern.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  let sin_plus_special_swapped = pattern_binary(
+    sin_sub_pattern.copy(),
+    sin_add_pattern.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  let sin_minus_special = pattern_binary(
+    sin_add_pattern.copy(),
+    sin_sub_pattern.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  let sin_minus_special_swapped = pattern_binary(
+    sin_sub_pattern.copy(),
+    sin_add_pattern.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(sin_plus_special, (bindings : PatternBindings) => {
+      let primary = unwrap_binding(bindings.copy(), "sum_prod_primary")
+      let secondary = unwrap_binding(bindings, "sum_prod_secondary")
+      mul(int(2), mul(sin(primary.copy()), cos(secondary.copy())))
+    }),
+  )
+  rules.push(
+    RewriteRule::new(sin_plus_special_swapped, (bindings : PatternBindings) => {
+      let primary = unwrap_binding(bindings.copy(), "sum_prod_primary")
+      let secondary = unwrap_binding(bindings, "sum_prod_secondary")
+      mul(int(2), mul(sin(primary.copy()), cos(secondary.copy())))
+    }),
+  )
+  rules.push(
+    RewriteRule::new(sin_minus_special, (bindings : PatternBindings) => {
+      let primary = unwrap_binding(bindings.copy(), "sum_prod_primary")
+      let secondary = unwrap_binding(bindings, "sum_prod_secondary")
+      mul(int(2), mul(cos(primary.copy()), sin(secondary.copy())))
+    }),
+  )
+  rules.push(
+    RewriteRule::new(sin_minus_special_swapped, (bindings : PatternBindings) => {
+      let primary = unwrap_binding(bindings.copy(), "sum_prod_primary")
+      let secondary = unwrap_binding(bindings, "sum_prod_secondary")
+      mul(int(-2), mul(cos(primary.copy()), sin(secondary.copy())))
+    }),
+  )
+  let cos_plus_special = pattern_binary(
+    cos_add_pattern.copy(),
+    cos_sub_pattern.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  let cos_plus_special_swapped = pattern_binary(
+    cos_sub_pattern.copy(),
+    cos_add_pattern.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  let cos_minus_special = pattern_binary(
+    cos_add_pattern.copy(),
+    cos_sub_pattern.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  let cos_minus_special_swapped = pattern_binary(
+    cos_sub_pattern.copy(),
+    cos_add_pattern.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(cos_plus_special, (bindings : PatternBindings) => {
+      let primary = unwrap_binding(bindings.copy(), "sum_prod_primary")
+      let secondary = unwrap_binding(bindings, "sum_prod_secondary")
+      mul(int(2), mul(cos(primary.copy()), cos(secondary.copy())))
+    }),
+  )
+  rules.push(
+    RewriteRule::new(cos_plus_special_swapped, (bindings : PatternBindings) => {
+      let primary = unwrap_binding(bindings.copy(), "sum_prod_primary")
+      let secondary = unwrap_binding(bindings, "sum_prod_secondary")
+      mul(int(2), mul(cos(primary.copy()), cos(secondary.copy())))
+    }),
+  )
+  rules.push(
+    RewriteRule::new(cos_minus_special, (bindings : PatternBindings) => {
+      let primary = unwrap_binding(bindings.copy(), "sum_prod_primary")
+      let secondary = unwrap_binding(bindings, "sum_prod_secondary")
+      mul(int(-2), mul(sin(primary.copy()), sin(secondary.copy())))
+    }),
+  )
+  rules.push(
+    RewriteRule::new(cos_minus_special_swapped, (bindings : PatternBindings) => {
+      let primary = unwrap_binding(bindings.copy(), "sum_prod_primary")
+      let secondary = unwrap_binding(bindings, "sum_prod_secondary")
+      mul(int(2), mul(sin(primary.copy()), sin(secondary.copy())))
+    }),
+  )
+  let cos_sum_pattern = pattern_binary(
+    cos_a_cos_b.copy(),
+    sin_a_sin_b.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(cos_sum_pattern, (bindings : PatternBindings) => {
+      let a = unwrap_binding(bindings.copy(), "sum_a")
+      let b = unwrap_binding(bindings, "sum_b")
+      cos(add(a, b))
+    }),
+  )
+  let cos_sum_pattern_swapped = pattern_binary(
+    sin_a_sin_b.copy(),
+    cos_a_cos_b.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(cos_sum_pattern_swapped, (bindings : PatternBindings) => {
+      let a = unwrap_binding(bindings.copy(), "sum_a")
+      let b = unwrap_binding(bindings, "sum_b")
+      neg(cos(add(a, b)))
+    }),
+  )
+  let cos_diff_pattern = pattern_binary(
+    cos_a_cos_b.copy(),
+    sin_a_sin_b.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  rules.push(
+    RewriteRule::new(cos_diff_pattern, (bindings : PatternBindings) => {
+      let a = unwrap_binding(bindings.copy(), "sum_a")
+      let b = unwrap_binding(bindings, "sum_b")
+      cos(sub(a, b))
+    }),
+  )
+  let cos_diff_pattern_swapped = pattern_binary(
+    sin_a_sin_b.copy(),
+    cos_a_cos_b.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  rules.push(
+    RewriteRule::new(cos_diff_pattern_swapped, (bindings : PatternBindings) => {
+      let a = unwrap_binding(bindings.copy(), "sum_a")
+      let b = unwrap_binding(bindings, "sum_b")
+      cos(sub(a, b))
+    }),
+  )
+  let dbl_theta = pattern_wildcard("dbl_theta")
+  let sin_theta = pattern_unary(dbl_theta.copy(), op=Some(UnaryOp::Sin))
+  let cos_theta = pattern_unary(dbl_theta.copy(), op=Some(UnaryOp::Cos))
+  let sin_cos_terms : Array[Pattern] = Array::new(capacity=2)
+  sin_cos_terms.push(
+    pattern_binary(sin_theta.copy(), cos_theta.copy(), op=Some(BinaryOp::Mul)),
+  )
+  sin_cos_terms.push(
+    pattern_binary(cos_theta.copy(), sin_theta.copy(), op=Some(BinaryOp::Mul)),
+  )
+  let sin_cos_mul = pattern_one_of(sin_cos_terms)
+  let two_sin_terms : Array[Pattern] = Array::new(capacity=2)
+  two_sin_terms.push(
+    pattern_binary(two_literal.copy(), sin_theta.copy(), op=Some(BinaryOp::Mul)),
+  )
+  two_sin_terms.push(
+    pattern_binary(sin_theta.copy(), two_literal.copy(), op=Some(BinaryOp::Mul)),
+  )
+  let two_sin_mul = pattern_one_of(two_sin_terms)
+  let two_cos_terms : Array[Pattern] = Array::new(capacity=2)
+  two_cos_terms.push(
+    pattern_binary(two_literal.copy(), cos_theta.copy(), op=Some(BinaryOp::Mul)),
+  )
+  two_cos_terms.push(
+    pattern_binary(cos_theta.copy(), two_literal.copy(), op=Some(BinaryOp::Mul)),
+  )
+  let two_cos_mul = pattern_one_of(two_cos_terms)
+  let sin_sq_double = pattern_binary(
+    sin_theta.copy(),
+    two_literal.copy(),
+    op=Some(BinaryOp::Pow),
+  )
+  let cos_sq_double = pattern_binary(
+    cos_theta.copy(),
+    two_literal.copy(),
+    op=Some(BinaryOp::Pow),
+  )
+  let two_sin_sq_options : Array[Pattern] = Array::new(capacity=2)
+  two_sin_sq_options.push(
+    pattern_binary(
+      two_literal.copy(),
+      sin_sq_double.copy(),
+      op=Some(BinaryOp::Mul),
+    ),
+  )
+  two_sin_sq_options.push(
+    pattern_binary(
+      sin_sq_double.copy(),
+      two_literal.copy(),
+      op=Some(BinaryOp::Mul),
+    ),
+  )
+  let two_sin_sq = pattern_one_of(two_sin_sq_options)
+  let two_cos_sq_options : Array[Pattern] = Array::new(capacity=2)
+  two_cos_sq_options.push(
+    pattern_binary(
+      two_literal.copy(),
+      cos_sq_double.copy(),
+      op=Some(BinaryOp::Mul),
+    ),
+  )
+  two_cos_sq_options.push(
+    pattern_binary(
+      cos_sq_double.copy(),
+      two_literal.copy(),
+      op=Some(BinaryOp::Mul),
+    ),
+  )
+  let two_cos_sq = pattern_one_of(two_cos_sq_options)
+  let one_minus_two_sin_sq = pattern_binary(
+    one_literal.copy(),
+    two_sin_sq.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(one_minus_two_sin_sq, (bindings : PatternBindings) => {
+      let angle = unwrap_binding(bindings, "dbl_theta")
+      cos(mul(int(2), angle))
+    }),
+  )
+  let two_cos_sq_minus_one = pattern_binary(
+    two_cos_sq.copy(),
+    one_literal.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(two_cos_sq_minus_one, (bindings : PatternBindings) => {
+      let angle = unwrap_binding(bindings, "dbl_theta")
+      cos(mul(int(2), angle))
+    }),
+  )
+  let two_sin_sq_minus_one = pattern_binary(
+    two_sin_sq.copy(),
+    one_literal.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(two_sin_sq_minus_one, (bindings : PatternBindings) => {
+      let angle = unwrap_binding(bindings, "dbl_theta")
+      neg(cos(mul(int(2), angle)))
+    }),
+  )
+  let one_minus_two_cos_sq = pattern_binary(
+    one_literal.copy(),
+    two_cos_sq.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(one_minus_two_cos_sq, (bindings : PatternBindings) => {
+      let angle = unwrap_binding(bindings, "dbl_theta")
+      neg(cos(mul(int(2), angle)))
+    }),
+  )
+  let double_patterns : Array[Pattern] = {
+    let candidates : Array[Pattern] = Array::new(capacity=6)
+    candidates.push(
+      pattern_binary(
+        two_sin_mul.copy(),
+        cos_theta.copy(),
+        op=Some(BinaryOp::Mul),
+      ),
+    )
+    candidates.push(
+      pattern_binary(
+        cos_theta.copy(),
+        two_sin_mul.copy(),
+        op=Some(BinaryOp::Mul),
+      ),
+    )
+    candidates.push(
+      pattern_binary(
+        two_literal.copy(),
+        sin_cos_mul.copy(),
+        op=Some(BinaryOp::Mul),
+      ),
+    )
+    candidates.push(
+      pattern_binary(
+        sin_cos_mul.copy(),
+        two_literal.copy(),
+        op=Some(BinaryOp::Mul),
+      ),
+    )
+    candidates.push(
+      pattern_binary(
+        two_cos_mul.copy(),
+        sin_theta.copy(),
+        op=Some(BinaryOp::Mul),
+      ),
+    )
+    candidates.push(
+      pattern_binary(
+        sin_theta.copy(),
+        two_cos_mul.copy(),
+        op=Some(BinaryOp::Mul),
+      ),
+    )
+    candidates
+  }
+  for candidate in double_patterns {
+    rules.push(
+      RewriteRule::new(candidate, (bindings : PatternBindings) => {
+        let angle = unwrap_binding(bindings, "dbl_theta")
+        sin(mul(int(2), angle))
+      }),
+    )
+  }
+  let sin_add_same = pattern_unary(
+    pattern_binary(dbl_theta.copy(), dbl_theta.copy(), op=Some(BinaryOp::Add)),
+    op=Some(UnaryOp::Sin),
+  )
+  rules.push(
+    RewriteRule::new(sin_add_same, (bindings : PatternBindings) => {
+      let angle = unwrap_binding(bindings, "dbl_theta")
+      sin(mul(int(2), angle))
+    }),
+  )
+  let cos_add_same = pattern_unary(
+    pattern_binary(dbl_theta.copy(), dbl_theta.copy(), op=Some(BinaryOp::Add)),
+    op=Some(UnaryOp::Cos),
+  )
+  rules.push(
+    RewriteRule::new(cos_add_same, (bindings : PatternBindings) => {
+      let angle = unwrap_binding(bindings, "dbl_theta")
+      cos(mul(int(2), angle))
+    }),
+  )
   rules
 }
 
@@ -122,11 +796,14 @@ pub fn simplify(
   }
   let original_measure = measure(expr)
   let candidate_measure = measure(candidate)
-  if should_preserve_original(original_measure, candidate_measure, ratio) {
+  let chosen = if should_preserve_original(
+      original_measure, candidate_measure, ratio,
+    ) {
     expr
   } else {
     candidate
   }
+  apply_identity_rewrites(chosen)
 }
 
 ///|
