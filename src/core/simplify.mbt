@@ -15,6 +15,438 @@ fn pow_root_guard(_expr : Expr, bindings : PatternBindings) -> Bool {
 }
 
 ///|
+fn apply_all_rewrites(expr : Expr) -> Expr {
+  apply_hyperbolic_rewrites(apply_identity_rewrites(expr))
+}
+
+///|
+fn apply_hyperbolic_rewrites(expr : Expr) -> Expr {
+  let mut current = hyperbolic_manual(expr)
+  for _ in 0..<4 {
+    let next = hyperbolic_manual(current.copy())
+    if next == current {
+      return current
+    }
+    current = next
+  }
+  current
+}
+
+///|
+fn hyperbolic_manual(expr : Expr) -> Expr {
+  match expr {
+    Expr::Unary(op, inner) => Expr::Unary(op, hyperbolic_manual(inner))
+    Expr::Binary(op, left, right) => {
+      let left_t = hyperbolic_manual(left)
+      let right_t = hyperbolic_manual(right)
+      match hyperbolic_rules(Expr::Binary(op, left_t, right_t)) {
+        Some(result) => result
+        None => Expr::Binary(op, left_t, right_t)
+      }
+    }
+    Expr::FunctionCall(name, args) => {
+      let transformed = args.map(arg => hyperbolic_manual(arg))
+      Expr::FunctionCall(name, transformed)
+    }
+    other => other
+  }
+}
+
+///|
+fn hyperbolic_rules(expr : Expr) -> Expr? {
+  match expr {
+    Expr::Binary(BinaryOp::Add, left, right) =>
+      match match_hyperbolic_sum(left.copy(), right.copy()) {
+        Some(result) => Some(result)
+        None =>
+          match match_hyperbolic_sum_special(left.copy(), right.copy(), true) {
+            Some(result) => Some(result)
+            None =>
+              match
+                match_cosh_square_sum(
+                  Expr::Binary(BinaryOp::Add, left.copy(), right.copy()),
+                ) {
+                Some(result) => Some(result)
+                None => hyperbolic_cosh_sinh_exp(left, right, true)
+              }
+          }
+      }
+    Expr::Binary(BinaryOp::Sub, left, right) =>
+      match match_hyperbolic_difference(left.copy(), right.copy()) {
+        Some(result) => Some(result)
+        None =>
+          match match_hyperbolic_sum_special(left.copy(), right.copy(), false) {
+            Some(result) => Some(result)
+            None => hyperbolic_cosh_sinh_exp(left, right, false)
+          }
+      }
+    Expr::Binary(BinaryOp::Mul, _, _) => match_hyperbolic_double(expr)
+    _ => match_cosh_square_sum(expr)
+  }
+}
+
+///|
+fn match_unary(expr : Expr, op : UnaryOp) -> (Bool, Expr) {
+  match expr {
+    Expr::Unary(inner_op, inner_expr) if inner_op == op => (true, inner_expr)
+    _ => (false, expr)
+  }
+}
+
+///|
+fn match_pow(expr : Expr, op : UnaryOp, exponent : Int) -> Expr? {
+  match expr {
+    Expr::Binary(BinaryOp::Pow, base, exp_expr) =>
+      match exp_expr {
+        Expr::Int(value) if value == exponent =>
+          match base {
+            Expr::Unary(inner_op, inner_expr) if inner_op == op =>
+              Some(inner_expr)
+            _ => None
+          }
+        _ => None
+      }
+    _ => None
+  }
+}
+
+///|
+fn match_binary_form(expr : Expr, op : BinaryOp) -> (Expr, Expr)? {
+  match expr {
+    Expr::Binary(node_op, left, right) if node_op == op => Some((left, right))
+    _ => None
+  }
+}
+
+///|
+fn match_sinh_cosh_product(expr : Expr) -> (Expr, Expr)? {
+  match match_mul_pair(expr) {
+    Some((left, right)) => {
+      let (left_sinh, left_arg) = match_unary(left.copy(), UnaryOp::Sinh)
+      let (right_cosh, right_arg) = match_unary(right.copy(), UnaryOp::Cosh)
+      if left_sinh && right_cosh {
+        return Some((left_arg, right_arg))
+      }
+      let (left_cosh, left_arg2) = match_unary(left, UnaryOp::Cosh)
+      let (right_sinh, right_arg2) = match_unary(right, UnaryOp::Sinh)
+      if left_cosh && right_sinh {
+        return Some((right_arg2, left_arg2))
+      }
+      None
+    }
+    None => None
+  }
+}
+
+///|
+fn match_cosh_sinh_product(expr : Expr) -> (Expr, Expr)? {
+  match match_mul_pair(expr) {
+    Some((left, right)) => {
+      let (left_cosh, left_arg) = match_unary(left.copy(), UnaryOp::Cosh)
+      let (right_sinh, right_arg) = match_unary(right.copy(), UnaryOp::Sinh)
+      if left_cosh && right_sinh {
+        return Some((left_arg, right_arg))
+      }
+      let (left_sinh, left_arg2) = match_unary(left, UnaryOp::Sinh)
+      let (right_cosh, right_arg2) = match_unary(right, UnaryOp::Cosh)
+      if left_sinh && right_cosh {
+        Some((right_arg2, left_arg2))
+      } else {
+        None
+      }
+    }
+    None => None
+  }
+}
+
+///|
+fn match_cosh_cosh_product(expr : Expr) -> (Expr, Expr)? {
+  match match_mul_pair(expr) {
+    Some((left, right)) => {
+      let (left_cosh, left_arg) = match_unary(left.copy(), UnaryOp::Cosh)
+      let (right_cosh, right_arg) = match_unary(right.copy(), UnaryOp::Cosh)
+      if left_cosh && right_cosh {
+        Some((left_arg, right_arg))
+      } else {
+        None
+      }
+    }
+    None => None
+  }
+}
+
+///|
+fn match_sinh_sinh_product(expr : Expr) -> (Expr, Expr)? {
+  match match_mul_pair(expr) {
+    Some((left, right)) => {
+      let (left_sinh, left_arg) = match_unary(left.copy(), UnaryOp::Sinh)
+      let (right_sinh, right_arg) = match_unary(right.copy(), UnaryOp::Sinh)
+      if left_sinh && right_sinh {
+        Some((left_arg, right_arg))
+      } else {
+        None
+      }
+    }
+    None => None
+  }
+}
+
+///|
+fn match_hyperbolic_sum(left : Expr, right : Expr) -> Expr? {
+  match (match_sinh_cosh_product(left), match_cosh_sinh_product(right)) {
+    (Some((a, b)), Some((a2, b2))) =>
+      if a == a2 && b == b2 {
+        Some(sinh(add(a, b)))
+      } else {
+        None
+      }
+    _ =>
+      match (match_cosh_cosh_product(left), match_sinh_sinh_product(right)) {
+        (Some((a, b)), Some((a2, b2))) =>
+          if a == a2 && b == b2 {
+            Some(cosh(add(a, b)))
+          } else {
+            None
+          }
+        _ => None
+      }
+  }
+}
+
+///|
+fn match_hyperbolic_difference(left : Expr, right : Expr) -> Expr? {
+  match (match_sinh_cosh_product(left), match_cosh_sinh_product(right)) {
+    (Some((a, b)), Some((a2, b2))) =>
+      if a == a2 && b == b2 {
+        Some(sinh(sub(a, b)))
+      } else {
+        None
+      }
+    _ =>
+      match (match_cosh_cosh_product(left), match_sinh_sinh_product(right)) {
+        (Some((a, b)), Some((a2, b2))) =>
+          if a == a2 && b == b2 {
+            Some(cosh(sub(a, b)))
+          } else {
+            None
+          }
+        _ => None
+      }
+  }
+}
+
+///|
+fn extract_sinh_special(sum_expr : Expr, diff_expr : Expr) -> (Expr, Expr)? {
+  match
+    (
+      match_binary_form(sum_expr, BinaryOp::Add),
+      match_binary_form(diff_expr, BinaryOp::Sub),
+    ) {
+    (Some((sum_a, sum_b)), Some((diff_a, diff_b))) =>
+      if sum_a == diff_a && sum_b == diff_b {
+        Some((sum_a, sum_b))
+      } else {
+        None
+      }
+    _ => None
+  }
+}
+
+///|
+fn match_hyperbolic_sum_special(
+  left : Expr,
+  right : Expr,
+  is_add : Bool,
+) -> Expr? {
+  match match_unary(left.copy(), UnaryOp::Sinh) {
+    (true, left_inner) =>
+      match match_unary(right.copy(), UnaryOp::Sinh) {
+        (true, right_inner) => {
+          match extract_sinh_special(left_inner.copy(), right_inner.copy()) {
+            Some((primary, secondary)) =>
+              return Some(
+                if is_add {
+                  mul(int(2), mul(sinh(primary.copy()), cosh(secondary.copy())))
+                } else {
+                  mul(int(2), mul(cosh(primary.copy()), sinh(secondary.copy())))
+                },
+              )
+            None => ()
+          }
+          match extract_sinh_special(right_inner, left_inner) {
+            Some((primary, secondary)) =>
+              return Some(
+                if is_add {
+                  mul(int(2), mul(sinh(primary.copy()), cosh(secondary.copy())))
+                } else {
+                  neg(
+                    mul(
+                      int(2),
+                      mul(cosh(primary.copy()), sinh(secondary.copy())),
+                    ),
+                  )
+                },
+              )
+            None => ()
+          }
+        }
+        _ => ()
+      }
+    _ => ()
+  }
+  match match_unary(left.copy(), UnaryOp::Cosh) {
+    (true, left_inner) =>
+      match match_unary(right.copy(), UnaryOp::Cosh) {
+        (true, right_inner) => {
+          match extract_sinh_special(left_inner.copy(), right_inner.copy()) {
+            Some((primary, secondary)) =>
+              return Some(
+                if is_add {
+                  mul(int(2), mul(cosh(primary.copy()), cosh(secondary.copy())))
+                } else {
+                  mul(int(2), mul(sinh(primary.copy()), sinh(secondary.copy())))
+                },
+              )
+            None => ()
+          }
+          match extract_sinh_special(right_inner, left_inner) {
+            Some((primary, secondary)) =>
+              return Some(
+                if is_add {
+                  mul(int(2), mul(cosh(primary.copy()), cosh(secondary.copy())))
+                } else {
+                  neg(
+                    mul(
+                      int(2),
+                      mul(sinh(primary.copy()), sinh(secondary.copy())),
+                    ),
+                  )
+                },
+              )
+            None => ()
+          }
+        }
+        _ => ()
+      }
+    _ => ()
+  }
+  None
+}
+
+///|
+fn match_mul_pair(expr : Expr) -> (Expr, Expr)? {
+  match expr {
+    Expr::Binary(BinaryOp::Mul, left, right) => Some((left, right))
+    _ => None
+  }
+}
+
+///|
+fn match_hyperbolic_double(expr : Expr) -> Expr? {
+  match expr {
+    Expr::Binary(BinaryOp::Mul, left, right) => {
+      let mut factors = Array::new()
+      factors = collect_mul_factors(left, factors)
+      factors = collect_mul_factors(right, factors)
+      let mut has_two = false
+      let mut maybe_sinh : Expr? = None
+      let mut maybe_cosh : Expr? = None
+      for factor in factors {
+        match factor {
+          Expr::Int(value) =>
+            if value == 2 && !has_two {
+              has_two = true
+            } else {
+              return None
+            }
+          Expr::Unary(UnaryOp::Sinh, angle) =>
+            match maybe_sinh {
+              Some(_) => return None
+              None => maybe_sinh = Some(angle)
+            }
+          Expr::Unary(UnaryOp::Cosh, angle) =>
+            match maybe_cosh {
+              Some(_) => return None
+              None => maybe_cosh = Some(angle)
+            }
+          _ => return None
+        }
+      }
+      if !has_two {
+        return None
+      }
+      match maybe_sinh {
+        Some(sinh_angle) =>
+          match maybe_cosh {
+            Some(cosh_angle) =>
+              if sinh_angle == cosh_angle {
+                Some(sinh(mul(int(2), sinh_angle)))
+              } else {
+                None
+              }
+            None => None
+          }
+        None => None
+      }
+    }
+    _ => None
+  }
+}
+
+///|
+fn match_cosh_square_sum(expr : Expr) -> Expr? {
+  match expr {
+    Expr::Binary(BinaryOp::Add, left, right) => {
+      let _ = match
+        (
+          match_pow(left.copy(), UnaryOp::Cosh, 2),
+          match_pow(right.copy(), UnaryOp::Sinh, 2),
+        ) {
+        (Some(angle_left), Some(angle_right)) =>
+          if angle_left == angle_right {
+            return Some(cosh(mul(int(2), angle_left)))
+          }
+        _ => ()
+      }
+      match
+        (match_pow(left, UnaryOp::Sinh, 2), match_pow(right, UnaryOp::Cosh, 2)) {
+        (Some(angle_left), Some(angle_right)) =>
+          if angle_left == angle_right {
+            Some(cosh(mul(int(2), angle_left)))
+          } else {
+            None
+          }
+        _ => None
+      }
+    }
+    _ => None
+  }
+}
+
+///|
+fn hyperbolic_cosh_sinh_exp(left : Expr, right : Expr, is_add : Bool) -> Expr? {
+  let (left_cosh, left_arg) = match_unary(left.copy(), UnaryOp::Cosh)
+  let (left_sinh, left_s_arg) = match_unary(left, UnaryOp::Sinh)
+  let (right_cosh, right_arg) = match_unary(right.copy(), UnaryOp::Cosh)
+  let (right_sinh, right_s_arg) = match_unary(right, UnaryOp::Sinh)
+  if left_cosh && right_sinh && left_arg == right_s_arg {
+    if is_add {
+      Some(exp(left_arg))
+    } else {
+      Some(exp(neg(left_arg)))
+    }
+  } else if left_sinh && right_cosh && left_s_arg == right_arg {
+    if is_add {
+      Some(exp(right_arg))
+    } else {
+      Some(neg(exp(neg(right_arg))))
+    }
+  } else {
+    None
+  }
+}
+
+///|
 fn identity_rewrite_rules() -> Array[RewriteRule] {
   let rules : Array[RewriteRule] = Array::new()
   let pow_root_pattern = pattern_guard(
@@ -647,6 +1079,298 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
     ),
   )
   let two_cos_sq = pattern_one_of(two_cos_sq_options)
+  let hyp_theta = pattern_wildcard("hyp_theta")
+  let sinh_theta = pattern_unary(hyp_theta.copy(), op=Some(UnaryOp::Sinh))
+  let cosh_theta = pattern_unary(hyp_theta.copy(), op=Some(UnaryOp::Cosh))
+  let tanh_theta = pattern_unary(hyp_theta.copy(), op=Some(UnaryOp::Tanh))
+  let sinh_sq_theta = pattern_binary(
+    sinh_theta.copy(),
+    two_literal.copy(),
+    op=Some(BinaryOp::Pow),
+  )
+  let cosh_sq_theta = pattern_binary(
+    cosh_theta.copy(),
+    two_literal.copy(),
+    op=Some(BinaryOp::Pow),
+  )
+  let tanh_sq_theta = pattern_binary(
+    tanh_theta.copy(),
+    two_literal.copy(),
+    op=Some(BinaryOp::Pow),
+  )
+  let cosh_sq_minus_sinh_sq = pattern_binary(
+    cosh_sq_theta.copy(),
+    sinh_sq_theta.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(cosh_sq_minus_sinh_sq, (_ : PatternBindings) => int(1)),
+  )
+  let sinh_sq_minus_cosh_sq = pattern_binary(
+    sinh_sq_theta.copy(),
+    cosh_sq_theta.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(sinh_sq_minus_cosh_sq, (_ : PatternBindings) => int(-1)),
+  )
+  let one_minus_tanh_sq = pattern_binary(
+    one_literal.copy(),
+    tanh_sq_theta.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(one_minus_tanh_sq, (bindings : PatternBindings) => {
+      let angle = unwrap_binding(bindings, "hyp_theta")
+      pow(cosh(angle), int(-2))
+    }),
+  )
+  let tanh_sq_div = pattern_binary(
+    one_literal.copy(),
+    pattern_binary(
+      tanh_theta.copy(),
+      two_literal.copy(),
+      op=Some(BinaryOp::Pow),
+    ),
+    op=Some(BinaryOp::Div),
+  )
+  let tanh_neg_sq_minus_one = pattern_binary(
+    tanh_sq_div.copy(),
+    one_literal.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(tanh_neg_sq_minus_one, (bindings : PatternBindings) => {
+      let angle = unwrap_binding(bindings, "hyp_theta")
+      pow(sinh(angle), int(-2))
+    }),
+  )
+  let hsum_a = pattern_wildcard("hsum_a")
+  let hsum_b = pattern_wildcard("hsum_b")
+  let sinh_a_base = pattern_unary(hsum_a.copy(), op=Some(UnaryOp::Sinh))
+  let cosh_a_base = pattern_unary(hsum_a.copy(), op=Some(UnaryOp::Cosh))
+  let sinh_b_base = pattern_unary(hsum_b.copy(), op=Some(UnaryOp::Sinh))
+  let cosh_b_base = pattern_unary(hsum_b.copy(), op=Some(UnaryOp::Cosh))
+  let sinh_a_cosh_b = pattern_binary(
+    sinh_a_base.copy(),
+    cosh_b_base.copy(),
+    op=Some(BinaryOp::Mul),
+  )
+  let cosh_a_sinh_b = pattern_binary(
+    cosh_a_base.copy(),
+    sinh_b_base.copy(),
+    op=Some(BinaryOp::Mul),
+  )
+  let sinh_sum_pattern_h = pattern_binary(
+    sinh_a_cosh_b.copy(),
+    cosh_a_sinh_b.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  rules.push(
+    RewriteRule::new(sinh_sum_pattern_h, (bindings : PatternBindings) => {
+      let a = unwrap_binding(bindings.copy(), "hsum_a")
+      let b = unwrap_binding(bindings, "hsum_b")
+      sinh(add(a, b))
+    }),
+  )
+  let sinh_diff_pattern_h = pattern_binary(
+    sinh_a_cosh_b.copy(),
+    cosh_a_sinh_b.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(sinh_diff_pattern_h, (bindings : PatternBindings) => {
+      let a = unwrap_binding(bindings.copy(), "hsum_a")
+      let b = unwrap_binding(bindings, "hsum_b")
+      sinh(sub(a, b))
+    }),
+  )
+  let cosh_a_cosh_b = pattern_binary(
+    cosh_a_base.copy(),
+    cosh_b_base.copy(),
+    op=Some(BinaryOp::Mul),
+  )
+  let sinh_a_sinh_b_h = pattern_binary(
+    sinh_a_base.copy(),
+    sinh_b_base.copy(),
+    op=Some(BinaryOp::Mul),
+  )
+  let cosh_sum_pattern_h = pattern_binary(
+    cosh_a_cosh_b.copy(),
+    sinh_a_sinh_b_h.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  rules.push(
+    RewriteRule::new(cosh_sum_pattern_h, (bindings : PatternBindings) => {
+      let a = unwrap_binding(bindings.copy(), "hsum_a")
+      let b = unwrap_binding(bindings, "hsum_b")
+      cosh(add(a, b))
+    }),
+  )
+  let cosh_diff_pattern_h = pattern_binary(
+    cosh_a_cosh_b.copy(),
+    sinh_a_sinh_b_h.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(cosh_diff_pattern_h, (bindings : PatternBindings) => {
+      let a = unwrap_binding(bindings.copy(), "hsum_a")
+      let b = unwrap_binding(bindings, "hsum_b")
+      cosh(sub(a, b))
+    }),
+  )
+  let sinh_special_primary = pattern_wildcard("hs_primary")
+  let sinh_special_secondary = pattern_wildcard("hs_secondary")
+  let sinh_special_sum = pattern_binary(
+    pattern_unary(
+      pattern_binary(
+        sinh_special_primary.copy(),
+        sinh_special_secondary.copy(),
+        op=Some(BinaryOp::Add),
+      ),
+      op=Some(UnaryOp::Sinh),
+    ),
+    pattern_unary(
+      pattern_binary(
+        sinh_special_primary.copy(),
+        sinh_special_secondary.copy(),
+        op=Some(BinaryOp::Sub),
+      ),
+      op=Some(UnaryOp::Sinh),
+    ),
+    op=Some(BinaryOp::Add),
+  )
+  let sinh_special_diff = pattern_binary(
+    pattern_unary(
+      pattern_binary(
+        sinh_special_primary.copy(),
+        sinh_special_secondary.copy(),
+        op=Some(BinaryOp::Add),
+      ),
+      op=Some(UnaryOp::Sinh),
+    ),
+    pattern_unary(
+      pattern_binary(
+        sinh_special_primary.copy(),
+        sinh_special_secondary.copy(),
+        op=Some(BinaryOp::Sub),
+      ),
+      op=Some(UnaryOp::Sinh),
+    ),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(sinh_special_sum, (bindings : PatternBindings) => {
+      let primary = unwrap_binding(bindings.copy(), "hs_primary")
+      let secondary = unwrap_binding(bindings, "hs_secondary")
+      mul(int(2), mul(sinh(primary.copy()), cosh(secondary.copy())))
+    }),
+  )
+  rules.push(
+    RewriteRule::new(sinh_special_diff, (bindings : PatternBindings) => {
+      let primary = unwrap_binding(bindings.copy(), "hs_primary")
+      let secondary = unwrap_binding(bindings, "hs_secondary")
+      mul(int(2), mul(cosh(primary.copy()), sinh(secondary.copy())))
+    }),
+  )
+  let cosh_special_primary = pattern_wildcard("ch_primary")
+  let cosh_special_secondary = pattern_wildcard("ch_secondary")
+  let cosh_special_sum = pattern_binary(
+    pattern_unary(
+      pattern_binary(
+        cosh_special_primary.copy(),
+        cosh_special_secondary.copy(),
+        op=Some(BinaryOp::Add),
+      ),
+      op=Some(UnaryOp::Cosh),
+    ),
+    pattern_unary(
+      pattern_binary(
+        cosh_special_primary.copy(),
+        cosh_special_secondary.copy(),
+        op=Some(BinaryOp::Sub),
+      ),
+      op=Some(UnaryOp::Cosh),
+    ),
+    op=Some(BinaryOp::Add),
+  )
+  let cosh_special_diff = pattern_binary(
+    pattern_unary(
+      pattern_binary(
+        cosh_special_primary.copy(),
+        cosh_special_secondary.copy(),
+        op=Some(BinaryOp::Add),
+      ),
+      op=Some(UnaryOp::Cosh),
+    ),
+    pattern_unary(
+      pattern_binary(
+        cosh_special_primary.copy(),
+        cosh_special_secondary.copy(),
+        op=Some(BinaryOp::Sub),
+      ),
+      op=Some(UnaryOp::Cosh),
+    ),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(cosh_special_sum, (bindings : PatternBindings) => {
+      let primary = unwrap_binding(bindings.copy(), "ch_primary")
+      let secondary = unwrap_binding(bindings, "ch_secondary")
+      mul(int(2), mul(cosh(primary.copy()), cosh(secondary.copy())))
+    }),
+  )
+  rules.push(
+    RewriteRule::new(cosh_special_diff, (bindings : PatternBindings) => {
+      let primary = unwrap_binding(bindings.copy(), "ch_primary")
+      let secondary = unwrap_binding(bindings, "ch_secondary")
+      mul(int(2), mul(sinh(primary.copy()), sinh(secondary.copy())))
+    }),
+  )
+  let sinh_add_linear = pattern_binary(
+    sinh_theta.copy(),
+    cosh_theta.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  rules.push(
+    RewriteRule::new(sinh_add_linear, (bindings : PatternBindings) => {
+      let angle = unwrap_binding(bindings, "hyp_theta")
+      exp(angle)
+    }),
+  )
+  let sinh_add_linear_swapped = pattern_binary(
+    cosh_theta.copy(),
+    sinh_theta.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  rules.push(
+    RewriteRule::new(sinh_add_linear_swapped, (bindings : PatternBindings) => {
+      let angle = unwrap_binding(bindings, "hyp_theta")
+      exp(angle)
+    }),
+  )
+  let sinh_sub_linear = pattern_binary(
+    cosh_theta.copy(),
+    sinh_theta.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(sinh_sub_linear, (bindings : PatternBindings) => {
+      let angle = unwrap_binding(bindings, "hyp_theta")
+      exp(neg(angle))
+    }),
+  )
+  let sinh_sub_linear_swapped = pattern_binary(
+    sinh_theta.copy(),
+    cosh_theta.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(sinh_sub_linear_swapped, (bindings : PatternBindings) => {
+      let angle = unwrap_binding(bindings, "hyp_theta")
+      neg(exp(neg(angle)))
+    }),
+  )
   let one_minus_two_sin_sq = pattern_binary(
     one_literal.copy(),
     two_sin_sq.copy(),
@@ -783,16 +1507,16 @@ pub fn simplify(
   doit? : Bool = true,
 ) -> Expr {
   let preprocessed = if inverse { inverse_cancellation(expr) } else { expr }
-  let simplified_once = apply_identity_rewrites(simplify_reduce(preprocessed))
+  let simplified_once = apply_all_rewrites(simplify_reduce(preprocessed))
   let rationalized = if rational {
     rationalize_expr(simplified_once)
   } else {
     simplified_once
   }
   let candidate = if doit {
-    apply_identity_rewrites(simplify_reduce(rationalized))
+    apply_all_rewrites(simplify_reduce(rationalized))
   } else {
-    apply_identity_rewrites(rationalized)
+    apply_all_rewrites(rationalized)
   }
   let original_measure = measure(expr)
   let candidate_measure = measure(candidate)
@@ -803,7 +1527,7 @@ pub fn simplify(
   } else {
     candidate
   }
-  apply_identity_rewrites(chosen)
+  apply_all_rewrites(chosen)
 }
 
 ///|

@@ -359,6 +359,121 @@ test "simplify cosine difference special swapped" {
 }
 
 ///|
+test "simplify cosh squared minus sinh squared" {
+  let x = sym("x")
+  inspect(simplify(pow(cosh(x), int(2)) - pow(sinh(x), int(2))), content="1")
+}
+
+///|
+test "simplify one minus tanh square" {
+  let x = sym("x")
+  inspect(simplify(int(1) - pow(tanh(x), int(2))), content="1 / cosh(x) ^ 2")
+}
+
+///|
+test "simplify tanh inverse square minus one" {
+  let x = sym("x")
+  inspect(simplify(pow(tanh(x), int(-2)) - int(1)), content="1 / sinh(x) ^ 2")
+}
+
+///|
+test "simplify hyperbolic sinh addition formula" {
+  let x = sym("x")
+  let y = sym("y")
+  inspect(
+    simplify(sinh(x) * cosh(y) + cosh(x) * sinh(y)),
+    content="sinh(x + y)",
+  )
+}
+
+///|
+test "simplify hyperbolic sinh subtraction formula" {
+  let x = sym("x")
+  let y = sym("y")
+  inspect(
+    simplify(sinh(x) * cosh(y) - cosh(x) * sinh(y)),
+    content="sinh(x - y)",
+  )
+}
+
+///|
+test "simplify hyperbolic cosh addition formula" {
+  let x = sym("x")
+  let y = sym("y")
+  inspect(
+    simplify(cosh(x) * cosh(y) + sinh(x) * sinh(y)),
+    content="cosh(x + y)",
+  )
+}
+
+///|
+test "simplify hyperbolic cosh subtraction formula" {
+  let x = sym("x")
+  let y = sym("y")
+  inspect(
+    simplify(cosh(x) * cosh(y) - sinh(x) * sinh(y)),
+    content="cosh(x - y)",
+  )
+}
+
+///|
+test "simplify hyperbolic sinh double angle" {
+  let x = sym("x")
+  inspect(simplify(mul(int(2), mul(sinh(x), cosh(x)))), content="sinh(2 * x)")
+}
+
+///|
+test "simplify hyperbolic cosh double angle" {
+  let x = sym("x")
+  inspect(
+    simplify(pow(cosh(x), int(2)) + pow(sinh(x), int(2))),
+    content="cosh(2 * x)",
+  )
+}
+
+///|
+test "simplify sinh sum special" {
+  let x = sym("x")
+  let y = sym("y")
+  inspect(simplify(sinh(x + y) + sinh(x - y)), content="2 * sinh(x) * cosh(y)")
+}
+
+///|
+test "simplify sinh difference special" {
+  let x = sym("x")
+  let y = sym("y")
+  inspect(simplify(sinh(x + y) - sinh(x - y)), content="2 * cosh(x) * sinh(y)")
+}
+
+///|
+test "simplify cosh sum special" {
+  let x = sym("x")
+  let y = sym("y")
+  inspect(simplify(cosh(x + y) + cosh(x - y)), content="2 * cosh(x) * cosh(y)")
+}
+
+///|
+test "simplify cosh difference special" {
+  let x = sym("x")
+  let y = sym("y")
+  inspect(simplify(cosh(x + y) - cosh(x - y)), content="2 * sinh(x) * sinh(y)")
+}
+
+///|
+test "simplify cosh plus sinh to exp" {
+  let x = sym("x")
+  inspect(simplify(cosh(x) + sinh(x)), content="exp(x)")
+  inspect(simplify(sinh(x) + cosh(x)), content="exp(x)")
+}
+
+///|
+test "simplify cosh minus sinh to exp" {
+  let x = sym("x")
+  inspect(simplify(cosh(x) - sinh(x)), content="exp(-x)")
+  inspect(simplify(sinh(x) - cosh(x)), content="-(exp(-x))")
+}
+
+///|
 test "rationalize expr keeps recurring decimals with base10" {
   let value = double(1.0 / 8192.0)
   let result = rationalize_expr(value)
