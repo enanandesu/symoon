@@ -72,13 +72,6 @@ pub enum BinaryOp {
   Div
   Pow
 }
-fn BinaryOp::equal(Self, Self) -> Bool // from trait `Eq`
-fn BinaryOp::hash(Self) -> Int // from trait `Hash`
-fn BinaryOp::hash_combine(Self, Hasher) -> Unit // from trait `Hash`
-#deprecated
-fn BinaryOp::op_equal(Self, Self) -> Bool // from trait `Eq`
-fn BinaryOp::output(Self, &Logger) -> Unit // from trait `Show`
-fn BinaryOp::to_string(Self) -> String // from trait `Show`
 impl Eq for BinaryOp
 impl Hash for BinaryOp
 impl Show for BinaryOp
@@ -91,26 +84,6 @@ pub enum Expr {
   Binary(BinaryOp, Expr, Expr)
   FunctionCall(String, Array[Expr])
 }
-fn Expr::add(Self, Self) -> Self // from trait `Add`
-fn Expr::div(Self, Self) -> Self // from trait `Div`
-fn Expr::equal(Self, Self) -> Bool // from trait `Eq`
-fn Expr::mul(Self, Self) -> Self // from trait `Mul`
-fn Expr::neg(Self) -> Self // from trait `Neg`
-#deprecated
-fn Expr::op_add(Self, Self) -> Self // from trait `Add`
-#deprecated
-fn Expr::op_div(Self, Self) -> Self // from trait `Div`
-#deprecated
-fn Expr::op_equal(Self, Self) -> Bool // from trait `Eq`
-#deprecated
-fn Expr::op_mul(Self, Self) -> Self // from trait `Mul`
-#deprecated
-fn Expr::op_neg(Self) -> Self // from trait `Neg`
-#deprecated
-fn Expr::op_sub(Self, Self) -> Self // from trait `Sub`
-fn Expr::output(Self, &Logger) -> Unit // from trait `Show`
-fn Expr::sub(Self, Self) -> Self // from trait `Sub`
-fn Expr::to_string(Self) -> String // from trait `Show`
 impl Add for Expr
 impl Div for Expr
 impl Eq for Expr
@@ -128,14 +101,7 @@ fn RationalConstant::new(Expr, Double?) -> Self
 pub struct Symbol {
   name : String
 }
-fn Symbol::equal(Self, Self) -> Bool // from trait `Eq`
-fn Symbol::hash(Self) -> Int // from trait `Hash`
-fn Symbol::hash_combine(Self, Hasher) -> Unit // from trait `Hash`
 fn Symbol::new(String) -> Self
-#deprecated
-fn Symbol::op_equal(Self, Self) -> Bool // from trait `Eq`
-fn Symbol::output(Self, &Logger) -> Unit // from trait `Show`
-fn Symbol::to_string(Self) -> String // from trait `Show`
 impl Eq for Symbol
 impl Hash for Symbol
 impl Show for Symbol
@@ -145,11 +111,6 @@ pub enum SymbolicError {
   DomainViolation(String, String)
   UnsupportedOperation(String)
 }
-fn SymbolicError::equal(Self, Self) -> Bool // from trait `Eq`
-#deprecated
-fn SymbolicError::op_equal(Self, Self) -> Bool // from trait `Eq`
-fn SymbolicError::output(Self, &Logger) -> Unit // from trait `Show`
-fn SymbolicError::to_string(Self) -> String // from trait `Show`
 impl Eq for SymbolicError
 impl Show for SymbolicError
 
@@ -171,13 +132,6 @@ pub enum UnaryOp {
   Log
   Abs
 }
-fn UnaryOp::equal(Self, Self) -> Bool // from trait `Eq`
-fn UnaryOp::hash(Self) -> Int // from trait `Hash`
-fn UnaryOp::hash_combine(Self, Hasher) -> Unit // from trait `Hash`
-#deprecated
-fn UnaryOp::op_equal(Self, Self) -> Bool // from trait `Eq`
-fn UnaryOp::output(Self, &Logger) -> Unit // from trait `Show`
-fn UnaryOp::to_string(Self) -> String // from trait `Show`
 impl Eq for UnaryOp
 impl Hash for UnaryOp
 impl Show for UnaryOp

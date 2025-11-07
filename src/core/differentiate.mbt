@@ -124,6 +124,13 @@ pub fn differentiate(expr : Expr, variable_name : String) -> Expr {
           let inner_diff = differentiate(inner, var_for_inner)
           Expr::Binary(BinaryOp::Div, inner_diff, inner)
         }
+        UnaryOp::Abs => {
+          let var_for_inner = variable_name
+          let inner_diff = differentiate(inner, var_for_inner)
+          let abs_inner = Expr::Unary(UnaryOp::Abs, inner)
+          let normalized = Expr::Binary(BinaryOp::Div, inner, abs_inner)
+          Expr::Binary(BinaryOp::Mul, normalized, inner_diff)
+        }
         _ => {
           let fallback_expr = Expr::Unary(op, inner)
           diff_fallback(variable_name, fallback_expr, "diff_unary".to_string())
