@@ -1,5 +1,32 @@
 ///|
-pub fn differentiate(expr : Expr, variable_name : String) -> Expr {
+pub fn differentiate(
+  expr : Expr,
+  variable_name : String,
+  order? : Int = 1,
+) -> Expr {
+  if order <= 0 {
+    expr
+  } else {
+    differentiate_order(expr, variable_name, order)
+  }
+}
+
+///|
+fn differentiate_order(
+  expr : Expr,
+  variable_name : String,
+  order : Int,
+) -> Expr {
+  let first_derivative = differentiate_once(expr, variable_name)
+  if order == 1 {
+    first_derivative
+  } else {
+    differentiate_order(first_derivative, variable_name, order - 1)
+  }
+}
+
+///|
+fn differentiate_once(expr : Expr, variable_name : String) -> Expr {
   match expr {
     Expr::Int(_) => Expr::Int(0)
     Expr::Double(_) => Expr::Int(0)
