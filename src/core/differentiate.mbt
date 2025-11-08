@@ -158,10 +158,6 @@ fn differentiate_once(expr : Expr, variable_name : String) -> Expr {
           let normalized = Expr::Binary(BinaryOp::Div, inner, abs_inner)
           Expr::Binary(BinaryOp::Mul, normalized, inner_diff)
         }
-        _ => {
-          let fallback_expr = Expr::Unary(op, inner)
-          diff_fallback(variable_name, fallback_expr, "diff_unary".to_string())
-        }
       }
     Expr::Binary(BinaryOp::Add, left, right) => {
       let var_left = variable_name

@@ -62,6 +62,8 @@ fn tan(Expr) -> Expr
 
 fn tanh(Expr) -> Expr
 
+fn to_latex(Expr) -> String
+
 // Errors
 
 // Types and methods
