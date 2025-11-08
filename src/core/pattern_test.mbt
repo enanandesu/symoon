@@ -40,6 +40,33 @@ test "pattern one of selects matching branch" {
 }
 
 ///|
+test "pattern sum matches regardless of operand order" {
+  let operands : Array[Pattern] = Array::new(capacity=2)
+  operands.push(pattern_symbol(name=Some("x")))
+  operands.push(pattern_int(value=Some(2)))
+  let sum_pattern = pattern_sum(operands)
+  assert_eq(matches(sum_pattern, add(int(2), sym("x"))), true)
+  assert_eq(matches(sum_pattern, add(sym("x"), int(2))), true)
+}
+
+///|
+test "pattern product flattens nested multiplication" {
+  let factors : Array[Pattern] = Array::new(capacity=3)
+  factors.push(pattern_symbol(name=Some("x")))
+  factors.push(pattern_symbol(name=Some("y")))
+  factors.push(pattern_symbol(name=Some("z")))
+  let product_pattern = pattern_product(factors)
+  assert_eq(
+    matches(product_pattern, mul(mul(sym("x"), sym("y")), sym("z"))),
+    true,
+  )
+  assert_eq(
+    matches(product_pattern, mul(sym("z"), mul(sym("y"), sym("x")))),
+    true,
+  )
+}
+
+///|
 test "rewrite applies rule repeatedly" {
   let add_pattern = pattern_guard(
     pattern_binary(pattern_wildcard("expr"), pattern_int(value=Some(0))),

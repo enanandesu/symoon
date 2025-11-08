@@ -68,6 +68,10 @@ fn pattern_int(value? : Int?) -> Pattern
 
 fn pattern_one_of(Array[Pattern]) -> Pattern
 
+fn pattern_product(Array[Pattern]) -> Pattern
+
+fn pattern_sum(Array[Pattern]) -> Pattern
+
 fn pattern_symbol(name? : String?) -> Pattern
 
 fn pattern_unary(Pattern, op? : UnaryOp?) -> Pattern
@@ -140,6 +144,7 @@ pub enum Pattern {
   DoubleLiteral(Double?)
   Unary(UnaryOp?, Pattern)
   Binary(BinaryOp?, Pattern, Pattern)
+  Commutative(BinaryOp, Array[Pattern])
   FunctionCall(String?, Array[Pattern])
   OneOf(Array[Pattern])
   All(Array[Pattern])

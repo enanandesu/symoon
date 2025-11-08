@@ -101,6 +101,7 @@ pub enum Pattern {
   DoubleLiteral(Double?)
   Unary(UnaryOp?, Pattern)
   Binary(BinaryOp?, Pattern, Pattern)
+  Commutative(BinaryOp, Array[Pattern])
   FunctionCall(String?, Array[Pattern])
   OneOf(Array[Pattern])
   All(Array[Pattern])
@@ -121,6 +122,10 @@ pub fn Pattern::copy(self : Pattern) -> Pattern {
     Pattern::Unary(maybe_op, inner) => Pattern::Unary(maybe_op, inner.copy())
     Pattern::Binary(maybe_op, left, right) =>
       Pattern::Binary(maybe_op, left.copy(), right.copy())
+    Pattern::Commutative(op, patterns) => {
+      let copied = patterns.map((item : Pattern) => item.copy())
+      Pattern::Commutative(op, copied)
+    }
     Pattern::FunctionCall(maybe_name, patterns) => {
       let copied = patterns.map((item : Pattern) => item.copy())
       Pattern::FunctionCall(maybe_name, copied)
@@ -184,6 +189,21 @@ pub fn pattern_binary(
   op? : BinaryOp? = None,
 ) -> Pattern {
   Pattern::Binary(op, left, right)
+}
+
+///|
+fn pattern_commutative(op : BinaryOp, operands : Array[Pattern]) -> Pattern {
+  Pattern::Commutative(op, operands)
+}
+
+///|
+pub fn pattern_sum(operands : Array[Pattern]) -> Pattern {
+  pattern_commutative(BinaryOp::Add, operands)
+}
+
+///|
+pub fn pattern_product(operands : Array[Pattern]) -> Pattern {
+  pattern_commutative(BinaryOp::Mul, operands)
 }
 
 ///|
@@ -334,6 +354,21 @@ fn match_internal(
           }
         _ => None
       }
+    Pattern::Commutative(op, requirements) => {
+      if !is_commutative_expr(expr.copy(), op) {
+        return None
+      }
+      let mut terms = Array::new()
+      terms = flatten_commutative_terms(expr, op, terms)
+      if terms.length() != requirements.length() {
+        return None
+      }
+      let usage = create_usage_flags(terms.length())
+      match match_commutative_terms(requirements, 0, terms, usage, bindings) {
+        Some(result) => Some(result)
+        None => None
+      }
+    }
     Pattern::FunctionCall(maybe_name, arg_patterns) =>
       match expr {
         Expr::FunctionCall(name, args) => {
@@ -397,6 +432,82 @@ fn match_internal(
 ///|
 pub fn match_expr(pattern : Pattern, expr : Expr) -> PatternBindings? {
   match_internal(pattern, expr, PatternBindings::new())
+}
+
+///|
+fn is_commutative_expr(expr : Expr, op : BinaryOp) -> Bool {
+  match expr {
+    Expr::Binary(node_op, _, _) => node_op == op
+    _ => false
+  }
+}
+
+///|
+fn flatten_commutative_terms(
+  expr : Expr,
+  op : BinaryOp,
+  terms : Array[Expr],
+) -> Array[Expr] {
+  match expr {
+    Expr::Binary(node_op, left, right) if node_op == op => {
+      let collected = flatten_commutative_terms(left, op, terms)
+      flatten_commutative_terms(right, op, collected)
+    }
+    other => {
+      let updated = terms
+      updated.push(other)
+      updated
+    }
+  }
+}
+
+///|
+fn create_usage_flags(len : Int) -> Array[Bool] {
+  let flags = Array::new(capacity=len)
+  for _ in 0..<len {
+    flags.push(false)
+  }
+  flags
+}
+
+///|
+fn match_commutative_terms(
+  patterns : Array[Pattern],
+  pattern_index : Int,
+  terms : Array[Expr],
+  used : Array[Bool],
+  bindings : PatternBindings,
+) -> PatternBindings? {
+  if pattern_index >= patterns.length() {
+    return Some(bindings)
+  }
+  let current_pattern = patterns[pattern_index]
+  let len_terms = terms.length()
+  for i in 0..<len_terms {
+    if used[i] {
+      continue
+    }
+    let term_expr = terms[i]
+    match
+      match_internal(current_pattern.copy(), term_expr.copy(), bindings.copy()) {
+      Some(updated) => {
+        used[i] = true
+        match
+          match_commutative_terms(
+            patterns,
+            pattern_index + 1,
+            terms,
+            used,
+            updated,
+          ) {
+          Some(result) => return Some(result)
+          None => used[i] = false
+        }
+      }
+      None => continue
+    }
+  }
+  None
 }
 
 ///|

@@ -102,6 +102,16 @@ test "simplify sin square plus cos square" {
   let x = sym("x")
   let expr = add(pow(sin(x), int(2)), pow(cos(x), int(2)))
   inspect(simplify(expr), content="1")
+  let expr1 = pow(sin(x), int(2)) + int(1) + pow(cos(x), int(2))
+  inspect(simplify(expr1), content="2")
+}
+
+///|
+test "simplify sin square plus cos square with symbol" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = pow(sin(x), int(2)) + y + pow(cos(x), int(2))
+  inspect(simplify(expr), content="y + 1")
 }
 
 ///|
@@ -119,6 +129,14 @@ test "simplify one plus tan square" {
 }
 
 ///|
+test "simplify tan square identity within sum" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = add(add(int(1), pow(tan(x), int(2))), y)
+  inspect(simplify(expr), content="y + 1 / cos(x) ^ 2")
+}
+
+///|
 test "simplify tan square plus one" {
   let x = sym("x")
   let expr = add(pow(tan(x), int(2)), int(1))
@@ -133,6 +151,14 @@ test "simplify one plus tan inverse square" {
 }
 
 ///|
+test "simplify tan inverse square identity within sum" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = add(add(y, int(1)), pow(tan(x), int(-2)))
+  inspect(simplify(expr), content="y + 1 / sin(x) ^ 2")
+}
+
+///|
 test "simplify tan inverse square plus one" {
   let x = sym("x")
   let expr = add(pow(tan(x), int(-2)), int(1))
@@ -140,10 +166,29 @@ test "simplify tan inverse square plus one" {
 }
 
 ///|
+test "simplify tan reciprocal square identity within sum" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = add(y, add(int(1), div(int(1), pow(tan(x), int(2)))))
+  inspect(simplify(expr), content="y + 1 / sin(x) ^ 2")
+}
+
+///|
 test "simplify sine addition formula" {
   let x = sym("x")
   let y = sym("y")
   let expr = add(mul(sin(x), cos(y)), mul(cos(x), sin(y)))
+  let expr1 = sin(x) * cos(y) + int(1) + cos(x) * sin(y)
+  inspect(simplify(expr), content="sin(x + y)")
+  inspect(simplify(expr1), content="cos(y) * sin(x) + 1 + cos(x) * sin(y)")
+}
+
+///|
+test "simplify sine addition with permuted factors" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = add(mul(cos(y), sin(x)), mul(sin(y), cos(x)))
+  inspect(expr, content="cos(y) * sin(x) + sin(y) * cos(x)")
   inspect(simplify(expr), content="sin(x + y)")
 }
 
@@ -172,6 +217,15 @@ test "simplify cosine addition formula" {
 }
 
 ///|
+test "simplify cosine addition with permuted factors" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = sub(mul(cos(y), cos(x)), mul(sin(y), sin(x)))
+  inspect(expr, content="cos(y) * cos(x) - sin(y) * sin(x)")
+  inspect(simplify(expr), content="cos(y + x)")
+}
+
+///|
 test "simplify cosine subtraction formula" {
   let x = sym("x")
   let y = sym("y")
@@ -183,6 +237,13 @@ test "simplify cosine subtraction formula" {
 test "simplify double angle from product" {
   let x = sym("x")
   let expr = mul(int(2), mul(sin(x), cos(x)))
+  inspect(simplify(expr), content="sin(2 * x)")
+}
+
+///|
+test "simplify double angle product with nested order" {
+  let x = sym("x")
+  let expr = mul(cos(x), mul(sin(x), int(2)))
   inspect(simplify(expr), content="sin(2 * x)")
 }
 
@@ -323,12 +384,30 @@ test "simplify sine sum special" {
 }
 
 ///|
+test "simplify sine sum special within larger sum" {
+  let x = sym("x")
+  let y = sym("y")
+  let z = sym("z")
+  let expr = sin(add(x, y)) + sin(sub(x, y)) + z
+  inspect(simplify(expr), content="z + 2 * cos(y) * sin(x)")
+}
+
+///|
 test "simplify sine difference special" {
   let x = sym("x")
   let y = sym("y")
   let expr = sub(sin(add(x, y)), sin(sub(x, y)))
   inspect(expr, content="sin(x + y) - sin(x - y)")
   inspect(simplify(expr), content="2 * cos(x) * sin(y)")
+}
+
+///|
+test "simplify sine difference special within larger sum" {
+  let x = sym("x")
+  let y = sym("y")
+  let z = sym("z")
+  let expr = add(add(sin(add(x, y)), z), neg(sin(sub(x, y))))
+  inspect(simplify(expr), content="z + 2 * cos(x) * sin(y)")
 }
 
 ///|
@@ -341,12 +420,30 @@ test "simplify cosine sum special" {
 }
 
 ///|
+test "simplify cosine sum special within larger sum" {
+  let x = sym("x")
+  let y = sym("y")
+  let z = sym("z")
+  let expr = cos(add(x, y)) + cos(sub(x, y)) + z
+  inspect(simplify(expr), content="z + 2 * cos(x) * cos(y)")
+}
+
+///|
 test "simplify cosine difference special" {
   let x = sym("x")
   let y = sym("y")
   let expr = sub(cos(add(x, y)), cos(sub(x, y)))
   inspect(expr, content="cos(x + y) - cos(x - y)")
   inspect(simplify(expr), content="-(2 * sin(x) * sin(y))")
+}
+
+///|
+test "simplify cosine difference special within larger sum" {
+  let x = sym("x")
+  let y = sym("y")
+  let z = sym("z")
+  let expr = add(add(cos(add(x, y)), z), neg(cos(sub(x, y))))
+  inspect(simplify(expr), content="z + -2 * sin(x) * sin(y)")
 }
 
 ///|
@@ -387,6 +484,16 @@ test "simplify hyperbolic sinh addition formula" {
 }
 
 ///|
+test "simplify hyperbolic sinh addition with permuted factors" {
+  let x = sym("x")
+  let y = sym("y")
+  inspect(
+    simplify(cosh(y) * sinh(x) + sinh(y) * cosh(x)),
+    content="sinh(x + y)",
+  )
+}
+
+///|
 test "simplify hyperbolic sinh subtraction formula" {
   let x = sym("x")
   let y = sym("y")
@@ -407,6 +514,16 @@ test "simplify hyperbolic cosh addition formula" {
 }
 
 ///|
+test "simplify hyperbolic cosh addition with permuted factors" {
+  let x = sym("x")
+  let y = sym("y")
+  inspect(
+    simplify(cosh(y) * cosh(x) + sinh(y) * sinh(x)),
+    content="cosh(x + y)",
+  )
+}
+
+///|
 test "simplify hyperbolic cosh subtraction formula" {
   let x = sym("x")
   let y = sym("y")
@@ -420,6 +537,12 @@ test "simplify hyperbolic cosh subtraction formula" {
 test "simplify hyperbolic sinh double angle" {
   let x = sym("x")
   inspect(simplify(mul(int(2), mul(sinh(x), cosh(x)))), content="sinh(2 * x)")
+}
+
+///|
+test "simplify hyperbolic sinh double angle with nested order" {
+  let x = sym("x")
+  inspect(simplify(mul(cosh(x), mul(int(2), sinh(x)))), content="sinh(2 * x)")
 }
 
 ///|

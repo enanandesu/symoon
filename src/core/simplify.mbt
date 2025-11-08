@@ -447,6 +447,398 @@ fn hyperbolic_cosh_sinh_exp(left : Expr, right : Expr, is_add : Bool) -> Expr? {
 }
 
 ///|
+fn flatten_add_terms_expr(expr : Expr) -> Array[Expr] {
+  append_add_terms(expr, Array::new())
+}
+
+///|
+fn rebuild_addition_from_terms(terms : Array[Expr]) -> Expr {
+  let len = terms.length()
+  if len == 0 {
+    return int(0)
+  }
+  let mut current = terms[0].copy()
+  for i in 1..<len {
+    current = add(current, terms[i].copy())
+  }
+  current
+}
+
+///|
+fn find_trig_pair_indexes(terms : Array[Expr]) -> (Int, Int)? {
+  let len = terms.length()
+  for i in 0..<len {
+    match match_pow(terms[i].copy(), UnaryOp::Sin, 2) {
+      Some(angle_sin) =>
+        for j in 0..<len {
+          if i == j {
+            continue
+          }
+          match match_pow(terms[j].copy(), UnaryOp::Cos, 2) {
+            Some(angle_cos) => if angle_sin == angle_cos { return Some((i, j)) }
+            None => continue
+          }
+        }
+      None => continue
+    }
+  }
+  None
+}
+
+///|
+fn remove_pair_and_insert(
+  terms : Array[Expr],
+  first : Int,
+  second : Int,
+  replacement : Expr,
+) -> Array[Expr] {
+  let result = Array::new()
+  let len = terms.length()
+  for i in 0..<len {
+    if i == first || i == second {
+      continue
+    }
+    result.push(terms[i].copy())
+  }
+  result.push(replacement)
+  result
+}
+
+///|
+fn is_literal_one(expr : Expr) -> Bool {
+  match expr {
+    Expr::Int(value) => value == 1
+    Expr::Double(value) => value == 1.0
+    _ => false
+  }
+}
+
+///|
+fn match_one_over_tan_sq(expr : Expr) -> Expr? {
+  match expr {
+    Expr::Binary(BinaryOp::Div, numerator, denominator) =>
+      match numerator {
+        Expr::Int(value) if value == 1 =>
+          match denominator {
+            Expr::Binary(BinaryOp::Pow, base, exponent) =>
+              match exponent {
+                Expr::Int(power) if power == 2 =>
+                  match base {
+                    Expr::Unary(UnaryOp::Tan, angle) => Some(angle)
+                    _ => None
+                  }
+                _ => None
+              }
+            _ => None
+          }
+        _ => None
+      }
+    _ => None
+  }
+}
+
+///|
+fn match_trig_binary(
+  expr : Expr,
+  trig_op : UnaryOp,
+  combine_op : BinaryOp,
+) -> (Expr, Expr)? {
+  match expr {
+    Expr::Unary(op, inner) if op == trig_op =>
+      match inner {
+        Expr::Binary(bin_op, left, right) if bin_op == combine_op =>
+          Some((left, right))
+        _ => None
+      }
+    _ => None
+  }
+}
+
+///|
+fn match_signed_trig(
+  expr : Expr,
+  trig_op : UnaryOp,
+  combine_op : BinaryOp,
+) -> (Bool, Expr, Expr)? {
+  match expr {
+    Expr::Unary(UnaryOp::Neg, inner) =>
+      match match_trig_binary(inner, trig_op, combine_op) {
+        Some((primary, secondary)) => Some((true, primary, secondary))
+        None => None
+      }
+    _ =>
+      match match_trig_binary(expr, trig_op, combine_op) {
+        Some((primary, secondary)) => Some((false, primary, secondary))
+        None => None
+      }
+  }
+}
+
+///|
+fn reduce_sum_terms_sin_cos(terms : Array[Expr]) -> Array[Expr]? {
+  match find_trig_pair_indexes(terms) {
+    Some((sin_index, cos_index)) =>
+      Some(remove_pair_and_insert(terms, sin_index, cos_index, int(1)))
+    None => None
+  }
+}
+
+///|
+fn reduce_sum_terms_one_tan_sq(terms : Array[Expr]) -> Array[Expr]? {
+  let len = terms.length()
+  for i in 0..<len {
+    if !is_literal_one(terms[i]) {
+      continue
+    }
+    for j in 0..<len {
+      if i == j {
+        continue
+      }
+      match match_pow(terms[j].copy(), UnaryOp::Tan, 2) {
+        Some(angle) => {
+          let replacement = pow(cos(angle), int(-2))
+          return Some(remove_pair_and_insert(terms, i, j, replacement))
+        }
+        None => continue
+      }
+    }
+  }
+  None
+}
+
+///|
+fn reduce_sum_terms_one_tan_inv_sq(terms : Array[Expr]) -> Array[Expr]? {
+  let len = terms.length()
+  for i in 0..<len {
+    if !is_literal_one(terms[i]) {
+      continue
+    }
+    for j in 0..<len {
+      if i == j {
+        continue
+      }
+      match match_pow(terms[j].copy(), UnaryOp::Tan, -2) {
+        Some(angle) => {
+          let replacement = pow(sin(angle), int(-2))
+          return Some(remove_pair_and_insert(terms, i, j, replacement))
+        }
+        None => continue
+      }
+    }
+  }
+  None
+}
+
+///|
+fn reduce_sum_terms_one_tan_div(terms : Array[Expr]) -> Array[Expr]? {
+  let len = terms.length()
+  for i in 0..<len {
+    if !is_literal_one(terms[i]) {
+      continue
+    }
+    for j in 0..<len {
+      if i == j {
+        continue
+      }
+      match match_one_over_tan_sq(terms[j].copy()) {
+        Some(angle) => {
+          let replacement = pow(sin(angle), int(-2))
+          return Some(remove_pair_and_insert(terms, i, j, replacement))
+        }
+        None => continue
+      }
+    }
+  }
+  None
+}
+
+///|
+fn reduce_sum_terms_sin_plus(terms : Array[Expr]) -> Array[Expr]? {
+  let len = terms.length()
+  for i in 0..<len {
+    match match_signed_trig(terms[i].copy(), UnaryOp::Sin, BinaryOp::Add) {
+      Some((neg_add, primary, secondary)) =>
+        for j in 0..<len {
+          if i == j {
+            continue
+          }
+          match
+            match_signed_trig(terms[j].copy(), UnaryOp::Sin, BinaryOp::Sub) {
+            Some((neg_sub, primary_b, secondary_b)) =>
+              if primary == primary_b &&
+                secondary == secondary_b &&
+                neg_add == neg_sub {
+                let base = mul(
+                  int(2),
+                  mul(sin(primary.copy()), cos(secondary.copy())),
+                )
+                let replacement = if neg_add { neg(base) } else { base }
+                return Some(remove_pair_and_insert(terms, i, j, replacement))
+              }
+            None => continue
+          }
+        }
+      None => continue
+    }
+  }
+  None
+}
+
+///|
+fn reduce_sum_terms_sin_difference(terms : Array[Expr]) -> Array[Expr]? {
+  let len = terms.length()
+  for i in 0..<len {
+    match match_signed_trig(terms[i].copy(), UnaryOp::Sin, BinaryOp::Add) {
+      Some((neg_add, primary, secondary)) =>
+        for j in 0..<len {
+          if i == j {
+            continue
+          }
+          match
+            match_signed_trig(terms[j].copy(), UnaryOp::Sin, BinaryOp::Sub) {
+            Some((neg_sub, primary_b, secondary_b)) =>
+              if primary == primary_b &&
+                secondary == secondary_b &&
+                neg_add != neg_sub {
+                let base = mul(
+                  int(2),
+                  mul(cos(primary.copy()), sin(secondary.copy())),
+                )
+                let replacement = if neg_add { neg(base) } else { base }
+                return Some(remove_pair_and_insert(terms, i, j, replacement))
+              }
+            None => continue
+          }
+        }
+      None => continue
+    }
+  }
+  None
+}
+
+///|
+fn reduce_sum_terms_cos_plus(terms : Array[Expr]) -> Array[Expr]? {
+  let len = terms.length()
+  for i in 0..<len {
+    match match_signed_trig(terms[i].copy(), UnaryOp::Cos, BinaryOp::Add) {
+      Some((neg_add, primary, secondary)) =>
+        for j in 0..<len {
+          if i == j {
+            continue
+          }
+          match
+            match_signed_trig(terms[j].copy(), UnaryOp::Cos, BinaryOp::Sub) {
+            Some((neg_sub, primary_b, secondary_b)) =>
+              if primary == primary_b &&
+                secondary == secondary_b &&
+                neg_add == neg_sub {
+                let base = mul(
+                  int(2),
+                  mul(cos(primary.copy()), cos(secondary.copy())),
+                )
+                let replacement = if neg_add { neg(base) } else { base }
+                return Some(remove_pair_and_insert(terms, i, j, replacement))
+              }
+            None => continue
+          }
+        }
+      None => continue
+    }
+  }
+  None
+}
+
+///|
+fn reduce_sum_terms_cos_difference(terms : Array[Expr]) -> Array[Expr]? {
+  let len = terms.length()
+  for i in 0..<len {
+    match match_signed_trig(terms[i].copy(), UnaryOp::Cos, BinaryOp::Add) {
+      Some((neg_add, primary, secondary)) =>
+        for j in 0..<len {
+          if i == j {
+            continue
+          }
+          match
+            match_signed_trig(terms[j].copy(), UnaryOp::Cos, BinaryOp::Sub) {
+            Some((neg_sub, primary_b, secondary_b)) =>
+              if primary == primary_b &&
+                secondary == secondary_b &&
+                neg_add != neg_sub {
+                let base = neg(
+                  mul(int(2), mul(sin(primary.copy()), sin(secondary.copy()))),
+                )
+                let replacement = if neg_add { neg(base) } else { base }
+                return Some(remove_pair_and_insert(terms, i, j, replacement))
+              }
+            None => continue
+          }
+        }
+      None => continue
+    }
+  }
+  None
+}
+
+///|
+fn try_reduce_sum_terms(terms : Array[Expr]) -> Array[Expr]? {
+  match reduce_sum_terms_sin_cos(terms) {
+    Some(updated) => return Some(updated)
+    None => ()
+  }
+  match reduce_sum_terms_one_tan_sq(terms) {
+    Some(updated) => return Some(updated)
+    None => ()
+  }
+  match reduce_sum_terms_one_tan_inv_sq(terms) {
+    Some(updated) => return Some(updated)
+    None => ()
+  }
+  match reduce_sum_terms_one_tan_div(terms) {
+    Some(updated) => return Some(updated)
+    None => ()
+  }
+  match reduce_sum_terms_sin_plus(terms) {
+    Some(updated) => return Some(updated)
+    None => ()
+  }
+  match reduce_sum_terms_sin_difference(terms) {
+    Some(updated) => return Some(updated)
+    None => ()
+  }
+  match reduce_sum_terms_cos_plus(terms) {
+    Some(updated) => return Some(updated)
+    None => ()
+  }
+  match reduce_sum_terms_cos_difference(terms) {
+    Some(updated) => return Some(updated)
+    None => ()
+  }
+  None
+}
+
+///|
+fn reduce_sum_expr(expr : Expr) -> Expr? {
+  match expr {
+    Expr::Binary(BinaryOp::Add, _, _) => {
+      let terms = flatten_add_terms_expr(expr)
+      match try_reduce_sum_terms(terms) {
+        Some(updated) => Some(rebuild_addition_from_terms(updated))
+        None => None
+      }
+    }
+    _ => None
+  }
+}
+
+///|
+fn can_reduce_sum_expr(expr : Expr) -> Bool {
+  match reduce_sum_expr(expr.copy()) {
+    Some(_) => true
+    None => false
+  }
+}
+
+///|
 fn identity_rewrite_rules() -> Array[RewriteRule] {
   let rules : Array[RewriteRule] = Array::new()
   let pow_root_pattern = pattern_guard(
@@ -539,21 +931,25 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
     two_literal.copy(),
     op=Some(BinaryOp::Pow),
   )
-  let sin_sq_plus_cos_sq = pattern_binary(
-    sin_sq.copy(),
-    cos_sq.copy(),
-    op=Some(BinaryOp::Add),
-  )
+  let sin_cos_terms : Array[Pattern] = Array::new(capacity=2)
+  sin_cos_terms.push(sin_sq.copy())
+  sin_cos_terms.push(cos_sq.copy())
+  let sin_sq_plus_cos_sq = pattern_sum(sin_cos_terms)
   rules.push(
     RewriteRule::new(sin_sq_plus_cos_sq, (_ : PatternBindings) => int(1)),
   )
-  let cos_sq_plus_sin_sq = pattern_binary(
-    cos_sq.copy(),
-    sin_sq.copy(),
-    op=Some(BinaryOp::Add),
-  )
+  let trig_sum_pattern = pattern_guard(pattern_wildcard("trig_sum_expr"), (
+    candidate : Expr,
+    _ : PatternBindings,
+  ) => can_reduce_sum_expr(candidate.copy()))
   rules.push(
-    RewriteRule::new(cos_sq_plus_sin_sq, (_ : PatternBindings) => int(1)),
+    RewriteRule::new(trig_sum_pattern, (bindings : PatternBindings) => {
+      let target = unwrap_binding(bindings, "trig_sum_expr")
+      match reduce_sum_expr(target.copy()) {
+        Some(result) => result
+        None => target
+      }
+    }),
   )
   let cos_sq_minus_sin_sq = pattern_binary(
     cos_sq.copy(),
@@ -589,46 +985,22 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
     neg_two_literal.copy(),
     op=Some(BinaryOp::Pow),
   )
-  let one_plus_tan_sq = pattern_binary(
-    one_literal.copy(),
-    tan_sq.copy(),
-    op=Some(BinaryOp::Add),
-  )
+  let tan_sq_sum_terms : Array[Pattern] = Array::new(capacity=2)
+  tan_sq_sum_terms.push(one_literal.copy())
+  tan_sq_sum_terms.push(tan_sq.copy())
+  let tan_sq_sum = pattern_sum(tan_sq_sum_terms)
   rules.push(
-    RewriteRule::new(one_plus_tan_sq, (bindings : PatternBindings) => {
+    RewriteRule::new(tan_sq_sum, (bindings : PatternBindings) => {
       let angle = unwrap_binding(bindings, "tan_theta")
       pow(cos(angle), int(-2))
     }),
   )
-  let tan_sq_plus_one = pattern_binary(
-    tan_sq.copy(),
-    one_literal.copy(),
-    op=Some(BinaryOp::Add),
-  )
+  let tan_neg_sq_sum_terms : Array[Pattern] = Array::new(capacity=2)
+  tan_neg_sq_sum_terms.push(one_literal.copy())
+  tan_neg_sq_sum_terms.push(tan_neg_sq.copy())
+  let tan_neg_sq_sum = pattern_sum(tan_neg_sq_sum_terms)
   rules.push(
-    RewriteRule::new(tan_sq_plus_one, (bindings : PatternBindings) => {
-      let angle = unwrap_binding(bindings, "tan_theta")
-      pow(cos(angle), int(-2))
-    }),
-  )
-  let one_plus_tan_neg_sq = pattern_binary(
-    one_literal.copy(),
-    tan_neg_sq.copy(),
-    op=Some(BinaryOp::Add),
-  )
-  rules.push(
-    RewriteRule::new(one_plus_tan_neg_sq, (bindings : PatternBindings) => {
-      let angle = unwrap_binding(bindings, "tan_theta")
-      pow(sin(angle), int(-2))
-    }),
-  )
-  let tan_neg_sq_plus_one = pattern_binary(
-    tan_neg_sq.copy(),
-    one_literal.copy(),
-    op=Some(BinaryOp::Add),
-  )
-  rules.push(
-    RewriteRule::new(tan_neg_sq_plus_one, (bindings : PatternBindings) => {
+    RewriteRule::new(tan_neg_sq_sum, (bindings : PatternBindings) => {
       let angle = unwrap_binding(bindings, "tan_theta")
       pow(sin(angle), int(-2))
     }),
@@ -638,24 +1010,12 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
     pattern_binary(tan_expr.copy(), two_literal.copy(), op=Some(BinaryOp::Pow)),
     op=Some(BinaryOp::Div),
   )
-  let one_plus_tan_sq_div = pattern_binary(
-    one_literal.copy(),
-    tan_sq_div.copy(),
-    op=Some(BinaryOp::Add),
-  )
+  let tan_sq_div_sum_terms : Array[Pattern] = Array::new(capacity=2)
+  tan_sq_div_sum_terms.push(one_literal.copy())
+  tan_sq_div_sum_terms.push(tan_sq_div.copy())
+  let tan_sq_div_sum = pattern_sum(tan_sq_div_sum_terms)
   rules.push(
-    RewriteRule::new(one_plus_tan_sq_div, (bindings : PatternBindings) => {
-      let angle = unwrap_binding(bindings, "tan_theta")
-      pow(sin(angle), int(-2))
-    }),
-  )
-  let tan_sq_div_plus_one = pattern_binary(
-    tan_sq_div.copy(),
-    one_literal.copy(),
-    op=Some(BinaryOp::Add),
-  )
-  rules.push(
-    RewriteRule::new(tan_sq_div_plus_one, (bindings : PatternBindings) => {
+    RewriteRule::new(tan_sq_div_sum, (bindings : PatternBindings) => {
       let angle = unwrap_binding(bindings, "tan_theta")
       pow(sin(angle), int(-2))
     }),
@@ -664,22 +1024,14 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   let tan_sum_b = pattern_wildcard("tan_sum_b")
   let tan_a = pattern_unary(tan_sum_a.copy(), op=Some(UnaryOp::Tan))
   let tan_b = pattern_unary(tan_sum_b.copy(), op=Some(UnaryOp::Tan))
-  let tan_add_numer_options : Array[Pattern] = Array::new(capacity=2)
-  tan_add_numer_options.push(
-    pattern_binary(tan_a.copy(), tan_b.copy(), op=Some(BinaryOp::Add)),
-  )
-  tan_add_numer_options.push(
-    pattern_binary(tan_b.copy(), tan_a.copy(), op=Some(BinaryOp::Add)),
-  )
-  let tan_add_numer = pattern_one_of(tan_add_numer_options)
-  let tan_product_options : Array[Pattern] = Array::new(capacity=2)
-  tan_product_options.push(
-    pattern_binary(tan_a.copy(), tan_b.copy(), op=Some(BinaryOp::Mul)),
-  )
-  tan_product_options.push(
-    pattern_binary(tan_b.copy(), tan_a.copy(), op=Some(BinaryOp::Mul)),
-  )
-  let tan_product = pattern_one_of(tan_product_options)
+  let tan_add_terms : Array[Pattern] = Array::new(capacity=2)
+  tan_add_terms.push(tan_a.copy())
+  tan_add_terms.push(tan_b.copy())
+  let tan_add_numer = pattern_sum(tan_add_terms)
+  let tan_product_terms : Array[Pattern] = Array::new(capacity=2)
+  tan_product_terms.push(tan_a.copy())
+  tan_product_terms.push(tan_b.copy())
+  let tan_product = pattern_product(tan_product_terms)
   let tan_add_denom = pattern_binary(
     one_literal.copy(),
     tan_product.copy(),
@@ -752,38 +1104,22 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   let cos_a_base = pattern_unary(sum_a.copy(), op=Some(UnaryOp::Cos))
   let sin_b_base = pattern_unary(sum_b.copy(), op=Some(UnaryOp::Sin))
   let cos_b_base = pattern_unary(sum_b.copy(), op=Some(UnaryOp::Cos))
-  let sin_cos_options : Array[Pattern] = Array::new(capacity=2)
-  sin_cos_options.push(
-    pattern_binary(sin_a_base.copy(), cos_b_base.copy(), op=Some(BinaryOp::Mul)),
-  )
-  sin_cos_options.push(
-    pattern_binary(cos_b_base.copy(), sin_a_base.copy(), op=Some(BinaryOp::Mul)),
-  )
-  let sin_a_cos_b = pattern_one_of(sin_cos_options)
-  let cos_sin_options : Array[Pattern] = Array::new(capacity=2)
-  cos_sin_options.push(
-    pattern_binary(cos_a_base.copy(), sin_b_base.copy(), op=Some(BinaryOp::Mul)),
-  )
-  cos_sin_options.push(
-    pattern_binary(sin_b_base.copy(), cos_a_base.copy(), op=Some(BinaryOp::Mul)),
-  )
-  let cos_a_sin_b = pattern_one_of(cos_sin_options)
-  let cos_cos_options : Array[Pattern] = Array::new(capacity=2)
-  cos_cos_options.push(
-    pattern_binary(cos_a_base.copy(), cos_b_base.copy(), op=Some(BinaryOp::Mul)),
-  )
-  cos_cos_options.push(
-    pattern_binary(cos_b_base.copy(), cos_a_base.copy(), op=Some(BinaryOp::Mul)),
-  )
-  let cos_a_cos_b = pattern_one_of(cos_cos_options)
-  let sin_sin_options : Array[Pattern] = Array::new(capacity=2)
-  sin_sin_options.push(
-    pattern_binary(sin_a_base.copy(), sin_b_base.copy(), op=Some(BinaryOp::Mul)),
-  )
-  sin_sin_options.push(
-    pattern_binary(sin_b_base.copy(), sin_a_base.copy(), op=Some(BinaryOp::Mul)),
-  )
-  let sin_a_sin_b = pattern_one_of(sin_sin_options)
+  let sin_cos_product_terms : Array[Pattern] = Array::new(capacity=2)
+  sin_cos_product_terms.push(sin_a_base.copy())
+  sin_cos_product_terms.push(cos_b_base.copy())
+  let sin_a_cos_b = pattern_product(sin_cos_product_terms)
+  let cos_sin_product_terms : Array[Pattern] = Array::new(capacity=2)
+  cos_sin_product_terms.push(cos_a_base.copy())
+  cos_sin_product_terms.push(sin_b_base.copy())
+  let cos_a_sin_b = pattern_product(cos_sin_product_terms)
+  let cos_cos_product_terms : Array[Pattern] = Array::new(capacity=2)
+  cos_cos_product_terms.push(cos_a_base.copy())
+  cos_cos_product_terms.push(cos_b_base.copy())
+  let cos_a_cos_b = pattern_product(cos_cos_product_terms)
+  let sin_sin_product_terms : Array[Pattern] = Array::new(capacity=2)
+  sin_sin_product_terms.push(sin_a_base.copy())
+  sin_sin_product_terms.push(sin_b_base.copy())
+  let sin_a_sin_b = pattern_product(sin_sin_product_terms)
   let sin_sum_pattern = pattern_binary(
     sin_a_cos_b.copy(),
     cos_a_sin_b.copy(),
@@ -1151,16 +1487,14 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   let cosh_a_base = pattern_unary(hsum_a.copy(), op=Some(UnaryOp::Cosh))
   let sinh_b_base = pattern_unary(hsum_b.copy(), op=Some(UnaryOp::Sinh))
   let cosh_b_base = pattern_unary(hsum_b.copy(), op=Some(UnaryOp::Cosh))
-  let sinh_a_cosh_b = pattern_binary(
-    sinh_a_base.copy(),
-    cosh_b_base.copy(),
-    op=Some(BinaryOp::Mul),
-  )
-  let cosh_a_sinh_b = pattern_binary(
-    cosh_a_base.copy(),
-    sinh_b_base.copy(),
-    op=Some(BinaryOp::Mul),
-  )
+  let sinh_cosh_factors : Array[Pattern] = Array::new(capacity=2)
+  sinh_cosh_factors.push(sinh_a_base.copy())
+  sinh_cosh_factors.push(cosh_b_base.copy())
+  let sinh_a_cosh_b = pattern_product(sinh_cosh_factors)
+  let cosh_sinh_factors : Array[Pattern] = Array::new(capacity=2)
+  cosh_sinh_factors.push(cosh_a_base.copy())
+  cosh_sinh_factors.push(sinh_b_base.copy())
+  let cosh_a_sinh_b = pattern_product(cosh_sinh_factors)
   let sinh_sum_pattern_h = pattern_binary(
     sinh_a_cosh_b.copy(),
     cosh_a_sinh_b.copy(),
@@ -1185,16 +1519,14 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
       sinh(sub(a, b))
     }),
   )
-  let cosh_a_cosh_b = pattern_binary(
-    cosh_a_base.copy(),
-    cosh_b_base.copy(),
-    op=Some(BinaryOp::Mul),
-  )
-  let sinh_a_sinh_b_h = pattern_binary(
-    sinh_a_base.copy(),
-    sinh_b_base.copy(),
-    op=Some(BinaryOp::Mul),
-  )
+  let cosh_pair_factors : Array[Pattern] = Array::new(capacity=2)
+  cosh_pair_factors.push(cosh_a_base.copy())
+  cosh_pair_factors.push(cosh_b_base.copy())
+  let cosh_a_cosh_b = pattern_product(cosh_pair_factors)
+  let sinh_pair_factors : Array[Pattern] = Array::new(capacity=2)
+  sinh_pair_factors.push(sinh_a_base.copy())
+  sinh_pair_factors.push(sinh_b_base.copy())
+  let sinh_a_sinh_b_h = pattern_product(sinh_pair_factors)
   let cosh_sum_pattern_h = pattern_binary(
     cosh_a_cosh_b.copy(),
     sinh_a_sinh_b_h.copy(),
