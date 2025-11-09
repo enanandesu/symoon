@@ -49,8 +49,7 @@ test "differentiate binary operations" {
   let quotient = simplify(differentiate(div(sin(sym("x")), sym("x")), "x"))
   inspect(quotient, content="(x * cos(x) - sin(x)) / x ^ 2")
   let reciprocal = simplify(differentiate(div(int(1), sym("x")), "x"))
-  let reciprocal_expected = simplify(div(int(-1), pow(sym("x"), int(2))))
-  assert_eq(reciprocal, reciprocal_expected)
+  inspect(reciprocal, content="-1 / x ^ 2")
 }
 
 ///|
@@ -66,6 +65,7 @@ test "differentiate power with integer exponent" {
     pow(sym("x"), int(5)) * (int(5) * div(int(1), sym("x"))),
   )
   assert_eq(result, expected)
+  inspect(result, content="5 * x ^ 4")
 }
 
 ///|
@@ -75,6 +75,7 @@ test "differentiate power with variable exponent" {
     pow(sym("x"), sym("x")) * (log(sym("x")) + sym("x") * div(int(1), sym("x"))),
   )
   assert_eq(result, expected)
+  inspect(result, content="x ^ x * (log(x) + 1)")
 }
 
 ///|

@@ -60,7 +60,7 @@ test "show more complicated expressions" {
   )
   inspect(
     simplify(expr2),
-    content="-((4 * x + y) * (x - y)) / log(x + y) * sin(x / y)",
+    content="-((4 * x + y) * (x - y) * sin(x / y)) / log(x + y)",
   )
   let expr3 = -(-x)
   inspect(expr3, content="-(-x)")

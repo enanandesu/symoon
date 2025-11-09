@@ -28,6 +28,39 @@ pub enum BinaryOp {
 } derive(Eq, Show, Hash)
 
 ///|
+pub fn UnaryOp::copy(self : UnaryOp) -> UnaryOp {
+  match self {
+    UnaryOp::Neg => UnaryOp::Neg
+    UnaryOp::Sin => UnaryOp::Sin
+    UnaryOp::Cos => UnaryOp::Cos
+    UnaryOp::Tan => UnaryOp::Tan
+    UnaryOp::Asin => UnaryOp::Asin
+    UnaryOp::Acos => UnaryOp::Acos
+    UnaryOp::Atan => UnaryOp::Atan
+    UnaryOp::Sinh => UnaryOp::Sinh
+    UnaryOp::Cosh => UnaryOp::Cosh
+    UnaryOp::Tanh => UnaryOp::Tanh
+    UnaryOp::Asinh => UnaryOp::Asinh
+    UnaryOp::Acosh => UnaryOp::Acosh
+    UnaryOp::Atanh => UnaryOp::Atanh
+    UnaryOp::Exp => UnaryOp::Exp
+    UnaryOp::Log => UnaryOp::Log
+    UnaryOp::Abs => UnaryOp::Abs
+  }
+}
+
+///|
+pub fn BinaryOp::copy(self : BinaryOp) -> BinaryOp {
+  match self {
+    BinaryOp::Add => BinaryOp::Add
+    BinaryOp::Sub => BinaryOp::Sub
+    BinaryOp::Mul => BinaryOp::Mul
+    BinaryOp::Div => BinaryOp::Div
+    BinaryOp::Pow => BinaryOp::Pow
+  }
+}
+
+///|
 pub fn neg(expr : Expr) -> Expr {
   Expr::Unary(UnaryOp::Neg, expr)
 }

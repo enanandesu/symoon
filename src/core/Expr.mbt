@@ -16,6 +16,11 @@ pub fn Symbol::new(name : String) -> Symbol {
 }
 
 ///|
+pub fn Symbol::copy(self : Symbol) -> Symbol {
+  Symbol::new(self.name)
+}
+
+///|
 pub enum Expr {
   Int(Int)
   Double(Double)
@@ -38,4 +43,33 @@ pub fn double(value : Double) -> Expr {
 ///|
 pub fn sym(name : String) -> Expr {
   Expr::Symbol(Symbol::new(name))
+}
+
+///|
+pub fn Expr::copy(self : Expr) -> Expr {
+  match self {
+    Expr::Int(value) => Expr::Int(value)
+    Expr::Double(value) => Expr::Double(value)
+    Expr::Symbol(symbol) => Expr::Symbol(symbol.copy())
+    Expr::Unary(op, inner) => Expr::Unary(op, inner.copy())
+    Expr::Binary(op, left, right) => Expr::Binary(op, left.copy(), right.copy())
+    Expr::FunctionCall(name, args) => {
+      let copied_args = Array::new(capacity=args.length())
+      for arg in args {
+        copied_args.push(arg.copy())
+      }
+      Expr::FunctionCall(name, copied_args)
+    }
+  }
+}
+
+///|
+pub fn SymbolicError::copy(self : SymbolicError) -> SymbolicError {
+  match self {
+    SymbolicError::UndefinedSymbol(name) => SymbolicError::UndefinedSymbol(name)
+    SymbolicError::DomainViolation(domain, reason) =>
+      SymbolicError::DomainViolation(domain, reason)
+    SymbolicError::UnsupportedOperation(operation) =>
+      SymbolicError::UnsupportedOperation(operation)
+  }
 }
