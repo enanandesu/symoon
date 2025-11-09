@@ -53,20 +53,34 @@ test "differentiate binary operations" {
 }
 
 ///|
-test "differentiate fallback unary" {
+test "differentiate absolute value" {
   let x = sym("x")
-  let abs_diff = differentiate(abs(x), "x")
-  inspect(abs_diff, content="diff_unary(x, abs(x))")
+  inspect(simplify(differentiate(abs(x), "x")), content="x / abs(x)")
 }
 
 ///|
 test "differentiate power with integer exponent" {
   let result = simplify(differentiate(pow(sym("x"), int(5)), "x"))
+  let expected = simplify(
+    pow(sym("x"), int(5)) * (int(5) * div(int(1), sym("x"))),
+  )
+  assert_eq(result, expected)
   inspect(result, content="5 * x ^ 4")
 }
 
 ///|
 test "differentiate power with variable exponent" {
   let result = simplify(differentiate(pow(sym("x"), sym("x")), "x"))
+  let expected = simplify(
+    pow(sym("x"), sym("x")) * (log(sym("x")) + sym("x") * div(int(1), sym("x"))),
+  )
+  assert_eq(result, expected)
   inspect(result, content="x ^ x * (log(x) + 1)")
+}
+
+///|
+test "differentiate higher order derivatives" {
+  let x = sym("x")
+  inspect(simplify(differentiate(sin(x), "x", order=2)), content="-(sin(x))")
+  assert_eq(differentiate(sym("x"), "x", order=0), sym("x"))
 }

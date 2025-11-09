@@ -65,3 +65,16 @@ test "show more complicated expressions" {
   let expr3 = -(-x)
   inspect(expr3, content="-(-x)")
 }
+
+///|
+test "to_latex formats expressions" {
+  let x = sym("x")
+  let y = sym("y")
+  assert_eq(to_latex(x), "x")
+  assert_eq(to_latex(neg(x + y)), "-\\left(x + y\\right)")
+  let frac_expr = div(sin(x), y)
+  assert_eq(to_latex(frac_expr), "\\frac{\\sin\\left(x\\right)}{y}")
+  let pow_expr = pow(x + y, int(2))
+  assert_eq(to_latex(pow_expr), "\\left(x + y\\right)^{2}")
+  assert_eq(to_latex(abs(x)), "\\left|x\\right|")
+}

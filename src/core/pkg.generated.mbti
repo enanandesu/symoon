@@ -26,7 +26,7 @@ fn count_ops(Expr) -> Double
 
 fn default_rational_constants() -> Array[RationalConstant]
 
-fn differentiate(Expr, String) -> Expr
+fn differentiate(Expr, String, order? : Int) -> Expr
 
 fn div(Expr, Expr) -> Expr
 
@@ -100,6 +100,7 @@ fn tan(Expr) -> Expr
 
 fn tanh(Expr) -> Expr
 
+fn to_latex(Expr) -> String
 fn try_apply_rule(RewriteRule, Expr) -> Expr?
 
 // Errors

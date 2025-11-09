@@ -136,6 +136,115 @@ fn format_expr(expr : Expr, wrap : Bool) -> String {
 }
 
 ///|
+fn latex_wrap(content : String, wrap : Bool) -> String {
+  if wrap {
+    "\\left(" + content + "\\right)"
+  } else {
+    content
+  }
+}
+
+///|
+fn format_expr_latex(expr : Expr, wrap : Bool) -> String {
+  match expr {
+    Expr::Int(value) => value.to_string()
+    Expr::Double(value) => value.to_string()
+    Expr::Symbol(symbol) => symbol.name
+    Expr::Unary(UnaryOp::Neg, inner) => {
+      let base = match inner {
+        Expr::Int(value) => "-" + value.to_string()
+        Expr::Double(value) => "-" + value.to_string()
+        Expr::Symbol(symbol) => "-" + symbol.name
+        other => "-\\left(" + format_expr_latex(other, false) + "\\right)"
+      }
+      latex_wrap(base, wrap)
+    }
+    Expr::Unary(UnaryOp::Abs, inner) => {
+      let inner_str = format_expr_latex(inner, false)
+      let base = "\\left|" + inner_str + "\\right|"
+      latex_wrap(base, wrap)
+    }
+    Expr::Unary(op, inner) => {
+      let func = match op {
+        UnaryOp::Sin => "\\sin"
+        UnaryOp::Cos => "\\cos"
+        UnaryOp::Tan => "\\tan"
+        UnaryOp::Asin => "\\arcsin"
+        UnaryOp::Acos => "\\arccos"
+        UnaryOp::Atan => "\\arctan"
+        UnaryOp::Sinh => "\\sinh"
+        UnaryOp::Cosh => "\\cosh"
+        UnaryOp::Tanh => "\\tanh"
+        UnaryOp::Asinh => "\\operatorname{asinh}"
+        UnaryOp::Acosh => "\\operatorname{acosh}"
+        UnaryOp::Atanh => "\\operatorname{atanh}"
+        UnaryOp::Exp => "\\exp"
+        UnaryOp::Log => "\\log"
+        UnaryOp::Neg => abort("unexpected neg unary latex formatting")
+        UnaryOp::Abs => abort("unexpected abs unary latex formatting")
+      }
+      let argument = format_expr_latex(inner, false)
+      let base = func + "\\left(" + argument + "\\right)"
+      latex_wrap(base, wrap)
+    }
+    Expr::Binary(BinaryOp::Div, left, right) => {
+      let numerator = format_expr_latex(left, false)
+      let denominator = format_expr_latex(right, false)
+      let base = "\\frac{" + numerator + "}{" + denominator + "}"
+      latex_wrap(base, wrap)
+    }
+    Expr::Binary(BinaryOp::Pow, left, right) => {
+      let left_str = format_expr_latex(
+        left,
+        needs_parentheses(left, BinaryOp::Pow, false),
+      )
+      let right_str = format_expr_latex(right, false)
+      let base = left_str + "^{" + right_str + "}"
+      latex_wrap(base, wrap)
+    }
+    Expr::Binary(op, left, right) => {
+      let op_symbol = match op {
+        BinaryOp::Add => " + "
+        BinaryOp::Sub => " - "
+        BinaryOp::Mul => " \\cdot "
+        BinaryOp::Div => abort("div handled earlier")
+        BinaryOp::Pow => abort("pow handled earlier")
+      }
+      let left_str = format_expr_latex(left, needs_parentheses(left, op, false))
+      let right_str = format_expr_latex(
+        right,
+        needs_parentheses(right, op, true),
+      )
+      let base = left_str + op_symbol + right_str
+      latex_wrap(base, wrap)
+    }
+    Expr::FunctionCall(name, args) => {
+      let builder = StringBuilder::new()
+      builder.write_string("\\operatorname{")
+      builder.write_string(name)
+      builder.write_string("}\\left(")
+      let mut first = true
+      for arg in args {
+        if first {
+          first = false
+        } else {
+          builder.write_string(", ")
+        }
+        builder.write_string(format_expr_latex(arg, false))
+      }
+      builder.write_string("\\right)")
+      let base = builder.to_string()
+      latex_wrap(base, wrap)
+    }
+  }
+}
+
+///|
+pub fn to_latex(expr : Expr) -> String {
+  format_expr_latex(expr, false)
+}
+
+///|
 pub impl Show for Expr with to_string(self) {
   format_expr(self, false)
 }
