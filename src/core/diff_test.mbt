@@ -84,3 +84,5 @@ test "differentiate higher order derivatives" {
   inspect(simplify(differentiate(sin(x), "x", order=2)), content="-(sin(x))")
   assert_eq(differentiate(sym("x"), "x", order=0), sym("x"))
 }
+
+///|

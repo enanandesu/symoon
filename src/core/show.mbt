@@ -218,25 +218,64 @@ fn format_expr_latex(expr : Expr, wrap : Bool) -> String {
       let base = left_str + op_symbol + right_str
       latex_wrap(base, wrap)
     }
-    Expr::FunctionCall(name, args) => {
-      let builder = StringBuilder::new()
-      builder.write_string("\\operatorname{")
-      builder.write_string(name)
-      builder.write_string("}\\left(")
-      let mut first = true
-      for arg in args {
-        if first {
-          first = false
-        } else {
-          builder.write_string(", ")
-        }
-        builder.write_string(format_expr_latex(arg, false))
-      }
-      builder.write_string("\\right)")
-      let base = builder.to_string()
-      latex_wrap(base, wrap)
-    }
+    Expr::FunctionCall(name, args) =>
+      format_function_call_latex(name, args, wrap)
   }
+}
+
+///|
+fn format_function_call_latex(
+  name : String,
+  args : Array[Expr],
+  wrap : Bool,
+) -> String {
+  if name == "diff_call" && args.length() == 2 {
+    format_diff_call_latex(args, wrap)
+  } else {
+    format_regular_function_call_latex(name, args, wrap)
+  }
+}
+
+///|
+fn format_regular_function_call_latex(
+  name : String,
+  args : Array[Expr],
+  wrap : Bool,
+) -> String {
+  let builder = StringBuilder::new()
+  builder.write_string("\\operatorname{")
+  builder.write_string(name)
+  builder.write_string("}\\left(")
+  let mut first = true
+  for arg in args {
+    if first {
+      first = false
+    } else {
+      builder.write_string(", ")
+    }
+    builder.write_string(format_expr_latex(arg, false))
+  }
+  builder.write_string("\\right)")
+  let base = builder.to_string()
+  latex_wrap(base, wrap)
+}
+
+///|
+fn format_diff_call_latex(args : Array[Expr], wrap : Bool) -> String {
+  let variable_expr = args[0]
+  let target_expr = args[1]
+  let variable = format_expr_latex(variable_expr, false)
+  let target = format_expr_latex(target_expr, false)
+  let numerator = "d"
+  let denominator = "d " + variable
+  let derivative = "\\frac{" +
+    numerator +
+    "}{" +
+    denominator +
+    "}\\left(" +
+    target +
+    "\\right)"
+  latex_wrap(derivative, wrap)
 }
 
 ///|

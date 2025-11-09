@@ -246,3 +246,5 @@ fn diff_pow_general(
   let pow_expr = Expr::Binary(BinaryOp::Pow, base, exponent)
   Expr::Binary(BinaryOp::Mul, pow_expr, inner_sum)
 }
+
+///|
