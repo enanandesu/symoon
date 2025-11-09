@@ -4,34 +4,33 @@ pub fn evaluate(
   lookup : (String) -> Double?, //TODO:再包装
 ) -> Result[Double, SymbolicError] {
   match expr {
-    Expr::Int(value) => Ok(value.to_double())
-    Expr::Double(value) => Ok(value)
-    Expr::Symbol(symbol) => {
+    Int(value) => Ok(value.to_double())
+    Double(value) => Ok(value)
+    Symbol(symbol) => {
       let key = symbol.name
       let query_key = key
       match lookup(query_key) {
         Some(value) => Ok(value)
-        None => Err(SymbolicError::UndefinedSymbol(key))
+        None => Err(UndefinedSymbol(key))
       }
     }
-    Expr::Unary(UnaryOp::Neg, inner) =>
+    Unary(Neg, inner) =>
       match evaluate(inner, lookup) {
         Ok(value) => Ok(-value)
         Err(err) => Err(err)
       }
-    Expr::Unary(_, _) =>
-      Err(SymbolicError::UnsupportedOperation("unary evaluation".to_string()))
-    Expr::Binary(op, left, right) =>
+    Unary(_, _) => Err(UnsupportedOperation("unary evaluation".to_string()))
+    Binary(op, left, right) =>
       match (evaluate(left, lookup), evaluate(right, lookup)) {
         (Ok(lhs), Ok(rhs)) =>
           match op {
-            BinaryOp::Add => Ok(lhs + rhs)
-            BinaryOp::Sub => Ok(lhs - rhs)
-            BinaryOp::Mul => Ok(lhs * rhs)
-            BinaryOp::Div =>
+            Add => Ok(lhs + rhs)
+            Sub => Ok(lhs - rhs)
+            Mul => Ok(lhs * rhs)
+            Div =>
               if rhs == 0.0 {
                 Err(
-                  SymbolicError::DomainViolation(
+                  DomainViolation(
                     "division".to_string(),
                     "division by zero".to_string(),
                   ),
@@ -39,12 +38,11 @@ pub fn evaluate(
               } else {
                 Ok(lhs / rhs)
               }
-            BinaryOp::Pow => Ok(@math.pow(lhs, rhs))
+            Pow => Ok(@math.pow(lhs, rhs))
           }
         (Err(err), _) => Err(err)
         (_, Err(err)) => Err(err)
       }
-    Expr::FunctionCall(name, _) =>
-      Err(SymbolicError::UnsupportedOperation("function call: " + name))
+    FunctionCall(name, _) => Err(UnsupportedOperation("function call: " + name))
   }
 }

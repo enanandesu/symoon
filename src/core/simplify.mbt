@@ -2558,18 +2558,9 @@ fn pow_product_with_double(
 }
 
 ///|
-fn abs_double(value : Double) -> Double {
-  if value < 0.0 {
-    -value
-  } else {
-    value
-  }
-}
-
-///|
 fn is_integral_double(value : Double) -> Bool {
   let rounded = @math.round(value)
-  abs_double(value - rounded) <= 1.0e-10
+  (value - rounded).abs() <= 1.0e-10
 }
 
 ///|

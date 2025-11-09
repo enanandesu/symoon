@@ -28,194 +28,177 @@ fn differentiate_order(
 ///|
 fn differentiate_once(expr : Expr, variable_name : String) -> Expr {
   match expr {
-    Expr::Int(_) => Expr::Int(0)
-    Expr::Double(_) => Expr::Int(0)
-    Expr::Symbol(symbol) =>
-      if symbol.name == variable_name {
-        Expr::Int(1)
-      } else {
-        Expr::Int(0)
-      }
-    Expr::Unary(op, inner) =>
+    Int(_) => Int(0)
+    Double(_) => Int(0)
+    Symbol(symbol) => if symbol.name == variable_name { Int(1) } else { Int(0) }
+    Unary(op, inner) =>
       match op {
-        UnaryOp::Neg => {
+        Neg => {
           let var_for_inner = variable_name
-          Expr::Unary(UnaryOp::Neg, differentiate(inner, var_for_inner))
+          Unary(Neg, differentiate(inner, var_for_inner))
         }
-        UnaryOp::Sin => {
+        Sin => {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
-          let cos_inner = Expr::Unary(UnaryOp::Cos, inner)
-          Expr::Binary(BinaryOp::Mul, cos_inner, inner_diff)
+          let cos_inner = Expr::Unary(Cos, inner)
+          Binary(Mul, cos_inner, inner_diff)
         }
-        UnaryOp::Cos => {
+        Cos => {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
-          let sin_inner = Expr::Unary(UnaryOp::Sin, inner)
-          let neg_sin = Expr::Unary(UnaryOp::Neg, sin_inner)
-          Expr::Binary(BinaryOp::Mul, neg_sin, inner_diff)
+          let sin_inner = Expr::Unary(Sin, inner)
+          let neg_sin = Expr::Unary(Neg, sin_inner)
+          Binary(Mul, neg_sin, inner_diff)
         }
-        UnaryOp::Tan => {
+        Tan => {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
-          let cos_inner = Expr::Unary(UnaryOp::Cos, inner)
-          let cos_sq = Expr::Binary(BinaryOp::Pow, cos_inner, Expr::Int(2))
-          let sec_sq = Expr::Binary(BinaryOp::Div, Expr::Int(1), cos_sq)
-          Expr::Binary(BinaryOp::Mul, sec_sq, inner_diff)
+          let cos_inner = Expr::Unary(Cos, inner)
+          let cos_sq = Expr::Binary(Pow, cos_inner, Int(2))
+          let sec_sq = Expr::Binary(Div, Int(1), cos_sq)
+          Binary(Mul, sec_sq, inner_diff)
         }
-        UnaryOp::Asin => {
+        Asin => {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
-          let inner_sq = Expr::Binary(BinaryOp::Pow, inner, Expr::Int(2))
-          let base = Expr::Binary(BinaryOp::Sub, Expr::Int(1), inner_sq)
-          let denom = Expr::Binary(BinaryOp::Pow, base, Expr::Double(0.5))
-          Expr::Binary(BinaryOp::Div, inner_diff, denom)
+          let inner_sq = Expr::Binary(Pow, inner, Int(2))
+          let base = Expr::Binary(Sub, Int(1), inner_sq)
+          let denom = Expr::Binary(Pow, base, Double(0.5))
+          Binary(Div, inner_diff, denom)
         }
-        UnaryOp::Acos => {
+        Acos => {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
-          let inner_sq = Expr::Binary(BinaryOp::Pow, inner, Expr::Int(2))
-          let base = Expr::Binary(BinaryOp::Sub, Expr::Int(1), inner_sq)
-          let denom = Expr::Binary(BinaryOp::Pow, base, Expr::Double(0.5))
-          let neg_diff = Expr::Unary(UnaryOp::Neg, inner_diff)
-          Expr::Binary(BinaryOp::Div, neg_diff, denom)
+          let inner_sq = Expr::Binary(Pow, inner, Int(2))
+          let base = Expr::Binary(Sub, Int(1), inner_sq)
+          let denom = Expr::Binary(Pow, base, Double(0.5))
+          let neg_diff = Expr::Unary(Neg, inner_diff)
+          Binary(Div, neg_diff, denom)
         }
-        UnaryOp::Atan => {
+        Atan => {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
-          let inner_sq = Expr::Binary(BinaryOp::Pow, inner, Expr::Int(2))
-          let denom = Expr::Binary(BinaryOp::Add, Expr::Int(1), inner_sq)
-          Expr::Binary(BinaryOp::Div, inner_diff, denom)
+          let inner_sq = Expr::Binary(Pow, inner, Int(2))
+          let denom = Expr::Binary(Add, Int(1), inner_sq)
+          Binary(Div, inner_diff, denom)
         }
-        UnaryOp::Sinh => {
+        Sinh => {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
-          let cosh_inner = Expr::Unary(UnaryOp::Cosh, inner)
-          Expr::Binary(BinaryOp::Mul, cosh_inner, inner_diff)
+          let cosh_inner = Expr::Unary(Cosh, inner)
+          Binary(Mul, cosh_inner, inner_diff)
         }
-        UnaryOp::Cosh => {
+        Cosh => {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
-          let sinh_inner = Expr::Unary(UnaryOp::Sinh, inner)
-          Expr::Binary(BinaryOp::Mul, sinh_inner, inner_diff)
+          let sinh_inner = Expr::Unary(Sinh, inner)
+          Binary(Mul, sinh_inner, inner_diff)
         }
-        UnaryOp::Tanh => {
+        Tanh => {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
-          let cosh_inner = Expr::Unary(UnaryOp::Cosh, inner)
-          let cosh_sq = Expr::Binary(BinaryOp::Pow, cosh_inner, Expr::Int(2))
-          let sech_sq = Expr::Binary(BinaryOp::Div, Expr::Int(1), cosh_sq)
-          Expr::Binary(BinaryOp::Mul, sech_sq, inner_diff)
+          let cosh_inner = Expr::Unary(Cosh, inner)
+          let cosh_sq = Expr::Binary(Pow, cosh_inner, Int(2))
+          let sech_sq = Expr::Binary(Div, Int(1), cosh_sq)
+          Binary(Mul, sech_sq, inner_diff)
         }
-        UnaryOp::Asinh => {
+        Asinh => {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
-          let inner_sq = Expr::Binary(BinaryOp::Pow, inner, Expr::Int(2))
-          let base = Expr::Binary(BinaryOp::Add, inner_sq, Expr::Int(1))
-          let denom = Expr::Binary(BinaryOp::Pow, base, Expr::Double(0.5))
-          Expr::Binary(BinaryOp::Div, inner_diff, denom)
+          let inner_sq = Expr::Binary(Pow, inner, Int(2))
+          let base = Expr::Binary(Add, inner_sq, Int(1))
+          let denom = Expr::Binary(Pow, base, Double(0.5))
+          Binary(Div, inner_diff, denom)
         }
-        UnaryOp::Acosh => {
+        Acosh => {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
-          let minus_one = Expr::Binary(BinaryOp::Sub, inner, Expr::Int(1))
-          let plus_one = Expr::Binary(BinaryOp::Add, inner, Expr::Int(1))
-          let sqrt_minus = Expr::Binary(
-            BinaryOp::Pow,
-            minus_one,
-            Expr::Double(0.5),
-          )
-          let sqrt_plus = Expr::Binary(
-            BinaryOp::Pow,
-            plus_one,
-            Expr::Double(0.5),
-          )
-          let denom = Expr::Binary(BinaryOp::Mul, sqrt_minus, sqrt_plus)
-          Expr::Binary(BinaryOp::Div, inner_diff, denom)
+          let minus_one = Expr::Binary(Sub, inner, Int(1))
+          let plus_one = Expr::Binary(Add, inner, Expr::Int(1))
+          let sqrt_minus = Expr::Binary(Pow, minus_one, Double(0.5))
+          let sqrt_plus = Expr::Binary(Pow, plus_one, Double(0.5))
+          let denom = Expr::Binary(Mul, sqrt_minus, sqrt_plus)
+          Binary(Div, inner_diff, denom)
         }
-        UnaryOp::Atanh => {
+        Atanh => {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
-          let inner_sq = Expr::Binary(BinaryOp::Pow, inner, Expr::Int(2))
-          let denom = Expr::Binary(BinaryOp::Sub, Expr::Int(1), inner_sq)
-          Expr::Binary(BinaryOp::Div, inner_diff, denom)
+          let inner_sq = Expr::Binary(Pow, inner, Int(2))
+          let denom = Expr::Binary(Sub, Int(1), inner_sq)
+          Binary(Div, inner_diff, denom)
         }
-        UnaryOp::Exp => {
+        Exp => {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
-          let exp_inner = Expr::Unary(UnaryOp::Exp, inner)
-          Expr::Binary(BinaryOp::Mul, exp_inner, inner_diff)
+          let exp_inner = Expr::Unary(Exp, inner)
+          Binary(Mul, exp_inner, inner_diff)
         }
-        UnaryOp::Log => {
+        Log => {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
-          Expr::Binary(BinaryOp::Div, inner_diff, inner)
+          Expr::Binary(Div, inner_diff, inner)
         }
-        UnaryOp::Abs => {
+        Abs => {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
-          let abs_inner = Expr::Unary(UnaryOp::Abs, inner)
-          let normalized = Expr::Binary(BinaryOp::Div, inner, abs_inner)
-          Expr::Binary(BinaryOp::Mul, normalized, inner_diff)
+          let abs_inner = Expr::Unary(Abs, inner)
+          let normalized = Expr::Binary(Div, inner, abs_inner)
+          Binary(Mul, normalized, inner_diff)
         }
       }
-    Expr::Binary(BinaryOp::Add, left, right) => {
+    Binary(Add, left, right) => {
       let var_left = variable_name
       let var_right = variable_name
       let left_diff = differentiate(left, var_left)
       let right_diff = differentiate(right, var_right)
-      Expr::Binary(BinaryOp::Add, left_diff, right_diff)
+      Binary(Add, left_diff, right_diff)
     }
-    Expr::Binary(BinaryOp::Sub, left, right) => {
+    Binary(Sub, left, right) => {
       let var_left = variable_name
       let var_right = variable_name
       let left_diff = differentiate(left, var_left)
       let right_diff = differentiate(right, var_right)
-      Expr::Binary(BinaryOp::Sub, left_diff, right_diff)
+      Binary(Sub, left_diff, right_diff)
     }
-    Expr::Binary(BinaryOp::Mul, left, right) => {
+    Binary(Mul, left, right) => {
       let var_left = variable_name
       let var_right = variable_name
       let left_diff = differentiate(left, var_left)
       let right_diff = differentiate(right, var_right)
-      let term_left = Expr::Binary(BinaryOp::Mul, left, right_diff)
-      let term_right = Expr::Binary(BinaryOp::Mul, left_diff, right)
-      Expr::Binary(BinaryOp::Add, term_left, term_right)
+      let term_left = Expr::Binary(Mul, left, right_diff)
+      let term_right = Expr::Binary(Mul, left_diff, right)
+      Binary(Add, term_left, term_right)
     }
-    Expr::Binary(BinaryOp::Div, left, right) => {
+    Binary(Div, left, right) => {
       let var_left = variable_name
       let var_right = variable_name
       let left_diff = differentiate(left, var_left)
       let right_diff = differentiate(right, var_right)
-      let numerator_left = Expr::Binary(BinaryOp::Mul, left_diff, right)
-      let numerator_right = Expr::Binary(BinaryOp::Mul, left, right_diff)
-      let numerator = Expr::Binary(
-        BinaryOp::Sub,
-        numerator_left,
-        numerator_right,
-      )
-      let denominator_squared = Expr::Binary(BinaryOp::Pow, right, Expr::Int(2))
-      Expr::Binary(BinaryOp::Div, numerator, denominator_squared)
+      let numerator_left = Expr::Binary(Mul, left_diff, right)
+      let numerator_right = Expr::Binary(Mul, left, right_diff)
+      let numerator = Expr::Binary(Sub, numerator_left, numerator_right)
+      let denominator_squared = Expr::Binary(Pow, right, Int(2))
+      Binary(Div, numerator, denominator_squared)
     }
-    Expr::Binary(BinaryOp::Pow, base, exponent) =>
+    Binary(Pow, base, exponent) =>
       match exponent {
-        Expr::Int(exp_value) =>
+        Int(exp_value) =>
           if exp_value == 0 {
-            Expr::Int(0)
+            Int(0)
           } else {
-            let exponent_expr = Expr::Int(exp_value)
+            let exponent_expr = Int(exp_value)
             diff_pow_general(base, exponent_expr, variable_name)
           }
-        Expr::Double(exp_value) =>
+        Double(exp_value) =>
           if exp_value == 0.0 {
-            Expr::Int(0)
+            Int(0)
           } else {
-            let exponent_expr = Expr::Double(exp_value)
+            let exponent_expr = Double(exp_value)
             diff_pow_general(base, exponent_expr, variable_name)
           }
         other_exponent => diff_pow_general(base, other_exponent, variable_name)
       }
-    Expr::FunctionCall(name, args) => {
+    FunctionCall(name, args) => {
       let call_expr = Expr::FunctionCall(name, args)
       diff_fallback(variable_name, call_expr, "diff_call".to_string())
     }
@@ -238,13 +221,13 @@ fn diff_pow_general(
   let var_for_exponent = variable_name
   let base_diff = differentiate(base, var_for_base)
   let exponent_diff = differentiate(exponent, var_for_exponent)
-  let log_base = Expr::Unary(UnaryOp::Log, base)
-  let exponent_diff_term = Expr::Binary(BinaryOp::Mul, exponent_diff, log_base)
-  let base_ratio = Expr::Binary(BinaryOp::Div, base_diff, base)
-  let exponent_term = Expr::Binary(BinaryOp::Mul, exponent, base_ratio)
-  let inner_sum = Expr::Binary(BinaryOp::Add, exponent_diff_term, exponent_term)
-  let pow_expr = Expr::Binary(BinaryOp::Pow, base, exponent)
-  Expr::Binary(BinaryOp::Mul, pow_expr, inner_sum)
+  let log_base = Expr::Unary(Log, base)
+  let exponent_diff_term = Expr::Binary(Mul, exponent_diff, log_base)
+  let base_ratio = Expr::Binary(Div, base_diff, base)
+  let exponent_term = Expr::Binary(Mul, exponent, base_ratio)
+  let inner_sum = Expr::Binary(Add, exponent_diff_term, exponent_term)
+  let pow_expr = Expr::Binary(Pow, base, exponent)
+  Binary(Mul, pow_expr, inner_sum)
 }
 
 ///|

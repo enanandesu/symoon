@@ -53,21 +53,21 @@ fn divide_by_factorial(expr : Expr, factorial_value : Int) -> Expr {
     return expr
   }
   match expr {
-    Expr::Int(value) =>
+    Int(value) =>
       if value % factorial_value == 0 {
-        Expr::Int(value / factorial_value)
+        Int(value / factorial_value)
       } else {
         let numerator = value.to_double()
         let denominator = factorial_value.to_double()
-        Expr::Double(numerator / denominator)
+        Double(numerator / denominator)
       }
-    Expr::Double(value) => {
+    Double(value) => {
       let denominator = factorial_value.to_double()
-      Expr::Double(value / denominator)
+      Double(value / denominator)
     }
     _ => {
-      let denominator_expr = Expr::Int(factorial_value)
-      simplify(Expr::Binary(BinaryOp::Div, expr, denominator_expr))
+      let denominator_expr = Int(factorial_value)
+      simplify(Binary(Div, expr, denominator_expr))
     }
   }
 }
@@ -75,9 +75,9 @@ fn divide_by_factorial(expr : Expr, factorial_value : Int) -> Expr {
 ///|
 fn is_zero_literal(expr : Expr) -> Bool {
   match expr {
-    Expr::Int(value) => value == 0
-    Expr::Double(value) => value == 0.0
-    Expr::Unary(UnaryOp::Neg, inner) => is_zero_literal(inner)
+    Int(value) => value == 0
+    Double(value) => value == 0.0
+    Unary(Neg, inner) => is_zero_literal(inner)
     _ => false
   }
 }
@@ -85,14 +85,14 @@ fn is_zero_literal(expr : Expr) -> Bool {
 ///|
 fn expr_contains_variable(expr : Expr, variable_name : String) -> Bool {
   match expr {
-    Expr::Int(_) => false
-    Expr::Double(_) => false
-    Expr::Symbol(symbol) => symbol.name == variable_name
-    Expr::Unary(_, inner) => expr_contains_variable(inner, variable_name)
-    Expr::Binary(_, left, right) =>
+    Int(_) => false
+    Double(_) => false
+    Symbol(symbol) => symbol.name == variable_name
+    Unary(_, inner) => expr_contains_variable(inner, variable_name)
+    Binary(_, left, right) =>
       expr_contains_variable(left, variable_name) ||
       expr_contains_variable(right, variable_name)
-    Expr::FunctionCall(_, args) => {
+    FunctionCall(_, args) => {
       for arg in args {
         if expr_contains_variable(arg, variable_name) {
           return true
@@ -106,7 +106,7 @@ fn expr_contains_variable(expr : Expr, variable_name : String) -> Bool {
 ///|
 fn contains_diff_fallback(expr : Expr) -> Bool {
   match expr {
-    Expr::FunctionCall(name, args) =>
+    FunctionCall(name, args) =>
       if name == "diff_call" {
         true
       } else {
@@ -117,8 +117,8 @@ fn contains_diff_fallback(expr : Expr) -> Bool {
         }
         false
       }
-    Expr::Unary(_, inner) => contains_diff_fallback(inner)
-    Expr::Binary(_, left, right) =>
+    Unary(_, inner) => contains_diff_fallback(inner)
+    Binary(_, left, right) =>
       contains_diff_fallback(left) || contains_diff_fallback(right)
     _ => false
   }
@@ -128,7 +128,7 @@ fn contains_diff_fallback(expr : Expr) -> Bool {
 fn normalize_negation(expr : Expr) -> Expr {
   let (base, flipped) = strip_negation(expr)
   if flipped {
-    Expr::Unary(UnaryOp::Neg, base)
+    Unary(Neg, base)
   } else {
     base
   }
@@ -137,7 +137,7 @@ fn normalize_negation(expr : Expr) -> Expr {
 ///|
 fn strip_negation(expr : Expr) -> (Expr, Bool) {
   match expr {
-    Expr::Unary(UnaryOp::Neg, inner) => {
+    Unary(Neg, inner) => {
       let (base, flipped) = strip_negation(inner)
       (base, !flipped)
     }
@@ -147,9 +147,8 @@ fn strip_negation(expr : Expr) -> (Expr, Bool) {
 
 ///|
 fn leading_coeff_fallback(variable_name : String, expr : Expr) -> Expr {
-  let args = Array::new()
-  args.push(sym(variable_name))
-  let simplified_expr = simplify(expr)
-  args.push(normalize_negation(simplified_expr))
-  Expr::FunctionCall("leading_coeff".to_string(), args)
+  Expr::FunctionCall("leading_coeff".to_string(), [
+    sym(variable_name),
+    normalize_negation(simplify(expr)),
+  ])
 }
