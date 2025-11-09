@@ -96,6 +96,10 @@ fn sin(Expr) -> Expr
 
 fn sinh(Expr) -> Expr
 
+fn solve_linear_equation(Expr, Expr, String) -> Expr
+
+fn solve_linear_system(Expr, Expr, Expr, Expr, String, String) -> (Expr, Expr)
+
 fn sub(Expr, Expr) -> Expr
 
 fn sym(String) -> Expr
