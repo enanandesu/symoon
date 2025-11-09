@@ -30,139 +30,139 @@ pub enum BinaryOp {
 ///|
 pub fn UnaryOp::copy(self : UnaryOp) -> UnaryOp {
   match self {
-    UnaryOp::Neg => UnaryOp::Neg
-    UnaryOp::Sin => UnaryOp::Sin
-    UnaryOp::Cos => UnaryOp::Cos
-    UnaryOp::Tan => UnaryOp::Tan
-    UnaryOp::Asin => UnaryOp::Asin
-    UnaryOp::Acos => UnaryOp::Acos
-    UnaryOp::Atan => UnaryOp::Atan
-    UnaryOp::Sinh => UnaryOp::Sinh
-    UnaryOp::Cosh => UnaryOp::Cosh
-    UnaryOp::Tanh => UnaryOp::Tanh
-    UnaryOp::Asinh => UnaryOp::Asinh
-    UnaryOp::Acosh => UnaryOp::Acosh
-    UnaryOp::Atanh => UnaryOp::Atanh
-    UnaryOp::Exp => UnaryOp::Exp
-    UnaryOp::Log => UnaryOp::Log
-    UnaryOp::Abs => UnaryOp::Abs
+    Neg => Neg
+    Sin => Sin
+    Cos => Cos
+    Tan => Tan
+    Asin => Asin
+    Acos => Acos
+    Atan => Atan
+    Sinh => Sinh
+    Cosh => Cosh
+    Tanh => Tanh
+    Asinh => Asinh
+    Acosh => Acosh
+    Atanh => Atanh
+    Exp => Exp
+    Log => Log
+    Abs => Abs
   }
 }
 
 ///|
 pub fn BinaryOp::copy(self : BinaryOp) -> BinaryOp {
   match self {
-    BinaryOp::Add => BinaryOp::Add
-    BinaryOp::Sub => BinaryOp::Sub
-    BinaryOp::Mul => BinaryOp::Mul
-    BinaryOp::Div => BinaryOp::Div
-    BinaryOp::Pow => BinaryOp::Pow
+    Add => BinaryOp::Add
+    Sub => BinaryOp::Sub
+    Mul => BinaryOp::Mul
+    Div => BinaryOp::Div
+    Pow => BinaryOp::Pow
   }
 }
 
 ///|
 pub fn neg(expr : Expr) -> Expr {
-  Expr::Unary(UnaryOp::Neg, expr)
+  Unary(Neg, expr)
 }
 
 ///|
 pub fn sin(expr : Expr) -> Expr {
-  Expr::Unary(UnaryOp::Sin, expr)
+  Unary(Sin, expr)
 }
 
 ///|
 pub fn cos(expr : Expr) -> Expr {
-  Expr::Unary(UnaryOp::Cos, expr)
+  Unary(Cos, expr)
 }
 
 ///|
 pub fn tan(expr : Expr) -> Expr {
-  Expr::Unary(UnaryOp::Tan, expr)
+  Unary(Tan, expr)
 }
 
 ///|
 pub fn asin(expr : Expr) -> Expr {
-  Expr::Unary(UnaryOp::Asin, expr)
+  Unary(Asin, expr)
 }
 
 ///|
 pub fn acos(expr : Expr) -> Expr {
-  Expr::Unary(UnaryOp::Acos, expr)
+  Unary(Acos, expr)
 }
 
 ///|
 pub fn atan(expr : Expr) -> Expr {
-  Expr::Unary(UnaryOp::Atan, expr)
+  Unary(Atan, expr)
 }
 
 ///|
 pub fn sinh(expr : Expr) -> Expr {
-  Expr::Unary(UnaryOp::Sinh, expr)
+  Unary(Sinh, expr)
 }
 
 ///|
 pub fn cosh(expr : Expr) -> Expr {
-  Expr::Unary(UnaryOp::Cosh, expr)
+  Unary(Cosh, expr)
 }
 
 ///|
 pub fn tanh(expr : Expr) -> Expr {
-  Expr::Unary(UnaryOp::Tanh, expr)
+  Unary(Tanh, expr)
 }
 
 ///|
 pub fn asinh(expr : Expr) -> Expr {
-  Expr::Unary(UnaryOp::Asinh, expr)
+  Unary(Asinh, expr)
 }
 
 ///|
 pub fn acosh(expr : Expr) -> Expr {
-  Expr::Unary(UnaryOp::Acosh, expr)
+  Unary(Acosh, expr)
 }
 
 ///|
 pub fn atanh(expr : Expr) -> Expr {
-  Expr::Unary(UnaryOp::Atanh, expr)
+  Unary(Atanh, expr)
 }
 
 ///|
 pub fn exp(expr : Expr) -> Expr {
-  Expr::Unary(UnaryOp::Exp, expr)
+  Unary(Exp, expr)
 }
 
 ///|
 pub fn log(expr : Expr) -> Expr {
-  Expr::Unary(UnaryOp::Log, expr)
+  Unary(Log, expr)
 }
 
 ///|
 pub fn abs(expr : Expr) -> Expr {
-  Expr::Unary(UnaryOp::Abs, expr)
+  Unary(Abs, expr)
 }
 
 ///|
 pub fn add(lhs : Expr, rhs : Expr) -> Expr {
-  Expr::Binary(BinaryOp::Add, lhs, rhs)
+  Binary(Add, lhs, rhs)
 }
 
 ///|
 pub fn sub(lhs : Expr, rhs : Expr) -> Expr {
-  Expr::Binary(BinaryOp::Sub, lhs, rhs)
+  Binary(Sub, lhs, rhs)
 }
 
 ///|
 pub fn mul(lhs : Expr, rhs : Expr) -> Expr {
-  Expr::Binary(BinaryOp::Mul, lhs, rhs)
+  Binary(Mul, lhs, rhs)
 }
 
 ///|
 pub fn div(lhs : Expr, rhs : Expr) -> Expr {
-  Expr::Binary(BinaryOp::Div, lhs, rhs)
+  Binary(Div, lhs, rhs)
 }
 
 ///|
 pub fn pow(base : Expr, exponent : Expr) -> Expr {
-  Expr::Binary(BinaryOp::Pow, base, exponent)
+  Binary(Pow, base, exponent)
 }
 
 ///|

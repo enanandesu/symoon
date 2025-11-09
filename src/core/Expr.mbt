@@ -32,33 +32,33 @@ pub enum Expr {
 
 ///|
 pub fn int(value : Int) -> Expr {
-  Expr::Int(value)
+  Int(value)
 }
 
 ///|
 pub fn double(value : Double) -> Expr {
-  Expr::Double(value)
+  Double(value)
 }
 
 ///|
 pub fn sym(name : String) -> Expr {
-  Expr::Symbol(Symbol::new(name))
+  Symbol(Symbol::new(name))
 }
 
 ///|
 pub fn Expr::copy(self : Expr) -> Expr {
   match self {
-    Expr::Int(value) => Expr::Int(value)
-    Expr::Double(value) => Expr::Double(value)
-    Expr::Symbol(symbol) => Expr::Symbol(symbol.copy())
-    Expr::Unary(op, inner) => Expr::Unary(op, inner.copy())
-    Expr::Binary(op, left, right) => Expr::Binary(op, left.copy(), right.copy())
-    Expr::FunctionCall(name, args) => {
+    Int(value) => Expr::Int(value)
+    Double(value) => Double(value)
+    Symbol(symbol) => Symbol(symbol.copy())
+    Unary(op, inner) => Unary(op, inner.copy())
+    Binary(op, left, right) => Binary(op, left.copy(), right.copy())
+    FunctionCall(name, args) => {
       let copied_args = Array::new(capacity=args.length())
       for arg in args {
         copied_args.push(arg.copy())
       }
-      Expr::FunctionCall(name, copied_args)
+      FunctionCall(name, copied_args)
     }
   }
 }
@@ -66,10 +66,8 @@ pub fn Expr::copy(self : Expr) -> Expr {
 ///|
 pub fn SymbolicError::copy(self : SymbolicError) -> SymbolicError {
   match self {
-    SymbolicError::UndefinedSymbol(name) => SymbolicError::UndefinedSymbol(name)
-    SymbolicError::DomainViolation(domain, reason) =>
-      SymbolicError::DomainViolation(domain, reason)
-    SymbolicError::UnsupportedOperation(operation) =>
-      SymbolicError::UnsupportedOperation(operation)
+    UndefinedSymbol(name) => UndefinedSymbol(name)
+    DomainViolation(domain, reason) => DomainViolation(domain, reason)
+    UnsupportedOperation(operation) => UnsupportedOperation(operation)
   }
 }
