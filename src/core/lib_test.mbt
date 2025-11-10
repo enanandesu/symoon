@@ -734,6 +734,84 @@ test "simplifyer combines multi-level polynomial terms" {
 }
 
 ///|
+test "simplify cancels symbolic factor via division" {
+  let x = sym("x")
+  let y = sym("y")
+  let z = sym("z")
+  let expr = div(add(mul(x.copy(), y), mul(x.copy(), z)), x)
+  inspect(simplify(expr), content="y + z")
+}
+
+///|
+test "simplify cancels numeric gcd via division" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = div(add(mul(int(4), x), mul(int(2), y)), int(2))
+  inspect(simplify(expr), content="2 * x + y")
+}
+
+///|
+test "simplify cancels difference of squares factor" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = div(
+    sub(pow(x.copy(), int(2)), pow(y.copy(), int(2))),
+    sub(x.copy(), y.copy()),
+  )
+  inspect(simplify(expr), content="x + y")
+}
+
+///|
+test "simplify cancels perfect square plus factor" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = div(
+    add(
+      add(pow(x.copy(), int(2)), mul(int(2), mul(x.copy(), y.copy()))),
+      pow(y.copy(), int(2)),
+    ),
+    add(x.copy(), y.copy()),
+  )
+  inspect(simplify(expr), content="x + y")
+}
+
+///|
+test "simplify cancels perfect square minus factor" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = div(
+    add(
+      add(pow(x.copy(), int(2)), mul(int(-2), mul(x.copy(), y.copy()))),
+      pow(y.copy(), int(2)),
+    ),
+    sub(x.copy(), y.copy()),
+  )
+  inspect(simplify(expr), content="x - y")
+}
+
+///|
+test "simplify cancels sum of cubes factor" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = div(
+    add(pow(x.copy(), int(3)), pow(y.copy(), int(3))),
+    add(x.copy(), y.copy()),
+  )
+  inspect(simplify(expr), content="x ^ 2 - x * y + y ^ 2")
+}
+
+///|
+test "simplify cancels difference of cubes factor" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = div(
+    sub(pow(x.copy(), int(3)), pow(y.copy(), int(3))),
+    sub(x.copy(), y.copy()),
+  )
+  inspect(simplify(expr), content="x ^ 2 + x * y + y ^ 2")
+}
+
+///|
 test "simplifyer normalizes factors across addition" {
   // x*(y*z) + z*(x*y) + y*(z*x)  -> 3 * x*y*z
   let expr = add(

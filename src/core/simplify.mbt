@@ -2096,6 +2096,379 @@ fn combine_polynomial_terms(terms : Array[Expr]) -> Expr {
 }
 
 ///|
+fn gcd_int_values(a : Int, b : Int) -> Int {
+  let mut lhs = if a < 0 { -a } else { a }
+  let mut rhs = if b < 0 { -b } else { b }
+  if lhs == 0 {
+    return if rhs == 0 { 1 } else { rhs }
+  }
+  if rhs == 0 {
+    return lhs
+  }
+  while rhs != 0 {
+    let temp = lhs % rhs
+    lhs = rhs
+    rhs = temp
+  }
+  lhs
+}
+
+///|
+fn gcd_of_coefficients(coeffs : Array[Expr]) -> Int {
+  let mut current : Int? = None
+  for coeff in coeffs {
+    match coeff {
+      Expr::Int(value) => {
+        let abs_value = if value < 0 { -value } else { value }
+        current = match current {
+          Some(existing) => Some(gcd_int_values(existing, abs_value))
+          None => Some(abs_value)
+        }
+      }
+      _ => return 1
+    }
+  }
+  match current {
+    Some(value) => if value == 0 { 1 } else { value }
+    None => 1
+  }
+}
+
+///|
+fn divide_coefficient_by_int(coeff : Expr, divisor : Int) -> Expr {
+  if divisor == 0 || divisor == 1 {
+    return coeff
+  }
+  match coeff {
+    Expr::Int(value) => Expr::Int(value / divisor)
+    _ => coeff
+  }
+}
+
+///|
+fn build_factor_counts_from_list(factors : Array[Expr]) -> Array[(Expr, Int)] {
+  let counts = Array::new()
+  for factor in factors {
+    let mut found = false
+    let len = counts.length()
+    for i in 0..<len {
+      let (existing, count) = counts[i]
+      if existing == factor {
+        counts[i] = (existing, count + 1)
+        found = true
+        break
+      }
+    }
+    if !found {
+      counts.push((factor, 1))
+    }
+  }
+  counts
+}
+
+///|
+fn copy_factor_counts(counts : Array[(Expr, Int)]) -> Array[(Expr, Int)] {
+  let copied = Array::new(capacity=counts.length())
+  for entry in counts {
+    let (factor, count) = entry
+    copied.push((factor.copy(), count))
+  }
+  copied
+}
+
+///|
+fn intersect_factor_counts(
+  first : Array[(Expr, Int)],
+  second : Array[(Expr, Int)],
+) -> Array[(Expr, Int)] {
+  let intersection = Array::new()
+  for entry in first {
+    let (factor, count) = entry
+    let mut other_count = 0
+    let len = second.length()
+    for i in 0..<len {
+      let (candidate, candidate_count) = second[i]
+      if candidate == factor {
+        other_count = candidate_count
+        break
+      }
+    }
+    if other_count > 0 {
+      let min_count = if count < other_count { count } else { other_count }
+      intersection.push((factor.copy(), min_count))
+    }
+  }
+  intersection
+}
+
+///|
+fn subtract_factor_counts(
+  source : Array[(Expr, Int)],
+  to_remove : Array[(Expr, Int)],
+) -> Array[(Expr, Int)] {
+  let result = Array::new()
+  for entry in source {
+    let (factor, count) = entry
+    let mut remaining = count
+    let len = to_remove.length()
+    for i in 0..<len {
+      let (remove_factor, remove_count) = to_remove[i]
+      if remove_factor == factor {
+        remaining = remaining - remove_count
+        break
+      }
+    }
+    if remaining > 0 {
+      result.push((factor.copy(), remaining))
+    }
+  }
+  result
+}
+
+///|
+fn expand_factor_counts(counts : Array[(Expr, Int)]) -> Array[Expr] {
+  let expanded = Array::new()
+  for entry in counts {
+    let (factor, count) = entry
+    for _ in 0..<count {
+      expanded.push(factor.copy())
+    }
+  }
+  expanded
+}
+
+///|
+fn factor_common_addition(expr : Expr) -> Expr? {
+  let terms = append_add_terms(expr, Array::new())
+  if terms.length() < 2 {
+    return None
+  }
+  let coeffs : Array[Expr] = Array::new()
+  let factor_counts_list : Array[Array[(Expr, Int)]] = Array::new()
+  for term in terms {
+    let simplified = simplify_reduce(term)
+    let (coeff, factors) = extract_polynomial_term(simplified)
+    coeffs.push(coeff)
+    factor_counts_list.push(build_factor_counts_from_list(factors))
+  }
+  let gcd_value = gcd_of_coefficients(coeffs.copy())
+  let count_len = factor_counts_list.length()
+  if count_len == 0 {
+    return None
+  }
+  let mut common_counts = copy_factor_counts(factor_counts_list[0])
+  for i in 1..<count_len {
+    common_counts = intersect_factor_counts(
+      common_counts,
+      factor_counts_list[i],
+    )
+    if common_counts.length() == 0 {
+      break
+    }
+  }
+  if gcd_value == 1 && common_counts.length() == 0 {
+    return None
+  }
+  let common_factors = expand_factor_counts(common_counts.copy())
+  let common_factor_expr = build_monomial_from_factors(common_factors)
+  let outer_coeff_expr = Expr::Int(gcd_value)
+  let outer_factor = term_from_parts(
+    outer_coeff_expr,
+    common_factor_expr.copy(),
+  )
+  let inner_terms = Array::new()
+  for i in 0..<count_len {
+    let coeff = coeffs[i]
+    let counts = factor_counts_list[i]
+    let remaining_counts = subtract_factor_counts(counts, common_counts)
+    let remaining_factors = expand_factor_counts(remaining_counts)
+    let remaining_monomial = build_monomial_from_factors(remaining_factors)
+    let adjusted_coeff = divide_coefficient_by_int(coeff, gcd_value)
+    let term_expr = term_from_parts(adjusted_coeff, remaining_monomial)
+    inner_terms.push(term_expr)
+  }
+  let inner_expr = rebuild_addition_from_terms(inner_terms)
+  let (outer_is_one, outer_clean) = simplify_is_one_literal(outer_factor)
+  if outer_is_one {
+    Some(inner_expr)
+  } else {
+    Some(Expr::Binary(BinaryOp::Mul, outer_clean, inner_expr))
+  }
+}
+
+///|
+fn match_pow_base(expr : Expr, exponent : Int) -> Expr? {
+  match expr {
+    Expr::Binary(BinaryOp::Pow, base, Expr::Int(value)) =>
+      if value == exponent {
+        Some(base)
+      } else {
+        None
+      }
+    _ => None
+  }
+}
+
+///|
+fn match_cross_term(
+  expr : Expr,
+  first : Expr,
+  second : Expr,
+  expected_coeff : Int,
+) -> Bool {
+  let factors = collect_mul_factors(expr, Array::new())
+  let mut coeff = 1
+  let rem = Array::new()
+  for factor in factors {
+    match factor {
+      Expr::Int(value) => coeff = coeff * value
+      Expr::Unary(UnaryOp::Neg, inner) => {
+        coeff = coeff * -1
+        rem.push(inner)
+      }
+      other => rem.push(other)
+    }
+  }
+  if coeff != expected_coeff || rem.length() != 2 {
+    return false
+  }
+  let a = rem[0]
+  let b = rem[1]
+  (a == first && b == second) || (a == second && b == first)
+}
+
+///|
+fn factor_diff_squares(expr : Expr) -> Expr? {
+  match expr {
+    Expr::Binary(BinaryOp::Sub, left, right) =>
+      match (match_pow_base(left, 2), match_pow_base(right, 2)) {
+        (Some(a), Some(b)) => Some(mul(sub(a.copy(), b.copy()), add(a, b)))
+        _ => None
+      }
+    _ => None
+  }
+}
+
+///|
+fn factor_square_plus(expr : Expr) -> Expr? {
+  let terms = append_add_terms(expr, Array::new())
+  if terms.length() != 3 {
+    return None
+  }
+  let pow_terms = Array::new()
+  let mut cross_index = -1
+  for i in 0..<terms.length() {
+    match match_pow_base(terms[i], 2) {
+      Some(base) => pow_terms.push((base, i))
+      None => cross_index = i
+    }
+  }
+  if pow_terms.length() != 2 || cross_index < 0 {
+    return None
+  }
+  let (a, _) = pow_terms[0]
+  let (b, _) = pow_terms[1]
+  if match_cross_term(terms[cross_index], a, b, 2) {
+    Some(mul(add(a.copy(), b.copy()), add(a, b)))
+  } else {
+    None
+  }
+}
+
+///|
+fn factor_square_minus(expr : Expr) -> Expr? {
+  let terms = append_add_terms(expr, Array::new())
+  if terms.length() != 3 {
+    return None
+  }
+  let pow_terms = Array::new()
+  let mut cross_index = -1
+  for i in 0..<terms.length() {
+    match match_pow_base(terms[i], 2) {
+      Some(base) => pow_terms.push((base, i))
+      None => cross_index = i
+    }
+  }
+  if pow_terms.length() != 2 || cross_index < 0 {
+    return None
+  }
+  let (a, _) = pow_terms[0]
+  let (b, _) = pow_terms[1]
+  if match_cross_term(terms[cross_index], a, b, -2) {
+    Some(mul(sub(a.copy(), b.copy()), sub(a, b)))
+  } else {
+    None
+  }
+}
+
+///|
+fn factor_sum_cubes(expr : Expr) -> Expr? {
+  match expr {
+    Expr::Binary(BinaryOp::Add, left, right) =>
+      match (match_pow_base(left, 3), match_pow_base(right, 3)) {
+        (Some(a), Some(b)) => {
+          let linear = add(a.copy(), b.copy())
+          let quadratic = add(
+            sub(pow(a.copy(), int(2)), mul(a.copy(), b.copy())),
+            pow(b.copy(), int(2)),
+          )
+          Some(mul(linear, quadratic))
+        }
+        _ => None
+      }
+    _ => None
+  }
+}
+
+///|
+fn factor_diff_cubes(expr : Expr) -> Expr? {
+  match expr {
+    Expr::Binary(BinaryOp::Sub, left, right) =>
+      match (match_pow_base(left, 3), match_pow_base(right, 3)) {
+        (Some(a), Some(b)) => {
+          let linear = sub(a.copy(), b.copy())
+          let quadratic = add(
+            add(pow(a.copy(), int(2)), mul(a.copy(), b.copy())),
+            pow(b.copy(), int(2)),
+          )
+          Some(mul(linear, quadratic))
+        }
+        _ => None
+      }
+    _ => None
+  }
+}
+
+///|
+fn factor_for_cancel(expr : Expr) -> Expr {
+  match factor_common_addition(expr.copy()) {
+    Some(result) => return result
+    None => ()
+  }
+  match factor_diff_squares(expr.copy()) {
+    Some(result) => return result
+    None => ()
+  }
+  match factor_square_plus(expr.copy()) {
+    Some(result) => return result
+    None => ()
+  }
+  match factor_square_minus(expr.copy()) {
+    Some(result) => return result
+    None => ()
+  }
+  match factor_sum_cubes(expr.copy()) {
+    Some(result) => return result
+    None => ()
+  }
+  match factor_diff_cubes(expr.copy()) {
+    Some(result) => return result
+    None => ()
+  }
+  expr
+}
+
+///|
 /// 输入表达式输出系数和因子数组，以供合并同类项
 fn extract_polynomial_term(expr : Expr) -> (Expr, Array[Expr]) {
   match expr {
@@ -2620,9 +2993,68 @@ fn simplify_div(left : Expr, right : Expr) -> Expr {
           Expr::Binary(BinaryOp::Div, Expr::Int(lhs), Expr::Int(rhs))
         }
       (Expr::Double(lhs), Expr::Double(rhs)) => Expr::Double(lhs / rhs)
-      (lhs, rhs) => Expr::Binary(BinaryOp::Div, lhs, rhs)
+      (lhs, rhs) => {
+        let (reduced_num, reduced_den) = cancel_fraction_factors(lhs, rhs)
+        let (den_is_one, den_clean) = simplify_is_one_literal(reduced_den)
+        if den_is_one {
+          reduced_num
+        } else {
+          Expr::Binary(BinaryOp::Div, reduced_num, den_clean)
+        }
+      }
     }
   }
+}
+
+///|
+fn cancel_fraction_factors(
+  numerator : Expr,
+  denominator : Expr,
+) -> (Expr, Expr) {
+  let factored_num = factor_for_cancel(numerator.copy())
+  let factored_den = factor_for_cancel(denominator.copy())
+  let numerator_factors = collect_mul_factors(factored_num, Array::new())
+  let denominator_factors = collect_mul_factors(factored_den, Array::new())
+  if numerator_factors.length() == 0 || denominator_factors.length() == 0 {
+    return (numerator, denominator)
+  }
+  let den_used : Array[Bool] = Array::new(capacity=denominator_factors.length())
+  for _ in 0..<denominator_factors.length() {
+    den_used.push(false)
+  }
+  let remaining_num = Array::new()
+  let mut did_cancel = false
+  for factor in numerator_factors {
+    let mut cancelled = false
+    let len = denominator_factors.length()
+    for i in 0..<len {
+      if den_used[i] {
+        continue
+      }
+      if denominator_factors[i] == factor {
+        den_used[i] = true
+        cancelled = true
+        did_cancel = true
+        break
+      }
+    }
+    if !cancelled {
+      remaining_num.push(factor)
+    }
+  }
+  if !did_cancel {
+    return (numerator, denominator)
+  }
+  let remaining_den = Array::new()
+  let len = denominator_factors.length()
+  for i in 0..<len {
+    if !den_used[i] {
+      remaining_den.push(denominator_factors[i])
+    }
+  }
+  let new_numerator = build_monomial_from_factors(remaining_num)
+  let new_denominator = build_monomial_from_factors(remaining_den)
+  (simplify_reduce(new_numerator), simplify_reduce(new_denominator))
 }
 
 ///|
