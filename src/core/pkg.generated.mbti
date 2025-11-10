@@ -100,6 +100,8 @@ fn solve_linear_equation(Expr, Expr, String) -> Expr
 
 fn solve_linear_system(Expr, Expr, Expr, Expr, String, String) -> (Expr, Expr)
 
+fn solve_linear_system_n(Array[(Expr, Expr)], Array[String]) -> Array[Expr]
+
 fn sub(Expr, Expr) -> Expr
 
 fn sym(String) -> Expr
@@ -163,7 +165,7 @@ pub enum Pattern {
 fn Pattern::copy(Self) -> Self
 
 pub struct PatternBindings {
-  entries : Array[(String, Expr)]
+  entries : Map[String, Expr]
 }
 fn PatternBindings::bind_expr(Self, String, Expr) -> Self?
 fn PatternBindings::contains(Self, String) -> Bool
