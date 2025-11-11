@@ -86,3 +86,101 @@ test "differentiate higher order derivatives" {
 }
 
 ///|
+test "differentiate exponential-log chain" {
+  let x = sym("x")
+  let log_arg = pow(x, int(2)) + int(1)
+  let expr = exp(sin(x) * log(log_arg))
+  let result = simplify(differentiate(expr, "x"))
+  let inner_diff = simplify(
+    sin(x) * div(int(2) * x, log_arg) + cos(x) * log(log_arg),
+  )
+  let expected = simplify(exp(sin(x) * log(log_arg)) * inner_diff)
+  assert_eq(result, expected)
+  inspect(
+    result,
+    content="exp(sin(x) * log(x ^ 2 + 1)) * ((2 * x * sin(x)) / (x ^ 2 + 1) + cos(x) * log(x ^ 2 + 1))",
+  )
+}
+
+///|
+test "differentiate quotient of products" {
+  let x = sym("x")
+  let quadratic = pow(x, int(2))
+  let numerator = sin(x) * exp(quadratic)
+  let denominator = log(x) + pow(x, int(3))
+  let expr = div(numerator, denominator)
+  let result = simplify(differentiate(expr, "x"))
+  let numerator_diff = simplify(
+    sin(x) * exp(quadratic) * (int(2) * x) + cos(x) * exp(quadratic),
+  )
+  let denominator_diff = simplify(div(int(1), x) + int(3) * pow(x, int(2)))
+  let expected = simplify(
+    div(
+      numerator_diff * denominator - numerator * denominator_diff,
+      pow(denominator, int(2)),
+    ),
+  )
+  assert_eq(result, expected)
+  inspect(
+    result,
+    content="((2 * x * sin(x) * exp(x ^ 2) + cos(x) * exp(x ^ 2)) * (log(x) + x ^ 3) - sin(x) * exp(x ^ 2) * (1 / x + 3 * x ^ 2)) / (log(x) + x ^ 3) ^ 2",
+  )
+}
+
+///|
+test "differentiate absolute composite expression" {
+  let x = sym("x")
+  let cubic = pow(x, int(3))
+  let inner = sin(x) * cubic
+  let expr = abs(inner)
+  let result = simplify(differentiate(expr, "x"))
+  let normalized = simplify(div(inner, expr))
+  let inner_diff = simplify(int(3) * sin(x) * pow(x, int(2)) + cos(x) * cubic)
+  let expected = simplify(normalized * inner_diff)
+  assert_eq(result, expected)
+  inspect(
+    result,
+    content="(x ^ 3 * sin(x) * (3 * x ^ 2 * sin(x) + x ^ 3 * cos(x))) / abs(x ^ 3 * sin(x))",
+  )
+}
+
+///|
+test "differentiate nested sine exponential cosine" {
+  let x = sym("x")
+  let expr = sin(exp(cos(x)))
+  let result = simplify(differentiate(expr, "x"))
+  let expected = simplify(cos(exp(cos(x))) * exp(cos(x)) * neg(sin(x)))
+  assert_eq(result, expected)
+  inspect(result, content="-(cos(exp(cos(x))) * exp(cos(x)) * sin(x))")
+}
+
+///|
+test "differentiate exponential product chain" {
+  let x = sym("x")
+  let inner = sin(x) * cos(exp(x))
+  let expr = exp(inner)
+  let result = simplify(differentiate(expr, "x"))
+  let inner_diff = simplify(
+    neg(exp(x) * sin(x) * sin(exp(x))) + cos(x) * cos(exp(x)),
+  )
+  let expected = simplify(expr * inner_diff)
+  assert_eq(result, expected)
+  inspect(
+    result,
+    content="exp(sin(x) * cos(exp(x))) * (-(exp(x) * sin(x) * sin(exp(x))) + cos(x) * cos(exp(x)))",
+  )
+}
+
+///|
+test "differentiate tangent exponential sine" {
+  let x = sym("x")
+  let inner = exp(sin(x))
+  let expr = tan(inner)
+  let result = simplify(differentiate(expr, "x"))
+  let inner_diff = simplify(inner * cos(x))
+  let expected = simplify(pow(cos(inner), int(-2)) * inner_diff)
+  assert_eq(result, expected)
+  inspect(result, content="cos(exp(sin(x))) ^ -2 * exp(sin(x)) * cos(x)")
+}
+
+///|
