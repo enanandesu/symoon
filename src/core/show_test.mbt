@@ -78,3 +78,13 @@ test "to_latex formats expressions" {
   assert_eq(to_latex(pow_expr), "\\left(x + y\\right)^{2}")
   assert_eq(to_latex(abs(x)), "\\left|x\\right|")
 }
+
+///|
+test "to_latex formats special constants" {
+  assert_eq(to_latex(sym("pi")), "\\pi")
+  assert_eq(to_latex(sym("Pi")), "\\pi")
+  assert_eq(to_latex(sym("Sqrt2")), "\\sqrt{2}")
+  assert_eq(to_latex(sym("Sqrt5")), "\\sqrt{5}")
+  assert_eq(to_latex(sym("Tau")), "\\tau")
+  assert_eq(to_latex(sym("I")), "i")
+}

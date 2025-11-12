@@ -142,11 +142,59 @@ fn latex_wrap(content : String, wrap : Bool) -> String {
 }
 
 ///|
+fn format_symbol_latex(symbol : Symbol) -> String {
+  let name = symbol.name
+  if name == "pi" || name == "Pi" {
+    return "\\pi"
+  }
+  if name == "tau" || name == "Tau" {
+    return "\\tau"
+  }
+  if name == "E" {
+    return "e"
+  }
+  if name == "EulerGamma" {
+    return "\\gamma"
+  }
+  if name == "Catalan" {
+    return "G"
+  }
+  if name == "GoldenRatio" {
+    return "\\varphi"
+  }
+  if name == "GoldenRatioConjugate" {
+    return "\\varphi^{*}"
+  }
+  if name == "SilverRatio" {
+    return "\\delta_{S}"
+  }
+  if name == "Sqrt2" {
+    return "\\sqrt{2}"
+  }
+  if name == "Sqrt3" {
+    return "\\sqrt{3}"
+  }
+  if name == "Sqrt5" {
+    return "\\sqrt{5}"
+  }
+  if name == "Log2" {
+    return "\\log 2"
+  }
+  if name == "Log10E" {
+    return "\\log_{10} e"
+  }
+  if name == "I" || name == "ImaginaryUnit" {
+    return "i"
+  }
+  name
+}
+
+///|
 fn format_expr_latex(expr : Expr, wrap : Bool) -> String {
   match expr {
     Int(value) => value.to_string()
     Double(value) => value.to_string()
-    Symbol(symbol) => symbol.name
+    Symbol(symbol) => format_symbol_latex(symbol)
     Unary(Neg, inner) => {
       let base = match inner {
         Int(value) => "-" + value.to_string()
