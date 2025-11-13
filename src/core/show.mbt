@@ -143,50 +143,23 @@ fn latex_wrap(content : String, wrap : Bool) -> String {
 
 ///|
 fn format_symbol_latex(symbol : Symbol) -> String {
-  let name = symbol.name
-  if name == "pi" || name == "Pi" {
-    return "\\pi"
+  match symbol.name {
+    "pi" | "Pi" => "\\pi"
+    "tau" | "Tau" => "\\tau"
+    "E" => "e"
+    "EulerGamma" => "\\gamma"
+    "Catalan" => "G"
+    "GoldenRatio" => "\\varphi"
+    "GoldenRatioConjugate" => "\\varphi^{*)"
+    "SilverRatio" => "\\delta_{S}"
+    "Sqrt2" => "\\sqrt{2}"
+    "Sqrt3" => "\\sqrt{3}"
+    "Sqrt5" => "\\sqrt{5}"
+    "Log2" => "\\log 2"
+    "Log10E" => "\\log_{10} e"
+    "I" | "ImaginaryUnit" => "i"
+    name => name
   }
-  if name == "tau" || name == "Tau" {
-    return "\\tau"
-  }
-  if name == "E" {
-    return "e"
-  }
-  if name == "EulerGamma" {
-    return "\\gamma"
-  }
-  if name == "Catalan" {
-    return "G"
-  }
-  if name == "GoldenRatio" {
-    return "\\varphi"
-  }
-  if name == "GoldenRatioConjugate" {
-    return "\\varphi^{*}"
-  }
-  if name == "SilverRatio" {
-    return "\\delta_{S}"
-  }
-  if name == "Sqrt2" {
-    return "\\sqrt{2}"
-  }
-  if name == "Sqrt3" {
-    return "\\sqrt{3}"
-  }
-  if name == "Sqrt5" {
-    return "\\sqrt{5}"
-  }
-  if name == "Log2" {
-    return "\\log 2"
-  }
-  if name == "Log10E" {
-    return "\\log_{10} e"
-  }
-  if name == "I" || name == "ImaginaryUnit" {
-    return "i"
-  }
-  name
 }
 
 ///|
