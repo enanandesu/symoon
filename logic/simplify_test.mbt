@@ -27,3 +27,5 @@ test "logic_simplify_with_assignments simplifies implications" {
   let reduced = logic_simplify_with_assignments(expr, env)
   assert_eq(reduced, conclusion)
 }
+
+///|
