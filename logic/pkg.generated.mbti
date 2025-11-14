@@ -1,0 +1,67 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "enanandesu/symoon/logic"
+
+// Values
+const LOGIC_AND_SYMBOL : String = "And"
+
+const LOGIC_EQUIVALENT_SYMBOL : String = "Equivalent"
+
+const LOGIC_FALSE_SYMBOL : String = "False"
+
+const LOGIC_IMPLIES_SYMBOL : String = "Implies"
+
+const LOGIC_NOT_SYMBOL : String = "Not"
+
+const LOGIC_OR_SYMBOL : String = "Or"
+
+const LOGIC_TRUE_SYMBOL : String = "True"
+
+const LOGIC_XOR_SYMBOL : String = "Xor"
+
+fn logic_and(Array[LogicExpr]) -> LogicExpr
+
+fn logic_equivalent(LogicExpr, LogicExpr) -> LogicExpr
+
+fn logic_eval(LogicExpr, Array[(String, Bool)]) -> Bool?
+
+fn logic_false() -> LogicExpr
+
+fn logic_implies(LogicExpr, LogicExpr) -> LogicExpr
+
+fn logic_normalize(LogicExpr) -> LogicExpr
+
+fn logic_not(LogicExpr) -> LogicExpr
+
+fn logic_or(Array[LogicExpr]) -> LogicExpr
+
+fn logic_simplify(LogicExpr) -> LogicExpr
+
+fn logic_simplify_with_assignments(LogicExpr, Array[(String, Bool)]) -> LogicExpr
+
+fn logic_symbol(String) -> LogicExpr
+
+fn logic_true() -> LogicExpr
+
+fn logic_xor(Array[LogicExpr]) -> LogicExpr
+
+// Errors
+
+// Types and methods
+pub enum LogicExpr {
+  Bool(Bool)
+  Symbol(String)
+  Not(LogicExpr)
+  And(Array[LogicExpr])
+  Or(Array[LogicExpr])
+  Xor(Array[LogicExpr])
+  Implies(LogicExpr, LogicExpr)
+  Equivalent(LogicExpr, LogicExpr)
+}
+fn LogicExpr::copy(Self) -> Self
+impl Eq for LogicExpr
+impl Show for LogicExpr
+
+// Type aliases
+
+// Traits
+
