@@ -1,18 +1,10 @@
 ///|
-fn unwrap_binding(bindings : PatternBindings, name : String) -> Expr {
-  match PatternBindings::get(bindings, name) {
-    Some(expr) => expr
-    None => abort("missing binding: " + name)
-  }
-}
-
-///|
 test "pattern wildcard binding captures operand" {
   let expr = add(sym("x"), int(2))
   let pattern = pattern_binary(pattern_wildcard("lhs"), pattern_int())
   match match_expr(pattern, expr) {
     Some(bindings) => {
-      let bound = unwrap_binding(bindings, "lhs")
+      let bound = PatternBindings::expect(bindings, "lhs")
       inspect(bound, content="x")
     }
     None => abort("expected wildcard match")
@@ -75,7 +67,7 @@ test "rewrite applies rule repeatedly" {
       _ => false
     },
   )
-  let add_zero_rule = RewriteRule::new(add_pattern, (bindings : PatternBindings) => unwrap_binding(
+  let add_zero_rule = RewriteRule::new(add_pattern, (bindings : PatternBindings) => PatternBindings::expect(
     bindings, "expr",
   ))
   let expr = add(sym("x"), int(0))

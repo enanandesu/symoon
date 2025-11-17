@@ -18,21 +18,15 @@ const LOGIC_TRUE_SYMBOL : String = "True"
 
 const LOGIC_XOR_SYMBOL : String = "Xor"
 
-fn logic_and(Array[LogicExpr]) -> LogicExpr
+fn logic_apply_and_eval(LogicExpr, Array[(String, Bool)]) -> (LogicExpr, Bool?)
 
-fn logic_equivalent(LogicExpr, LogicExpr) -> LogicExpr
+fn logic_apply_assignments(LogicExpr, Array[(String, Bool)]) -> LogicExpr
 
 fn logic_eval(LogicExpr, Array[(String, Bool)]) -> Bool?
 
 fn logic_false() -> LogicExpr
 
-fn logic_implies(LogicExpr, LogicExpr) -> LogicExpr
-
 fn logic_normalize(LogicExpr) -> LogicExpr
-
-fn logic_not(LogicExpr) -> LogicExpr
-
-fn logic_or(Array[LogicExpr]) -> LogicExpr
 
 fn logic_simplify(LogicExpr) -> LogicExpr
 
@@ -41,8 +35,6 @@ fn logic_simplify_with_assignments(LogicExpr, Array[(String, Bool)]) -> LogicExp
 fn logic_symbol(String) -> LogicExpr
 
 fn logic_true() -> LogicExpr
-
-fn logic_xor(Array[LogicExpr]) -> LogicExpr
 
 // Errors
 

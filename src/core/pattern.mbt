@@ -61,6 +61,14 @@ pub fn PatternBindings::get(self : PatternBindings, name : String) -> Expr? {
 }
 
 ///|
+pub fn PatternBindings::expect(self : PatternBindings, name : String) -> Expr {
+  match self.entries.get(name) {
+    Some(expr) => expr
+    None => abort("missing binding: " + name)
+  }
+}
+
+///|
 pub fn PatternBindings::contains(self : PatternBindings, name : String) -> Bool {
   self.entries.contains(name)
 }

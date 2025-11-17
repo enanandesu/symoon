@@ -1,12 +1,4 @@
 ///|
-fn unwrap_binding(bindings : PatternBindings, name : String) -> Expr {
-  match PatternBindings::get(bindings, name) {
-    Some(expr) => expr
-    None => abort("missing binding: " + name)
-  }
-}
-
-///|
 fn pow_root_guard(_expr : Expr, bindings : PatternBindings) -> Bool {
   match PatternBindings::get(bindings, "n_expr") {
     Some(Expr::Int(value)) => value > 0
@@ -860,8 +852,8 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   let pow_root_rule = RewriteRule::new(pow_root_pattern, (
     bindings : PatternBindings,
   ) => {
-    let base_expr = unwrap_binding(bindings.copy(), "inner_base")
-    let exponent_expr = unwrap_binding(bindings, "n_expr")
+    let base_expr = PatternBindings::expect(bindings.copy(), "inner_base")
+    let exponent_expr = PatternBindings::expect(bindings, "n_expr")
     match exponent_expr {
       Expr::Int(value) =>
         if value % 2 == 0 {
@@ -878,7 +870,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
     op=Some(UnaryOp::Log),
   )
   rules.push(
-    RewriteRule::new(log_exp_pattern, (bindings : PatternBindings) => unwrap_binding(
+    RewriteRule::new(log_exp_pattern, (bindings : PatternBindings) => PatternBindings::expect(
       bindings, "inner",
     )),
   )
@@ -887,7 +879,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
     op=Some(UnaryOp::Exp),
   )
   rules.push(
-    RewriteRule::new(exp_log_pattern, (bindings : PatternBindings) => unwrap_binding(
+    RewriteRule::new(exp_log_pattern, (bindings : PatternBindings) => PatternBindings::expect(
       bindings, "inner",
     )),
   )
@@ -898,8 +890,8 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(log_add_pattern, (bindings : PatternBindings) => {
-      let a = unwrap_binding(bindings.copy(), "log_a")
-      let b = unwrap_binding(bindings, "log_b")
+      let a = PatternBindings::expect(bindings.copy(), "log_a")
+      let b = PatternBindings::expect(bindings, "log_b")
       log(mul(a, b))
     }),
   )
@@ -910,8 +902,8 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(log_sub_pattern, (bindings : PatternBindings) => {
-      let a = unwrap_binding(bindings.copy(), "log_a")
-      let b = unwrap_binding(bindings, "log_b")
+      let a = PatternBindings::expect(bindings.copy(), "log_a")
+      let b = PatternBindings::expect(bindings, "log_b")
       log(div(a, b))
     }),
   )
@@ -944,7 +936,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   ) => can_reduce_sum_expr(candidate.copy()))
   rules.push(
     RewriteRule::new(trig_sum_pattern, (bindings : PatternBindings) => {
-      let target = unwrap_binding(bindings, "trig_sum_expr")
+      let target = PatternBindings::expect(bindings, "trig_sum_expr")
       match reduce_sum_expr(target.copy()) {
         Some(result) => result
         None => target
@@ -958,7 +950,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(cos_sq_minus_sin_sq, (bindings : PatternBindings) => {
-      let angle = unwrap_binding(bindings, "py_theta")
+      let angle = PatternBindings::expect(bindings, "py_theta")
       cos(mul(int(2), angle))
     }),
   )
@@ -969,7 +961,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(sin_sq_minus_cos_sq, (bindings : PatternBindings) => {
-      let angle = unwrap_binding(bindings, "py_theta")
+      let angle = PatternBindings::expect(bindings, "py_theta")
       neg(cos(mul(int(2), angle)))
     }),
   )
@@ -991,7 +983,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   let tan_sq_sum = pattern_sum(tan_sq_sum_terms)
   rules.push(
     RewriteRule::new(tan_sq_sum, (bindings : PatternBindings) => {
-      let angle = unwrap_binding(bindings, "tan_theta")
+      let angle = PatternBindings::expect(bindings, "tan_theta")
       pow(cos(angle), int(-2))
     }),
   )
@@ -1001,7 +993,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   let tan_neg_sq_sum = pattern_sum(tan_neg_sq_sum_terms)
   rules.push(
     RewriteRule::new(tan_neg_sq_sum, (bindings : PatternBindings) => {
-      let angle = unwrap_binding(bindings, "tan_theta")
+      let angle = PatternBindings::expect(bindings, "tan_theta")
       pow(sin(angle), int(-2))
     }),
   )
@@ -1016,7 +1008,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   let tan_sq_div_sum = pattern_sum(tan_sq_div_sum_terms)
   rules.push(
     RewriteRule::new(tan_sq_div_sum, (bindings : PatternBindings) => {
-      let angle = unwrap_binding(bindings, "tan_theta")
+      let angle = PatternBindings::expect(bindings, "tan_theta")
       pow(sin(angle), int(-2))
     }),
   )
@@ -1044,8 +1036,8 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(tan_add_fraction, (bindings : PatternBindings) => {
-      let a = unwrap_binding(bindings.copy(), "tan_sum_a")
-      let b = unwrap_binding(bindings, "tan_sum_b")
+      let a = PatternBindings::expect(bindings.copy(), "tan_sum_a")
+      let b = PatternBindings::expect(bindings, "tan_sum_b")
       tan(add(a, b))
     }),
   )
@@ -1069,8 +1061,8 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(tan_sub_fraction, (bindings : PatternBindings) => {
-      let a = unwrap_binding(bindings.copy(), "tan_sum_a")
-      let b = unwrap_binding(bindings, "tan_sum_b")
+      let a = PatternBindings::expect(bindings.copy(), "tan_sum_a")
+      let b = PatternBindings::expect(bindings, "tan_sum_b")
       tan(sub(a, b))
     }),
   )
@@ -1094,7 +1086,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(tan_double_fraction, (bindings : PatternBindings) => {
-      let angle = unwrap_binding(bindings, "tan_theta")
+      let angle = PatternBindings::expect(bindings, "tan_theta")
       tan(mul(int(2), angle))
     }),
   )
@@ -1127,8 +1119,8 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(sin_sum_pattern, (bindings : PatternBindings) => {
-      let a = unwrap_binding(bindings.copy(), "sum_a")
-      let b = unwrap_binding(bindings, "sum_b")
+      let a = PatternBindings::expect(bindings.copy(), "sum_a")
+      let b = PatternBindings::expect(bindings, "sum_b")
       sin(add(a, b))
     }),
   )
@@ -1139,8 +1131,8 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(sin_sum_pattern_swapped, (bindings : PatternBindings) => {
-      let a = unwrap_binding(bindings.copy(), "sum_a")
-      let b = unwrap_binding(bindings, "sum_b")
+      let a = PatternBindings::expect(bindings.copy(), "sum_a")
+      let b = PatternBindings::expect(bindings, "sum_b")
       sin(add(a, b))
     }),
   )
@@ -1151,8 +1143,8 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(sin_diff_pattern, (bindings : PatternBindings) => {
-      let a = unwrap_binding(bindings.copy(), "sum_a")
-      let b = unwrap_binding(bindings, "sum_b")
+      let a = PatternBindings::expect(bindings.copy(), "sum_a")
+      let b = PatternBindings::expect(bindings, "sum_b")
       sin(sub(a, b))
     }),
   )
@@ -1163,8 +1155,8 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(sin_diff_pattern_swapped, (bindings : PatternBindings) => {
-      let a = unwrap_binding(bindings.copy(), "sum_a")
-      let b = unwrap_binding(bindings, "sum_b")
+      let a = PatternBindings::expect(bindings.copy(), "sum_a")
+      let b = PatternBindings::expect(bindings, "sum_b")
       sin(sub(b, a))
     }),
   )
@@ -1224,29 +1216,29 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(sin_plus_special, (bindings : PatternBindings) => {
-      let primary = unwrap_binding(bindings.copy(), "sum_prod_primary")
-      let secondary = unwrap_binding(bindings, "sum_prod_secondary")
+      let primary = PatternBindings::expect(bindings.copy(), "sum_prod_primary")
+      let secondary = PatternBindings::expect(bindings, "sum_prod_secondary")
       mul(int(2), mul(sin(primary.copy()), cos(secondary.copy())))
     }),
   )
   rules.push(
     RewriteRule::new(sin_plus_special_swapped, (bindings : PatternBindings) => {
-      let primary = unwrap_binding(bindings.copy(), "sum_prod_primary")
-      let secondary = unwrap_binding(bindings, "sum_prod_secondary")
+      let primary = PatternBindings::expect(bindings.copy(), "sum_prod_primary")
+      let secondary = PatternBindings::expect(bindings, "sum_prod_secondary")
       mul(int(2), mul(sin(primary.copy()), cos(secondary.copy())))
     }),
   )
   rules.push(
     RewriteRule::new(sin_minus_special, (bindings : PatternBindings) => {
-      let primary = unwrap_binding(bindings.copy(), "sum_prod_primary")
-      let secondary = unwrap_binding(bindings, "sum_prod_secondary")
+      let primary = PatternBindings::expect(bindings.copy(), "sum_prod_primary")
+      let secondary = PatternBindings::expect(bindings, "sum_prod_secondary")
       mul(int(2), mul(cos(primary.copy()), sin(secondary.copy())))
     }),
   )
   rules.push(
     RewriteRule::new(sin_minus_special_swapped, (bindings : PatternBindings) => {
-      let primary = unwrap_binding(bindings.copy(), "sum_prod_primary")
-      let secondary = unwrap_binding(bindings, "sum_prod_secondary")
+      let primary = PatternBindings::expect(bindings.copy(), "sum_prod_primary")
+      let secondary = PatternBindings::expect(bindings, "sum_prod_secondary")
       mul(int(-2), mul(cos(primary.copy()), sin(secondary.copy())))
     }),
   )
@@ -1272,29 +1264,29 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(cos_plus_special, (bindings : PatternBindings) => {
-      let primary = unwrap_binding(bindings.copy(), "sum_prod_primary")
-      let secondary = unwrap_binding(bindings, "sum_prod_secondary")
+      let primary = PatternBindings::expect(bindings.copy(), "sum_prod_primary")
+      let secondary = PatternBindings::expect(bindings, "sum_prod_secondary")
       mul(int(2), mul(cos(primary.copy()), cos(secondary.copy())))
     }),
   )
   rules.push(
     RewriteRule::new(cos_plus_special_swapped, (bindings : PatternBindings) => {
-      let primary = unwrap_binding(bindings.copy(), "sum_prod_primary")
-      let secondary = unwrap_binding(bindings, "sum_prod_secondary")
+      let primary = PatternBindings::expect(bindings.copy(), "sum_prod_primary")
+      let secondary = PatternBindings::expect(bindings, "sum_prod_secondary")
       mul(int(2), mul(cos(primary.copy()), cos(secondary.copy())))
     }),
   )
   rules.push(
     RewriteRule::new(cos_minus_special, (bindings : PatternBindings) => {
-      let primary = unwrap_binding(bindings.copy(), "sum_prod_primary")
-      let secondary = unwrap_binding(bindings, "sum_prod_secondary")
+      let primary = PatternBindings::expect(bindings.copy(), "sum_prod_primary")
+      let secondary = PatternBindings::expect(bindings, "sum_prod_secondary")
       mul(int(-2), mul(sin(primary.copy()), sin(secondary.copy())))
     }),
   )
   rules.push(
     RewriteRule::new(cos_minus_special_swapped, (bindings : PatternBindings) => {
-      let primary = unwrap_binding(bindings.copy(), "sum_prod_primary")
-      let secondary = unwrap_binding(bindings, "sum_prod_secondary")
+      let primary = PatternBindings::expect(bindings.copy(), "sum_prod_primary")
+      let secondary = PatternBindings::expect(bindings, "sum_prod_secondary")
       mul(int(2), mul(sin(primary.copy()), sin(secondary.copy())))
     }),
   )
@@ -1305,8 +1297,8 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(cos_sum_pattern, (bindings : PatternBindings) => {
-      let a = unwrap_binding(bindings.copy(), "sum_a")
-      let b = unwrap_binding(bindings, "sum_b")
+      let a = PatternBindings::expect(bindings.copy(), "sum_a")
+      let b = PatternBindings::expect(bindings, "sum_b")
       cos(add(a, b))
     }),
   )
@@ -1317,8 +1309,8 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(cos_sum_pattern_swapped, (bindings : PatternBindings) => {
-      let a = unwrap_binding(bindings.copy(), "sum_a")
-      let b = unwrap_binding(bindings, "sum_b")
+      let a = PatternBindings::expect(bindings.copy(), "sum_a")
+      let b = PatternBindings::expect(bindings, "sum_b")
       neg(cos(add(a, b)))
     }),
   )
@@ -1329,8 +1321,8 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(cos_diff_pattern, (bindings : PatternBindings) => {
-      let a = unwrap_binding(bindings.copy(), "sum_a")
-      let b = unwrap_binding(bindings, "sum_b")
+      let a = PatternBindings::expect(bindings.copy(), "sum_a")
+      let b = PatternBindings::expect(bindings, "sum_b")
       cos(sub(a, b))
     }),
   )
@@ -1341,8 +1333,8 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(cos_diff_pattern_swapped, (bindings : PatternBindings) => {
-      let a = unwrap_binding(bindings.copy(), "sum_a")
-      let b = unwrap_binding(bindings, "sum_b")
+      let a = PatternBindings::expect(bindings.copy(), "sum_a")
+      let b = PatternBindings::expect(bindings, "sum_b")
       cos(sub(a, b))
     }),
   )
@@ -1457,7 +1449,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(one_minus_tanh_sq, (bindings : PatternBindings) => {
-      let angle = unwrap_binding(bindings, "hyp_theta")
+      let angle = PatternBindings::expect(bindings, "hyp_theta")
       pow(cosh(angle), int(-2))
     }),
   )
@@ -1477,7 +1469,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(tanh_neg_sq_minus_one, (bindings : PatternBindings) => {
-      let angle = unwrap_binding(bindings, "hyp_theta")
+      let angle = PatternBindings::expect(bindings, "hyp_theta")
       pow(sinh(angle), int(-2))
     }),
   )
@@ -1502,8 +1494,8 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(sinh_sum_pattern_h, (bindings : PatternBindings) => {
-      let a = unwrap_binding(bindings.copy(), "hsum_a")
-      let b = unwrap_binding(bindings, "hsum_b")
+      let a = PatternBindings::expect(bindings.copy(), "hsum_a")
+      let b = PatternBindings::expect(bindings, "hsum_b")
       sinh(add(a, b))
     }),
   )
@@ -1514,8 +1506,8 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(sinh_diff_pattern_h, (bindings : PatternBindings) => {
-      let a = unwrap_binding(bindings.copy(), "hsum_a")
-      let b = unwrap_binding(bindings, "hsum_b")
+      let a = PatternBindings::expect(bindings.copy(), "hsum_a")
+      let b = PatternBindings::expect(bindings, "hsum_b")
       sinh(sub(a, b))
     }),
   )
@@ -1534,8 +1526,8 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(cosh_sum_pattern_h, (bindings : PatternBindings) => {
-      let a = unwrap_binding(bindings.copy(), "hsum_a")
-      let b = unwrap_binding(bindings, "hsum_b")
+      let a = PatternBindings::expect(bindings.copy(), "hsum_a")
+      let b = PatternBindings::expect(bindings, "hsum_b")
       cosh(add(a, b))
     }),
   )
@@ -1546,8 +1538,8 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(cosh_diff_pattern_h, (bindings : PatternBindings) => {
-      let a = unwrap_binding(bindings.copy(), "hsum_a")
-      let b = unwrap_binding(bindings, "hsum_b")
+      let a = PatternBindings::expect(bindings.copy(), "hsum_a")
+      let b = PatternBindings::expect(bindings, "hsum_b")
       cosh(sub(a, b))
     }),
   )
@@ -1593,15 +1585,15 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(sinh_special_sum, (bindings : PatternBindings) => {
-      let primary = unwrap_binding(bindings.copy(), "hs_primary")
-      let secondary = unwrap_binding(bindings, "hs_secondary")
+      let primary = PatternBindings::expect(bindings.copy(), "hs_primary")
+      let secondary = PatternBindings::expect(bindings, "hs_secondary")
       mul(int(2), mul(sinh(primary.copy()), cosh(secondary.copy())))
     }),
   )
   rules.push(
     RewriteRule::new(sinh_special_diff, (bindings : PatternBindings) => {
-      let primary = unwrap_binding(bindings.copy(), "hs_primary")
-      let secondary = unwrap_binding(bindings, "hs_secondary")
+      let primary = PatternBindings::expect(bindings.copy(), "hs_primary")
+      let secondary = PatternBindings::expect(bindings, "hs_secondary")
       mul(int(2), mul(cosh(primary.copy()), sinh(secondary.copy())))
     }),
   )
@@ -1647,15 +1639,15 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(cosh_special_sum, (bindings : PatternBindings) => {
-      let primary = unwrap_binding(bindings.copy(), "ch_primary")
-      let secondary = unwrap_binding(bindings, "ch_secondary")
+      let primary = PatternBindings::expect(bindings.copy(), "ch_primary")
+      let secondary = PatternBindings::expect(bindings, "ch_secondary")
       mul(int(2), mul(cosh(primary.copy()), cosh(secondary.copy())))
     }),
   )
   rules.push(
     RewriteRule::new(cosh_special_diff, (bindings : PatternBindings) => {
-      let primary = unwrap_binding(bindings.copy(), "ch_primary")
-      let secondary = unwrap_binding(bindings, "ch_secondary")
+      let primary = PatternBindings::expect(bindings.copy(), "ch_primary")
+      let secondary = PatternBindings::expect(bindings, "ch_secondary")
       mul(int(2), mul(sinh(primary.copy()), sinh(secondary.copy())))
     }),
   )
@@ -1666,7 +1658,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(sinh_add_linear, (bindings : PatternBindings) => {
-      let angle = unwrap_binding(bindings, "hyp_theta")
+      let angle = PatternBindings::expect(bindings, "hyp_theta")
       exp(angle)
     }),
   )
@@ -1677,7 +1669,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(sinh_add_linear_swapped, (bindings : PatternBindings) => {
-      let angle = unwrap_binding(bindings, "hyp_theta")
+      let angle = PatternBindings::expect(bindings, "hyp_theta")
       exp(angle)
     }),
   )
@@ -1688,7 +1680,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(sinh_sub_linear, (bindings : PatternBindings) => {
-      let angle = unwrap_binding(bindings, "hyp_theta")
+      let angle = PatternBindings::expect(bindings, "hyp_theta")
       exp(neg(angle))
     }),
   )
@@ -1699,7 +1691,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(sinh_sub_linear_swapped, (bindings : PatternBindings) => {
-      let angle = unwrap_binding(bindings, "hyp_theta")
+      let angle = PatternBindings::expect(bindings, "hyp_theta")
       neg(exp(neg(angle)))
     }),
   )
@@ -1710,7 +1702,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(one_minus_two_sin_sq, (bindings : PatternBindings) => {
-      let angle = unwrap_binding(bindings, "dbl_theta")
+      let angle = PatternBindings::expect(bindings, "dbl_theta")
       cos(mul(int(2), angle))
     }),
   )
@@ -1721,7 +1713,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(two_cos_sq_minus_one, (bindings : PatternBindings) => {
-      let angle = unwrap_binding(bindings, "dbl_theta")
+      let angle = PatternBindings::expect(bindings, "dbl_theta")
       cos(mul(int(2), angle))
     }),
   )
@@ -1732,7 +1724,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(two_sin_sq_minus_one, (bindings : PatternBindings) => {
-      let angle = unwrap_binding(bindings, "dbl_theta")
+      let angle = PatternBindings::expect(bindings, "dbl_theta")
       neg(cos(mul(int(2), angle)))
     }),
   )
@@ -1743,7 +1735,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(one_minus_two_cos_sq, (bindings : PatternBindings) => {
-      let angle = unwrap_binding(bindings, "dbl_theta")
+      let angle = PatternBindings::expect(bindings, "dbl_theta")
       neg(cos(mul(int(2), angle)))
     }),
   )
@@ -1796,7 +1788,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   for candidate in double_patterns {
     rules.push(
       RewriteRule::new(candidate, (bindings : PatternBindings) => {
-        let angle = unwrap_binding(bindings, "dbl_theta")
+        let angle = PatternBindings::expect(bindings, "dbl_theta")
         sin(mul(int(2), angle))
       }),
     )
@@ -1807,7 +1799,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(sin_add_same, (bindings : PatternBindings) => {
-      let angle = unwrap_binding(bindings, "dbl_theta")
+      let angle = PatternBindings::expect(bindings, "dbl_theta")
       sin(mul(int(2), angle))
     }),
   )
@@ -1817,7 +1809,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
   )
   rules.push(
     RewriteRule::new(cos_add_same, (bindings : PatternBindings) => {
-      let angle = unwrap_binding(bindings, "dbl_theta")
+      let angle = PatternBindings::expect(bindings, "dbl_theta")
       cos(mul(int(2), angle))
     }),
   )

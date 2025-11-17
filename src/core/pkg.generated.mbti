@@ -170,6 +170,7 @@ pub struct PatternBindings {
 fn PatternBindings::bind_expr(Self, String, Expr) -> Self?
 fn PatternBindings::contains(Self, String) -> Bool
 fn PatternBindings::copy(Self) -> Self
+fn PatternBindings::expect(Self, String) -> Expr
 fn PatternBindings::get(Self, String) -> Expr?
 fn PatternBindings::is_empty(Self) -> Bool
 fn PatternBindings::len(Self) -> Int
