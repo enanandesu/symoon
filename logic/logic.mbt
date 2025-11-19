@@ -201,7 +201,6 @@ fn lookup_assignment(
   (assignments, None)
 }
 
-///|
 fn normalize_operands(operands : Array[LogicExpr]) -> Array[LogicExpr] {
   let len = operands.length()
   let normalized = Array::new(capacity=len)

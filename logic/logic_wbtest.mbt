@@ -121,3 +121,14 @@ test "logic_eval resolves assignments and propagates unknowns" {
   assignments2.push(("A", true))
   assert_eq(logic_eval(expr, assignments2), None)
 }
+
+///|
+test "logic_and matches boolean conjunction truth table" {
+  let x = logic_symbol("x")
+  let y = logic_symbol("y")
+  let expr = logic_normalize(LogicExpr::And([x.copy(), y.copy()]))
+  let both_true : Array[(String, Bool)] = [("x", true), ("y", true)]
+  assert_eq(logic_eval(expr.copy(), both_true), Some(true))
+  let second_false : Array[(String, Bool)] = [("x", true), ("y", false)]
+  assert_eq(logic_eval(expr, second_false), Some(false))
+}
