@@ -24,6 +24,10 @@ fn logic_apply_assignments(LogicExpr, Array[(String, Bool)]) -> LogicExpr
 
 fn logic_eval(LogicExpr, Array[(String, Bool)]) -> Bool?
 
+fn logic_infer(Array[LogicExpr], LogicExpr) -> Bool
+
+fn logic_to_latex(LogicExpr) -> String
+
 fn logic_false() -> LogicExpr
 
 fn logic_normalize(LogicExpr) -> LogicExpr
@@ -56,4 +60,3 @@ impl Show for LogicExpr
 // Type aliases
 
 // Traits
-
