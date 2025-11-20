@@ -46,6 +46,12 @@ fn substitute_assignments(
       let replaced = substitute_term_list(terms, assignments)
       logic_normalize(LogicExpr::Xor(replaced))
     }
+    Ite(condition, then_branch, else_branch) => {
+      let next_condition = substitute_assignments(condition, assignments)
+      let next_then = substitute_assignments(then_branch, assignments)
+      let next_else = substitute_assignments(else_branch, assignments)
+      logic_normalize(LogicExpr::Ite(next_condition, next_then, next_else))
+    }
     Implies(lhs, rhs) => {
       let next_lhs = substitute_assignments(lhs, assignments)
       let next_rhs = substitute_assignments(rhs, assignments)

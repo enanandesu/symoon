@@ -30,3 +30,15 @@ test "logic_to_latex formats xor and constants" {
   )
   assert_eq(logic_to_latex(expr), "\\top \\oplus Flag \\oplus \\bot")
 }
+
+///|
+test "logic_to_latex prints ite expressions" {
+  let cond = logic_symbol("Cond")
+  let expr = logic_normalize(
+    LogicExpr::Ite(cond.copy(), logic_symbol("X"), logic_symbol("Y")),
+  )
+  assert_eq(
+    logic_to_latex(expr),
+    "\\operatorname{ITE}\\left(Cond, X, Y\\right)",
+  )
+}

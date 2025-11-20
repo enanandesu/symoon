@@ -40,6 +40,13 @@ fn collect_logic_symbols(
     And(terms) => collect_symbols_from_terms(terms, seen, symbols)
     Or(terms) => collect_symbols_from_terms(terms, seen, symbols)
     Xor(terms) => collect_symbols_from_terms(terms, seen, symbols)
+    Ite(condition, then_branch, else_branch) => {
+      let (after_condition, after_condition_symbols) =
+        collect_logic_symbols(condition, seen, symbols)
+      let (after_then, after_then_symbols) =
+        collect_logic_symbols(then_branch, after_condition, after_condition_symbols)
+      collect_logic_symbols(else_branch, after_then, after_then_symbols)
+    }
     Implies(lhs, rhs) => {
       let (after_lhs, names_after_lhs) =
         collect_logic_symbols(lhs, seen, symbols)

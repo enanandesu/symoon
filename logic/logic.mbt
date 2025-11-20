@@ -6,6 +6,7 @@ pub enum LogicExpr {
   And(Array[LogicExpr])
   Or(Array[LogicExpr])
   Xor(Array[LogicExpr])
+  Ite(LogicExpr, LogicExpr, LogicExpr)
   Implies(LogicExpr, LogicExpr)
   Equivalent(LogicExpr, LogicExpr)
 } derive(Show, Eq)
@@ -19,6 +20,8 @@ pub fn LogicExpr::copy(self : LogicExpr) -> LogicExpr {
     And(terms) => And(copy_terms(terms))
     Or(terms) => Or(copy_terms(terms))
     Xor(terms) => Xor(copy_terms(terms))
+    Ite(condition, then_branch, else_branch) =>
+      Ite(condition.copy(), then_branch.copy(), else_branch.copy())
     Implies(lhs, rhs) => Implies(lhs.copy(), rhs.copy())
     Equivalent(lhs, rhs) => Equivalent(lhs.copy(), rhs.copy())
   }
@@ -54,6 +57,19 @@ pub fn logic_xor(operands : Array[LogicExpr]) -> LogicExpr {
 }
 
 ///|
+pub fn logic_ite(
+  condition : LogicExpr,
+  then_branch : LogicExpr,
+  else_branch : LogicExpr,
+) -> LogicExpr {
+  logic_ite_internal(
+    logic_normalize(condition),
+    logic_normalize(then_branch),
+    logic_normalize(else_branch),
+  )
+}
+
+///|
 pub fn logic_implies(lhs : LogicExpr, rhs : LogicExpr) -> LogicExpr {
   logic_implies_internal(logic_normalize(lhs), logic_normalize(rhs))
 }
@@ -72,6 +88,12 @@ pub fn logic_normalize(expr : LogicExpr) -> LogicExpr {
     And(terms) => logic_and_internal(normalize_operands(terms))
     Or(terms) => logic_or_internal(normalize_operands(terms))
     Xor(terms) => logic_xor_internal(normalize_operands(terms))
+    Ite(condition, then_branch, else_branch) =>
+      logic_ite_internal(
+        logic_normalize(condition),
+        logic_normalize(then_branch),
+        logic_normalize(else_branch),
+      )
     Implies(lhs, rhs) =>
       logic_implies_internal(logic_normalize(lhs), logic_normalize(rhs))
     Equivalent(lhs, rhs) =>
@@ -181,6 +203,29 @@ fn logic_eval_internal(
         (Some(left_bool), Some(right_bool)) =>
           (env_after_rhs, Some(left_bool == right_bool))
         _ => (env_after_rhs, None)
+      }
+    }
+    Ite(condition, then_branch, else_branch) => {
+      let (env_after_condition, condition_value) =
+        logic_eval_internal(condition, assignments)
+      match condition_value {
+        Some(true) => logic_eval_internal(then_branch, env_after_condition)
+        Some(false) => logic_eval_internal(else_branch, env_after_condition)
+        None => {
+          let (env_after_then, then_value) =
+            logic_eval_internal(then_branch, env_after_condition)
+          let (env_after_else, else_value) =
+            logic_eval_internal(else_branch, env_after_then)
+          match (then_value, else_value) {
+            (Some(lhs_bool), Some(rhs_bool)) =>
+              if lhs_bool == rhs_bool {
+                (env_after_else, Some(lhs_bool))
+              } else {
+                (env_after_else, None)
+              }
+            _ => (env_after_else, None)
+          }
+        }
       }
     }
   }
@@ -456,6 +501,53 @@ fn logic_equivalent_internal(lhs : LogicExpr, rhs : LogicExpr) -> LogicExpr {
 }
 
 ///|
+fn logic_ite_internal(
+  condition : LogicExpr,
+  then_branch : LogicExpr,
+  else_branch : LogicExpr,
+) -> LogicExpr {
+  match condition {
+    Bool(true) => return then_branch
+    Bool(false) => return else_branch
+    _ => {}
+  }
+  if then_branch == else_branch {
+    return then_branch
+  }
+  match (then_branch, else_branch) {
+    (Bool(true), Bool(false)) => condition
+    (Bool(false), Bool(true)) => logic_not_canonical(condition)
+    (Bool(true), other) => {
+      let operands = Array::new(capacity=2)
+      operands.push(condition.copy())
+      operands.push(other)
+      logic_or_internal(operands)
+    }
+    (other, Bool(true)) => {
+      let negated = logic_not_canonical(condition.copy())
+      let operands = Array::new(capacity=2)
+      operands.push(negated)
+      operands.push(other)
+      logic_or_internal(operands)
+    }
+    (Bool(false), other) => {
+      let negated = logic_not_canonical(condition.copy())
+      let operands = Array::new(capacity=2)
+      operands.push(negated)
+      operands.push(other)
+      logic_and_internal(operands)
+    }
+    (other, Bool(false)) => {
+      let operands = Array::new(capacity=2)
+      operands.push(condition.copy())
+      operands.push(other)
+      logic_and_internal(operands)
+    }
+    (lhs, rhs) => Ite(condition, lhs, rhs)
+  }
+}
+
+///|
 fn logic_signature(expr : LogicExpr) -> String {
   match expr {
     Bool(value) => if value { LOGIC_TRUE_SYMBOL } else { LOGIC_FALSE_SYMBOL }
@@ -464,6 +556,8 @@ fn logic_signature(expr : LogicExpr) -> String {
     And(terms) => signature_for_list(LOGIC_AND_SYMBOL, terms)
     Or(terms) => signature_for_list(LOGIC_OR_SYMBOL, terms)
     Xor(terms) => signature_for_list(LOGIC_XOR_SYMBOL, terms)
+    Ite(condition, then_branch, else_branch) =>
+      ternary_signature(LOGIC_ITE_SYMBOL, condition, then_branch, else_branch)
     Implies(lhs, rhs) => binary_signature(LOGIC_IMPLIES_SYMBOL, lhs, rhs)
     Equivalent(lhs, rhs) => binary_signature(LOGIC_EQUIVALENT_SYMBOL, lhs, rhs)
   }
@@ -513,6 +607,25 @@ fn unary_signature(tag : String, expr : LogicExpr) -> String {
   builder.write_string(tag)
   builder.write_char('(')
   builder.write_string(logic_signature(expr))
+  builder.write_char(')')
+  builder.to_string()
+}
+
+///|
+fn ternary_signature(
+  tag : String,
+  first : LogicExpr,
+  second : LogicExpr,
+  third : LogicExpr,
+) -> String {
+  let builder = StringBuilder::new()
+  builder.write_string(tag)
+  builder.write_char('(')
+  builder.write_string(logic_signature(first))
+  builder.write_char(',')
+  builder.write_string(logic_signature(second))
+  builder.write_char(',')
+  builder.write_string(logic_signature(third))
   builder.write_char(')')
   builder.to_string()
 }

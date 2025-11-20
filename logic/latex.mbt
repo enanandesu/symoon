@@ -26,6 +26,17 @@ fn format_logic_expr(expr : LogicExpr, parent_precedence : Int) -> String {
     Or(terms) => format_variadic_terms(terms, "\\lor", "\\bot", 3, parent_precedence)
     Xor(terms) =>
       format_variadic_terms(terms, "\\oplus", "\\bot", 2, parent_precedence)
+    Ite(condition, then_branch, else_branch) => {
+      let builder = StringBuilder::new()
+      builder.write_string("\\operatorname{ITE}\\left(")
+      builder.write_string(format_logic_expr(condition, -1))
+      builder.write_string(", ")
+      builder.write_string(format_logic_expr(then_branch, -1))
+      builder.write_string(", ")
+      builder.write_string(format_logic_expr(else_branch, -1))
+      builder.write_string("\\right)")
+      wrap_if_needed(builder.to_string(), 6, parent_precedence)
+    }
     Implies(lhs, rhs) => format_binary_expr(lhs, rhs, "\\rightarrow", 1, parent_precedence)
     Equivalent(lhs, rhs) =>
       format_binary_expr(lhs, rhs, "\\leftrightarrow", 0, parent_precedence)

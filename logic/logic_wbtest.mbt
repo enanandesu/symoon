@@ -132,3 +132,33 @@ test "logic_and matches boolean conjunction truth table" {
   let second_false : Array[(String, Bool)] = [("x", true), ("y", false)]
   assert_eq(logic_eval(expr, second_false), Some(false))
 }
+
+///|
+test "logic_ite simplifies boolean branches" {
+  let cond = logic_symbol("Cond")
+  let direct = logic_ite(cond.copy(), logic_true(), logic_false())
+  assert_eq(direct, cond)
+  let negated = logic_ite(cond.copy(), logic_false(), logic_true())
+  match negated {
+    Not(inner) => assert_eq(inner, cond)
+    _ => abort("expected negated condition")
+  }
+}
+
+///|
+test "logic_ite evaluates according to assignments" {
+  let cond = logic_symbol("Cond")
+  let then_branch = logic_symbol("Then")
+  let else_branch = logic_symbol("Else")
+  let expr = logic_ite(cond.copy(), then_branch.copy(), else_branch.copy())
+  let mut env_true : Array[(String, Bool)] = Array::new()
+  env_true.push(("Cond", true))
+  env_true.push(("Then", true))
+  env_true.push(("Else", false))
+  assert_eq(logic_eval(expr.copy(), env_true), Some(true))
+  let mut env_false : Array[(String, Bool)] = Array::new()
+  env_false.push(("Cond", false))
+  env_false.push(("Then", true))
+  env_false.push(("Else", true))
+  assert_eq(logic_eval(expr, env_false), Some(true))
+}

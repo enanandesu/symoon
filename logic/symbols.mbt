@@ -17,6 +17,9 @@ pub const LOGIC_OR_SYMBOL : String = "Or"
 pub const LOGIC_XOR_SYMBOL : String = "Xor"
 
 ///|
+pub const LOGIC_ITE_SYMBOL : String = "Ite"
+
+///|
 pub const LOGIC_IMPLIES_SYMBOL : String = "Implies"
 
 ///|

@@ -18,6 +18,8 @@ const LOGIC_TRUE_SYMBOL : String = "True"
 
 const LOGIC_XOR_SYMBOL : String = "Xor"
 
+const LOGIC_ITE_SYMBOL : String = "Ite"
+
 fn logic_apply_and_eval(LogicExpr, Array[(String, Bool)]) -> (LogicExpr, Bool?)
 
 fn logic_apply_assignments(LogicExpr, Array[(String, Bool)]) -> LogicExpr
@@ -25,6 +27,8 @@ fn logic_apply_assignments(LogicExpr, Array[(String, Bool)]) -> LogicExpr
 fn logic_eval(LogicExpr, Array[(String, Bool)]) -> Bool?
 
 fn logic_infer(Array[LogicExpr], LogicExpr) -> Bool
+
+fn logic_ite(LogicExpr, LogicExpr, LogicExpr) -> LogicExpr
 
 fn logic_to_latex(LogicExpr) -> String
 
@@ -50,6 +54,7 @@ pub enum LogicExpr {
   And(Array[LogicExpr])
   Or(Array[LogicExpr])
   Xor(Array[LogicExpr])
+  Ite(LogicExpr, LogicExpr, LogicExpr)
   Implies(LogicExpr, LogicExpr)
   Equivalent(LogicExpr, LogicExpr)
 }
