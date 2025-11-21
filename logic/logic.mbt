@@ -509,7 +509,7 @@ fn logic_ite_internal(
   match condition {
     Bool(true) => return then_branch
     Bool(false) => return else_branch
-    _ => {}
+    _ => ()
   }
   if then_branch == else_branch {
     return then_branch

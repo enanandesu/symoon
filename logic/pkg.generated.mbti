@@ -28,6 +28,8 @@ fn logic_eval(LogicExpr, Array[(String, Bool)]) -> Bool?
 
 fn logic_infer(Array[LogicExpr], LogicExpr) -> Bool
 
+fn logic_from_truth_table(Array[String], Array[(Array[Bool], Bool)]) -> LogicExpr
+
 fn logic_ite(LogicExpr, LogicExpr, LogicExpr) -> LogicExpr
 
 fn logic_to_latex(LogicExpr) -> String
@@ -43,6 +45,22 @@ fn logic_simplify_with_assignments(LogicExpr, Array[(String, Bool)]) -> LogicExp
 fn logic_symbol(String) -> LogicExpr
 
 fn logic_true() -> LogicExpr
+
+fn fo_const(String) -> FOTerm
+
+fn fo_eval(FOFormula, FOInterpretation) -> Bool?
+
+fn fo_eval_with_assignments(
+  FOFormula,
+  FOInterpretation,
+  Array[(String, String)],
+) -> Bool?
+
+fn fo_interpretation(Array[String]) -> FOInterpretation
+
+fn fo_predicate(Int, (Array[String]) -> Bool) -> FOPredicate
+
+fn fo_var(String) -> FOTerm
 
 // Errors
 
@@ -61,6 +79,42 @@ pub enum LogicExpr {
 fn LogicExpr::copy(Self) -> Self
 impl Eq for LogicExpr
 impl Show for LogicExpr
+
+pub enum FOTerm {
+  Variable(String)
+  Constant(String)
+}
+fn FOTerm::copy(Self) -> Self
+impl Eq for FOTerm
+impl Show for FOTerm
+
+pub enum FOFormula {
+  Bool(Bool)
+  Predicate(String, Array[FOTerm])
+  Not(FOFormula)
+  And(Array[FOFormula])
+  Or(Array[FOFormula])
+  Implies(FOFormula, FOFormula)
+  Equivalent(FOFormula, FOFormula)
+  ForAll(String, FOFormula)
+  Exists(String, FOFormula)
+}
+fn FOFormula::copy(Self) -> Self
+impl Eq for FOFormula
+impl Show for FOFormula
+
+pub struct FOPredicate {
+  arity : Int
+  evaluator : (Array[String]) -> Bool
+}
+fn FOPredicate::evaluate(Self, Array[String]) -> Bool
+
+pub struct FOInterpretation {
+  domain : Array[String]
+  predicates : Map[String, FOPredicate]
+}
+fn FOInterpretation::copy(Self) -> Self
+fn FOInterpretation::with_predicate(Self, String, FOPredicate) -> Self
 
 // Type aliases
 
