@@ -1,0 +1,130 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "enanandesu/symoon/logic"
+
+// Values
+const LOGIC_AND_SYMBOL : String = "And"
+
+const LOGIC_EQUIVALENT_SYMBOL : String = "Equivalent"
+
+const LOGIC_FALSE_SYMBOL : String = "False"
+
+const LOGIC_IMPLIES_SYMBOL : String = "Implies"
+
+const LOGIC_ITE_SYMBOL : String = "Ite"
+
+const LOGIC_NOT_SYMBOL : String = "Not"
+
+const LOGIC_OR_SYMBOL : String = "Or"
+
+const LOGIC_TRUE_SYMBOL : String = "True"
+
+const LOGIC_XOR_SYMBOL : String = "Xor"
+
+fn fo_const(String) -> FOTerm
+
+fn fo_eval(FOFormula, FOInterpretation) -> Bool?
+
+fn fo_eval_with_assignments(FOFormula, FOInterpretation, Array[(String, String)]) -> Bool?
+
+fn fo_interpretation(Array[String]) -> FOInterpretation
+
+fn fo_predicate(Int, (Array[String]) -> Bool) -> FOPredicate
+
+fn fo_var(String) -> FOTerm
+
+fn logic_and(Array[LogicExpr]) -> LogicExpr
+
+fn logic_apply_and_eval(LogicExpr, Array[(String, Bool)]) -> (LogicExpr, Bool?)
+
+fn logic_apply_assignments(LogicExpr, Array[(String, Bool)]) -> LogicExpr
+
+fn logic_equivalent(LogicExpr, LogicExpr) -> LogicExpr
+
+fn logic_eval(LogicExpr, Array[(String, Bool)]) -> Bool?
+
+fn logic_false() -> LogicExpr
+
+fn logic_from_truth_table(Array[String], Array[(Array[Bool], Bool)]) -> LogicExpr
+
+fn logic_implies(LogicExpr, LogicExpr) -> LogicExpr
+
+fn logic_infer(Array[LogicExpr], LogicExpr) -> Bool
+
+fn logic_ite(LogicExpr, LogicExpr, LogicExpr) -> LogicExpr
+
+fn logic_normalize(LogicExpr) -> LogicExpr
+
+fn logic_not(LogicExpr) -> LogicExpr
+
+fn logic_or(Array[LogicExpr]) -> LogicExpr
+
+fn logic_simplify(LogicExpr) -> LogicExpr
+
+fn logic_simplify_with_assignments(LogicExpr, Array[(String, Bool)]) -> LogicExpr
+
+fn logic_symbol(String) -> LogicExpr
+
+fn logic_to_latex(LogicExpr) -> String
+
+fn logic_true() -> LogicExpr
+
+fn logic_xor(Array[LogicExpr]) -> LogicExpr
+
+// Errors
+
+// Types and methods
+pub enum FOFormula {
+  Bool(Bool)
+  Predicate(String, Array[FOTerm])
+  Not(FOFormula)
+  And(Array[FOFormula])
+  Or(Array[FOFormula])
+  Implies(FOFormula, FOFormula)
+  Equivalent(FOFormula, FOFormula)
+  ForAll(String, FOFormula)
+  Exists(String, FOFormula)
+}
+fn FOFormula::copy(Self) -> Self
+impl Eq for FOFormula
+impl Show for FOFormula
+
+pub struct FOInterpretation {
+  domain : Array[String]
+  predicates : Map[String, FOPredicate]
+}
+fn FOInterpretation::copy(Self) -> Self
+fn FOInterpretation::with_predicate(Self, String, FOPredicate) -> Self
+
+pub struct FOPredicate {
+  arity : Int
+  evaluator : (Array[String]) -> Bool
+}
+fn FOPredicate::evaluate(Self, Array[String]) -> Bool
+
+pub enum FOTerm {
+  Variable(String)
+  Constant(String)
+}
+fn FOTerm::copy(Self) -> Self
+impl Eq for FOTerm
+impl Show for FOTerm
+
+pub enum LogicExpr {
+  Bool(Bool)
+  Symbol(String)
+  Not(LogicExpr)
+  And(Array[LogicExpr])
+  Or(Array[LogicExpr])
+  Xor(Array[LogicExpr])
+  Ite(LogicExpr, LogicExpr, LogicExpr)
+  Implies(LogicExpr, LogicExpr)
+  Equivalent(LogicExpr, LogicExpr)
+}
+fn LogicExpr::copy(Self) -> Self
+impl Eq for LogicExpr
+impl Show for LogicExpr
+
+// Type aliases
+
+// Traits
+

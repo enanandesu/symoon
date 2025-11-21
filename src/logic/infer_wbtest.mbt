@@ -44,10 +44,12 @@ test "logic_infer resolves disjunction elimination" {
   let a = logic_symbol("A")
   let b = logic_symbol("B")
   let premises = [
-    logic_normalize(LogicExpr::And([
-      logic_normalize(LogicExpr::Or([a.copy(), b.copy()])),
-      logic_normalize(LogicExpr::Not(a.copy())),
-    ])),
+    logic_normalize(
+      LogicExpr::And([
+        logic_normalize(LogicExpr::Or([a.copy(), b.copy()])),
+        logic_normalize(LogicExpr::Not(a.copy())),
+      ]),
+    ),
   ]
   assert_eq(logic_infer(premises, b), true)
 }

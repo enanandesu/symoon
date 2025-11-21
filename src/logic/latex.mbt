@@ -8,11 +8,16 @@ fn format_logic_expr(expr : LogicExpr, parent_precedence : Int) -> String {
   match expr {
     Bool(value) =>
       wrap_if_needed(
-        if value { "\\top" } else { "\\bot" },
+        if value {
+          "\\top"
+        } else {
+          "\\bot"
+        },
         6,
         parent_precedence,
       )
-    Symbol(name) => wrap_if_needed(format_logic_symbol(name), 6, parent_precedence)
+    Symbol(name) =>
+      wrap_if_needed(format_logic_symbol(name), 6, parent_precedence)
     Not(inner) => {
       let precedence = 5
       let inner_str = format_logic_expr(inner, precedence)
@@ -23,7 +28,8 @@ fn format_logic_expr(expr : LogicExpr, parent_precedence : Int) -> String {
     }
     And(terms) =>
       format_variadic_terms(terms, "\\land", "\\top", 4, parent_precedence)
-    Or(terms) => format_variadic_terms(terms, "\\lor", "\\bot", 3, parent_precedence)
+    Or(terms) =>
+      format_variadic_terms(terms, "\\lor", "\\bot", 3, parent_precedence)
     Xor(terms) =>
       format_variadic_terms(terms, "\\oplus", "\\bot", 2, parent_precedence)
     Ite(condition, then_branch, else_branch) => {
@@ -37,7 +43,8 @@ fn format_logic_expr(expr : LogicExpr, parent_precedence : Int) -> String {
       builder.write_string("\\right)")
       wrap_if_needed(builder.to_string(), 6, parent_precedence)
     }
-    Implies(lhs, rhs) => format_binary_expr(lhs, rhs, "\\rightarrow", 1, parent_precedence)
+    Implies(lhs, rhs) =>
+      format_binary_expr(lhs, rhs, "\\rightarrow", 1, parent_precedence)
     Equivalent(lhs, rhs) =>
       format_binary_expr(lhs, rhs, "\\leftrightarrow", 0, parent_precedence)
   }
@@ -90,7 +97,11 @@ fn format_logic_symbol(name : String) -> String {
 }
 
 ///|
-fn wrap_if_needed(content : String, precedence : Int, parent_precedence : Int) -> String {
+fn wrap_if_needed(
+  content : String,
+  precedence : Int,
+  parent_precedence : Int,
+) -> String {
   if parent_precedence >= 0 && precedence < parent_precedence {
     let builder = StringBuilder::new()
     builder.write_string("\\left(")

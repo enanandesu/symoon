@@ -1,29 +1,26 @@
 ///|
-pub fn logic_infer(
-  premises : Array[LogicExpr],
-  conclusion : LogicExpr,
-) -> Bool {
+pub fn logic_infer(premises : Array[LogicExpr], conclusion : LogicExpr) -> Bool {
   let normalized_premises = normalize_operands(premises)
   let normalized_conclusion = logic_normalize(conclusion)
   let mut seen_symbols : Map[String, Bool] = {}
   let mut symbols = Array::new()
   let premise_len = normalized_premises.length()
   for i in 0..<premise_len {
-    let (next_seen, next_symbols) =
-      collect_logic_symbols(normalized_premises[i], seen_symbols, symbols)
+    let (next_seen, next_symbols) = collect_logic_symbols(
+      normalized_premises[i],
+      seen_symbols,
+      symbols,
+    )
     seen_symbols = next_seen
     symbols = next_symbols
   }
-  let (_, complete_symbols) =
-    collect_logic_symbols(normalized_conclusion, seen_symbols, symbols)
+  let (_, complete_symbols) = collect_logic_symbols(
+    normalized_conclusion, seen_symbols, symbols,
+  )
   let sorted = sort_strings(complete_symbols)
   let empty_assignments : Array[(String, Bool)] = Array::new()
   inference_enumerate(
-    normalized_premises,
-    normalized_conclusion,
-    sorted,
-    0,
-    empty_assignments,
+    normalized_premises, normalized_conclusion, sorted, 0, empty_assignments,
   )
 }
 
@@ -41,20 +38,24 @@ fn collect_logic_symbols(
     Or(terms) => collect_symbols_from_terms(terms, seen, symbols)
     Xor(terms) => collect_symbols_from_terms(terms, seen, symbols)
     Ite(condition, then_branch, else_branch) => {
-      let (after_condition, after_condition_symbols) =
-        collect_logic_symbols(condition, seen, symbols)
-      let (after_then, after_then_symbols) =
-        collect_logic_symbols(then_branch, after_condition, after_condition_symbols)
+      let (after_condition, after_condition_symbols) = collect_logic_symbols(
+        condition, seen, symbols,
+      )
+      let (after_then, after_then_symbols) = collect_logic_symbols(
+        then_branch, after_condition, after_condition_symbols,
+      )
       collect_logic_symbols(else_branch, after_then, after_then_symbols)
     }
     Implies(lhs, rhs) => {
-      let (after_lhs, names_after_lhs) =
-        collect_logic_symbols(lhs, seen, symbols)
+      let (after_lhs, names_after_lhs) = collect_logic_symbols(
+        lhs, seen, symbols,
+      )
       collect_logic_symbols(rhs, after_lhs, names_after_lhs)
     }
     Equivalent(lhs, rhs) => {
-      let (after_lhs, names_after_lhs) =
-        collect_logic_symbols(lhs, seen, symbols)
+      let (after_lhs, names_after_lhs) = collect_logic_symbols(
+        lhs, seen, symbols,
+      )
       collect_logic_symbols(rhs, after_lhs, names_after_lhs)
     }
   }
@@ -70,8 +71,11 @@ fn collect_symbols_from_terms(
   let mut current_seen = seen
   let mut current_symbols = symbols
   for i in 0..<len {
-    let (next_seen, next_symbols) =
-      collect_logic_symbols(terms[i], current_seen, current_symbols)
+    let (next_seen, next_symbols) = collect_logic_symbols(
+      terms[i],
+      current_seen,
+      current_symbols,
+    )
     current_seen = next_seen
     current_symbols = next_symbols
   }
@@ -109,23 +113,11 @@ fn inference_enumerate(
   let name = symbols[index]
   let next_index = index + 1
   let with_true = extend_assignments(assignments, name, true)
-  if !inference_enumerate(
-    premises,
-    conclusion,
-    symbols,
-    next_index,
-    with_true,
-  ) {
+  if !inference_enumerate(premises, conclusion, symbols, next_index, with_true) {
     return false
   }
   let with_false = extend_assignments(assignments, name, false)
-  inference_enumerate(
-    premises,
-    conclusion,
-    symbols,
-    next_index,
-    with_false,
-  )
+  inference_enumerate(premises, conclusion, symbols, next_index, with_false)
 }
 
 ///|

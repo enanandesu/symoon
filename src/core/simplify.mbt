@@ -8,7 +8,8 @@ fn pow_root_guard(_expr : Expr, bindings : PatternBindings) -> Bool {
 
 ///|
 fn apply_all_rewrites(expr : Expr) -> Expr {
-  apply_hyperbolic_rewrites(apply_identity_rewrites(expr))
+  let after_identity = apply_identity_rewrites(expr)
+  apply_hyperbolic_rewrites(after_identity)
 }
 
 ///|
@@ -21,7 +22,11 @@ fn apply_hyperbolic_rewrites(expr : Expr) -> Expr {
     }
     current = next
   }
-  current
+  if count_ops(current) <= count_ops(expr) {
+    current
+  } else {
+    expr
+  }
 }
 
 ///|
@@ -3003,6 +3008,76 @@ fn cancel_fraction_factors(
   numerator : Expr,
   denominator : Expr,
 ) -> (Expr, Expr) {
+  fn add_factor(
+    counts : Array[(Expr, Int)],
+    factor : Expr,
+    exp : Int,
+  ) -> Array[(Expr, Int)] {
+    let len = counts.length()
+    for i in 0..<len {
+      let (existing, cnt) = counts[i]
+      if existing == factor {
+        counts[i] = (existing, cnt + exp)
+        return counts
+      }
+    }
+    counts.push((factor, exp))
+    counts
+  }
+
+  fn push_counts(
+    counts : Array[(Expr, Int)],
+    into : Array[Expr],
+  ) -> Array[Expr] {
+    let result = into
+    for entry in counts {
+      let (factor, exp) = entry
+      if exp == 0 {
+        continue
+      }
+      if exp == 1 {
+        result.push(factor.copy())
+      } else {
+        result.push(Expr::Binary(BinaryOp::Pow, factor.copy(), Expr::Int(exp)))
+      }
+    }
+    result
+  }
+
+  fn accumulate(
+    factors : Array[Expr],
+    coeff_ref : Int,
+    sign_ref : Int,
+    counts : Array[(Expr, Int)],
+  ) -> (Int, Int, Array[(Expr, Int)]) {
+    let mut coeff = coeff_ref
+    let mut sign = sign_ref
+    let mut map = counts
+    for factor in factors {
+      match factor {
+        Expr::Int(value) => {
+          let abs_val = if value < 0 { -value } else { value }
+          if value < 0 {
+            sign = sign * -1
+          }
+          coeff = coeff * abs_val
+        }
+        Expr::Unary(UnaryOp::Neg, inner) => {
+          sign = sign * -1
+          match inner {
+            Expr::Binary(BinaryOp::Pow, base, Expr::Int(exp)) =>
+              map = add_factor(map, base, exp)
+            _ => map = add_factor(map, inner, 1)
+          }
+        }
+        Expr::Binary(BinaryOp::Pow, base, Expr::Int(exp)) =>
+          map = add_factor(map, base, exp)
+        other => map = add_factor(map, other, 1)
+      }
+    }
+    (coeff, sign, map)
+  }
+
   let factored_num = factor_for_cancel(numerator.copy())
   let factored_den = factor_for_cancel(denominator.copy())
   let numerator_factors = collect_mul_factors(factored_num, Array::new())
@@ -3010,42 +3085,74 @@ fn cancel_fraction_factors(
   if numerator_factors.length() == 0 || denominator_factors.length() == 0 {
     return (numerator, denominator)
   }
-  let den_used : Array[Bool] = Array::new(capacity=denominator_factors.length())
-  for _ in 0..<denominator_factors.length() {
-    den_used.push(false)
+  let (num_coeff, num_sign, num_counts) = accumulate(
+    numerator_factors,
+    1,
+    1,
+    Array::new(),
+  )
+  let (den_coeff, den_sign, den_counts) = accumulate(
+    denominator_factors,
+    1,
+    1,
+    Array::new(),
+  )
+  let gcd_val = gcd_int_values(num_coeff, den_coeff)
+  let mut num_coeff_reduced = num_coeff / gcd_val
+  let mut den_coeff_reduced = den_coeff / gcd_val
+
+  // absorb sign into numerator
+  num_coeff_reduced = num_coeff_reduced * num_sign
+  den_coeff_reduced = den_coeff_reduced * den_sign
+  if den_coeff_reduced < 0 {
+    den_coeff_reduced = -den_coeff_reduced
+    num_coeff_reduced = -num_coeff_reduced
   }
-  let remaining_num = Array::new()
-  let mut did_cancel = false
-  for factor in numerator_factors {
-    let mut cancelled = false
-    let len = denominator_factors.length()
-    for i in 0..<len {
-      if den_used[i] {
-        continue
-      }
-      if denominator_factors[i] == factor {
-        den_used[i] = true
-        cancelled = true
-        did_cancel = true
+  let num_map = num_counts
+  let den_map = den_counts
+
+  // cancel symbolic factors by exponent
+  let num_len = num_map.length()
+  for i in 0..<num_len {
+    let (factor, exp) = num_map[i]
+    let mut j = 0
+    let mut matched = false
+    let den_len = den_map.length()
+    while j < den_len {
+      let (dfactor, dexp) = den_map[j]
+      if dfactor == factor {
+        let min_exp = if exp < dexp { exp } else { dexp }
+        num_map[i] = (factor, exp - min_exp)
+        den_map[j] = (dfactor, dexp - min_exp)
+        matched = true
         break
       }
+      j = j + 1
     }
-    if !cancelled {
-      remaining_num.push(factor)
-    }
-  }
-  if !did_cancel {
-    return (numerator, denominator)
-  }
-  let remaining_den = Array::new()
-  let len = denominator_factors.length()
-  for i in 0..<len {
-    if !den_used[i] {
-      remaining_den.push(denominator_factors[i])
+    if matched {
+      continue
     }
   }
-  let new_numerator = build_monomial_from_factors(remaining_num)
-  let new_denominator = build_monomial_from_factors(remaining_den)
+
+  // rebuild
+  let num_list = Array::new()
+  let den_list = Array::new()
+  let with_num_coeff = if num_coeff_reduced == 1 {
+    num_list
+  } else {
+    num_list.push(Expr::Int(num_coeff_reduced))
+    num_list
+  }
+  let with_den_coeff = if den_coeff_reduced == 1 {
+    den_list
+  } else {
+    den_list.push(Expr::Int(den_coeff_reduced))
+    den_list
+  }
+  let num_final = push_counts(num_map, with_num_coeff)
+  let den_final = push_counts(den_map, with_den_coeff)
+  let new_numerator = build_monomial_from_factors(num_final)
+  let new_denominator = build_monomial_from_factors(den_final)
   (simplify_reduce(new_numerator), simplify_reduce(new_denominator))
 }
 

@@ -37,6 +37,7 @@ fn copy_terms(terms : Array[LogicExpr]) -> Array[LogicExpr] {
   copied
 }
 
+///|
 pub fn logic_not(expr : LogicExpr) -> LogicExpr {
   logic_not_canonical(logic_normalize(expr))
 }
@@ -188,11 +189,12 @@ fn logic_eval_internal(
       let result = match left_value {
         Some(false) => Some(true)
         Some(true) => right_value
-        None => match right_value {
-          Some(true) => Some(true)
-          Some(false) => None
-          None => None
-        }
+        None =>
+          match right_value {
+            Some(true) => Some(true)
+            Some(false) => None
+            None => None
+          }
       }
       (env_after_rhs, result)
     }
@@ -206,16 +208,19 @@ fn logic_eval_internal(
       }
     }
     Ite(condition, then_branch, else_branch) => {
-      let (env_after_condition, condition_value) =
-        logic_eval_internal(condition, assignments)
+      let (env_after_condition, condition_value) = logic_eval_internal(
+        condition, assignments,
+      )
       match condition_value {
         Some(true) => logic_eval_internal(then_branch, env_after_condition)
         Some(false) => logic_eval_internal(else_branch, env_after_condition)
         None => {
-          let (env_after_then, then_value) =
-            logic_eval_internal(then_branch, env_after_condition)
-          let (env_after_else, else_value) =
-            logic_eval_internal(else_branch, env_after_then)
+          let (env_after_then, then_value) = logic_eval_internal(
+            then_branch, env_after_condition,
+          )
+          let (env_after_else, else_value) = logic_eval_internal(
+            else_branch, env_after_then,
+          )
           match (then_value, else_value) {
             (Some(lhs_bool), Some(rhs_bool)) =>
               if lhs_bool == rhs_bool {
@@ -246,6 +251,7 @@ fn lookup_assignment(
   (assignments, None)
 }
 
+///|
 fn normalize_operands(operands : Array[LogicExpr]) -> Array[LogicExpr] {
   let len = operands.length()
   let normalized = Array::new(capacity=len)
@@ -274,8 +280,9 @@ fn logic_and_internal(operands : Array[LogicExpr]) -> LogicExpr {
   let len = operands.length()
   for i in 0..<len {
     let operand = operands[i]
-    let (next_seen, next_terms, halted) =
-      absorb_and_operand(operand, current_seen, current_terms)
+    let (next_seen, next_terms, halted) = absorb_and_operand(
+      operand, current_seen, current_terms,
+    )
     current_seen = next_seen
     current_terms = next_terms
     if halted {
@@ -303,8 +310,9 @@ fn logic_or_internal(operands : Array[LogicExpr]) -> LogicExpr {
   let len = operands.length()
   for i in 0..<len {
     let operand = operands[i]
-    let (next_seen, next_terms, halted) =
-      absorb_or_operand(operand, current_seen, current_terms)
+    let (next_seen, next_terms, halted) = absorb_or_operand(
+      operand, current_seen, current_terms,
+    )
     current_seen = next_seen
     current_terms = next_terms
     if halted {
@@ -375,8 +383,11 @@ fn absorb_and_operand(
       let mut current_seen = seen
       let mut current_terms = terms
       for i in 0..<len {
-        let (next_seen, next_terms, halted) =
-          absorb_and_operand(inner[i], current_seen, current_terms)
+        let (next_seen, next_terms, halted) = absorb_and_operand(
+          inner[i],
+          current_seen,
+          current_terms,
+        )
         current_seen = next_seen
         current_terms = next_terms
         if halted {
@@ -416,8 +427,11 @@ fn absorb_or_operand(
       let mut current_seen = seen
       let mut current_terms = terms
       for i in 0..<len {
-        let (next_seen, next_terms, halted) =
-          absorb_or_operand(inner[i], current_seen, current_terms)
+        let (next_seen, next_terms, halted) = absorb_or_operand(
+          inner[i],
+          current_seen,
+          current_terms,
+        )
         current_seen = next_seen
         current_terms = next_terms
         if halted {
@@ -475,16 +489,17 @@ fn logic_implies_internal(lhs : LogicExpr, rhs : LogicExpr) -> LogicExpr {
   match lhs {
     Bool(false) => Bool(true)
     Bool(true) => rhs
-    _ => match rhs {
-      Bool(true) => Bool(true)
-      Bool(false) => logic_not_canonical(lhs)
-      _ => {
-        let operands = Array::new(capacity=2)
-        operands.push(logic_not_canonical(lhs))
-        operands.push(rhs)
-        logic_or_internal(operands)
+    _ =>
+      match rhs {
+        Bool(true) => Bool(true)
+        Bool(false) => logic_not_canonical(lhs)
+        _ => {
+          let operands = Array::new(capacity=2)
+          operands.push(logic_not_canonical(lhs))
+          operands.push(rhs)
+          logic_or_internal(operands)
+        }
       }
-    }
   }
 }
 

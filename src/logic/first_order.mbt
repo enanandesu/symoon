@@ -86,8 +86,11 @@ pub fn fo_const(name : String) -> FOTerm {
 }
 
 ///|
-pub fn fo_predicate(arity : Int, evaluator : (Array[String]) -> Bool) -> FOPredicate {
-  { arity: arity, evaluator: evaluator }
+pub fn fo_predicate(
+  arity : Int,
+  evaluator : (Array[String]) -> Bool,
+) -> FOPredicate {
+  { arity, evaluator }
 }
 
 ///|
@@ -97,7 +100,7 @@ pub fn FOPredicate::evaluate(self : FOPredicate, args : Array[String]) -> Bool {
 
 ///|
 pub fn fo_interpretation(domain : Array[String]) -> FOInterpretation {
-  { domain: domain, predicates: {} }
+  { domain, predicates: {} }
 }
 
 ///|
@@ -275,7 +278,10 @@ fn fo_eval_predicate(
 }
 
 ///|
-fn fo_eval_term(term : FOTerm, assignments : Array[(String, String)]) -> String? {
+fn fo_eval_term(
+  term : FOTerm,
+  assignments : Array[(String, String)],
+) -> String? {
   match term {
     Variable(name) => fo_assignment_lookup(assignments, name)
     Constant(value) => Some(value)

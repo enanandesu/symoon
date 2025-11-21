@@ -1,4 +1,4 @@
-///|
+﻿///|
 test "simplify removes additive zero" {
   let expr = add(int(0), sym("x"))
   inspect(simplify(expr), content="x")
@@ -809,6 +809,36 @@ test "simplify cancels difference of cubes factor" {
     sub(x.copy(), y.copy()),
   )
   inspect(simplify(expr), content="x ^ 2 + x * y + y ^ 2")
+}
+
+///|
+test "simplify cancels opposite signs in division" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = div(mul(neg(x.copy()), y.copy()), neg(x))
+  inspect(simplify(expr), content="y")
+}
+
+///|
+test "simplify cancels extra exponent" {
+  let x = sym("x")
+  let y = sym("y")
+  let expr = div(mul(pow(x.copy(), int(2)), y.copy()), x)
+  inspect(simplify(expr), content="x * y")
+}
+
+///|
+test "simplify cancels exponent difference" {
+  let x = sym("x")
+  let expr = div(pow(x.copy(), int(3)), pow(x.copy(), int(2)))
+  inspect(simplify(expr), content="x")
+}
+
+///|
+test "simplify cancels numeric gcd with sign" {
+  let x = sym("x")
+  let expr = div(mul(int(-4), pow(x.copy(), int(2))), mul(int(2), x))
+  inspect(simplify(expr), content="-(2 * x)")
 }
 
 ///|
