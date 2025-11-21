@@ -162,3 +162,53 @@ test "logic_ite evaluates according to assignments" {
   env_false.push(("Else", true))
   assert_eq(logic_eval(expr, env_false), Some(true))
 }
+
+///|
+test "logic_collect_variables returns sorted unique names" {
+  let expr = logic_normalize(
+    LogicExpr::And([
+      logic_symbol("C"),
+      logic_normalize(
+        LogicExpr::Or([
+          logic_symbol("A"),
+          logic_normalize(LogicExpr::Not(logic_symbol("B"))),
+        ]),
+      ),
+    ]),
+  )
+  let vars = logic_collect_variables(expr)
+  assert_eq(vars, ["A", "B", "C"])
+}
+
+///|
+test "logic_collect_subexpressions gathers each unique expression" {
+  let expr = logic_normalize(
+    LogicExpr::And([
+      logic_symbol("A"),
+      logic_normalize(LogicExpr::Or([logic_symbol("B"), logic_symbol("A")])),
+    ]),
+  )
+  let subs = logic_collect_subexpressions(expr)
+  assert_eq(subs.length(), 4)
+  assert_contains_expr(subs, logic_symbol("A"))
+  assert_contains_expr(subs, logic_symbol("B"))
+  assert_contains_expr(
+    subs,
+    logic_normalize(LogicExpr::Or([logic_symbol("A"), logic_symbol("B")])),
+  )
+  assert_contains_expr(subs, expr)
+}
+
+///|
+fn assert_contains_expr(expressions : Array[LogicExpr], target : LogicExpr) -> Unit {
+  let len = expressions.length()
+  let mut found = false
+  for i in 0..<len {
+    if expressions[i] == target {
+      found = true
+    }
+  }
+  if !found {
+    abort("missing expected expression")
+  }
+}

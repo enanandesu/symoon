@@ -38,6 +38,10 @@ fn logic_apply_and_eval(LogicExpr, Array[(String, Bool)]) -> (LogicExpr, Bool?)
 
 fn logic_apply_assignments(LogicExpr, Array[(String, Bool)]) -> LogicExpr
 
+fn logic_collect_subexpressions(LogicExpr) -> Array[LogicExpr]
+
+fn logic_collect_variables(LogicExpr) -> Array[String]
+
 fn logic_equivalent(LogicExpr, LogicExpr) -> LogicExpr
 
 fn logic_eval(LogicExpr, Array[(String, Bool)]) -> Bool?
@@ -127,4 +131,3 @@ impl Show for LogicExpr
 // Type aliases
 
 // Traits
-
