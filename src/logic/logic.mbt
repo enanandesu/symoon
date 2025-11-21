@@ -268,6 +268,16 @@ pub fn logic_collect_subexpressions(expr : LogicExpr) -> Array[LogicExpr] {
 }
 
 ///|
+pub fn logic_expr_depth(expr : LogicExpr) -> Int {
+  logic_expr_depth_internal(expr)
+}
+
+///|
+pub fn logic_expr_complexity(expr : LogicExpr) -> Int {
+  logic_expr_complexity_internal(expr)
+}
+
+///|
 fn collect_variables_internal(
   expr : LogicExpr,
   seen : Map[String, Bool],
@@ -411,6 +421,105 @@ fn collect_subexpressions_from_terms(
     current_subexprs = next_subexprs
   }
   (current_seen, current_subexprs)
+}
+
+///|
+fn logic_expr_depth_internal(expr : LogicExpr) -> Int {
+  match expr {
+    Bool(_) => 1
+    Symbol(_) => 1
+    Not(inner) => 1 + logic_expr_depth_internal(inner)
+    And(terms) => 1 + maximum_depth_in_terms(terms)
+    Or(terms) => 1 + maximum_depth_in_terms(terms)
+    Xor(terms) => 1 + maximum_depth_in_terms(terms)
+    Ite(condition, then_branch, else_branch) => {
+      let cond_depth = logic_expr_depth_internal(condition)
+      let then_depth = logic_expr_depth_internal(then_branch)
+      let else_depth = logic_expr_depth_internal(else_branch)
+      let mut best = cond_depth
+      if then_depth > best {
+        best = then_depth
+      }
+      if else_depth > best {
+        best = else_depth
+      }
+      1 + best
+    }
+    Implies(lhs, rhs) => {
+      let left_depth = logic_expr_depth_internal(lhs)
+      let right_depth = logic_expr_depth_internal(rhs)
+      let mut best = left_depth
+      if right_depth > best {
+        best = right_depth
+      }
+      1 + best
+    }
+    Equivalent(lhs, rhs) => {
+      let left_depth = logic_expr_depth_internal(lhs)
+      let right_depth = logic_expr_depth_internal(rhs)
+      let mut best = left_depth
+      if right_depth > best {
+        best = right_depth
+      }
+      1 + best
+    }
+  }
+}
+
+///|
+fn maximum_depth_in_terms(terms : Array[LogicExpr]) -> Int {
+  let len = terms.length()
+  if len == 0 {
+    return 0
+  }
+  let mut best = 0
+  for term in terms {
+    let depth = logic_expr_depth_internal(term)
+    if depth > best {
+      best = depth
+    }
+  }
+  best
+}
+
+///|
+fn logic_expr_complexity_internal(expr : LogicExpr) -> Int {
+  match expr {
+    Bool(_) => 1
+    Symbol(_) => 1
+    Not(inner) => 1 + logic_expr_complexity_internal(inner)
+    And(terms) => 1 + sum_complexity_terms(terms)
+    Or(terms) => 1 + sum_complexity_terms(terms)
+    Xor(terms) => 1 + sum_complexity_terms(terms)
+    Ite(condition, then_branch, else_branch) => {
+      let mut total = 1
+      total += logic_expr_complexity_internal(condition)
+      total += logic_expr_complexity_internal(then_branch)
+      total += logic_expr_complexity_internal(else_branch)
+      total
+    }
+    Implies(lhs, rhs) => {
+      let mut total = 1
+      total += logic_expr_complexity_internal(lhs)
+      total += logic_expr_complexity_internal(rhs)
+      total
+    }
+    Equivalent(lhs, rhs) => {
+      let mut total = 1
+      total += logic_expr_complexity_internal(lhs)
+      total += logic_expr_complexity_internal(rhs)
+      total
+    }
+  }
+}
+
+///|
+fn sum_complexity_terms(terms : Array[LogicExpr]) -> Int {
+  let mut total = 0
+  for term in terms {
+    total += logic_expr_complexity_internal(term)
+  }
+  total
 }
 
 ///|

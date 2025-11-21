@@ -200,7 +200,10 @@ test "logic_collect_subexpressions gathers each unique expression" {
 }
 
 ///|
-fn assert_contains_expr(expressions : Array[LogicExpr], target : LogicExpr) -> Unit {
+fn assert_contains_expr(
+  expressions : Array[LogicExpr],
+  target : LogicExpr,
+) -> Unit {
   let len = expressions.length()
   let mut found = false
   for i in 0..<len {
@@ -211,4 +214,34 @@ fn assert_contains_expr(expressions : Array[LogicExpr], target : LogicExpr) -> U
   if !found {
     abort("missing expected expression")
   }
+}
+
+///|
+test "logic_expr_depth tracks maximum nesting" {
+  let expr = logic_normalize(
+    LogicExpr::And([
+      logic_symbol("A"),
+      logic_normalize(LogicExpr::Not(logic_symbol("B"))),
+    ]),
+  )
+  assert_eq(logic_expr_depth(expr), 3)
+  let conditional = logic_ite(
+    logic_symbol("Cond"),
+    logic_symbol("X"),
+    logic_normalize(LogicExpr::And([logic_symbol("Y"), logic_symbol("Z")])),
+  )
+  assert_eq(logic_expr_depth(conditional), 3)
+}
+
+///|
+test "logic_expr_complexity counts expression nodes" {
+  let expr = logic_normalize(
+    LogicExpr::And([
+      logic_symbol("A"),
+      logic_normalize(LogicExpr::Not(logic_symbol("B"))),
+    ]),
+  )
+  assert_eq(logic_expr_complexity(expr), 4)
+  let simple = logic_symbol("Flag")
+  assert_eq(logic_expr_complexity(simple), 1)
 }
