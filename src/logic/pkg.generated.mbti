@@ -76,6 +76,20 @@ fn logic_to_cnf(LogicExpr) -> LogicExpr
 
 fn logic_simplify_logic(LogicExpr, String) -> LogicExpr
 
+fn gate_and(Array[Bool]) -> Bool
+
+fn gate_nand(Array[Bool]) -> Bool
+
+fn gate_nor(Array[Bool]) -> Bool
+
+fn gate_not(Bool) -> Bool
+
+fn gate_or(Array[Bool]) -> Bool
+
+fn gate_xnor(Array[Bool]) -> Bool
+
+fn gate_xor(Array[Bool]) -> Bool
+
 fn logic_true() -> LogicExpr
 
 fn logic_xor(Array[LogicExpr]) -> LogicExpr

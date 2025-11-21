@@ -294,9 +294,36 @@ pub fn logic_to_dnf(expr : LogicExpr) -> LogicExpr {
 
 ///|
 pub fn logic_to_cnf(expr : LogicExpr) -> LogicExpr {
-  let negated = logic_not(expr.copy())
-  let dnf_of_negation = logic_to_dnf(negated)
-  logic_not(dnf_of_negation)
+  let normalized = logic_normalize(expr)
+  let variables = logic_collect_variables(normalized.copy())
+  let variable_count = variables.length()
+  let total = pow_two(variable_count)
+  let clauses = Array::new()
+  let mut index = 0
+  while index < total {
+    let assignment = assignment_from_index(index, variable_count)
+    let env = Array::new(capacity=variable_count)
+    let mut i = 0
+    while i < variable_count {
+      env.push((variables[i], assignment[i]))
+      i += 1
+    }
+    match logic_eval(normalized.copy(), env) {
+      Some(false) =>
+        clauses.push(cnf_clause_from_assignment(variables, assignment))
+      None => clauses.push(cnf_clause_from_assignment(variables, assignment))
+      _ => ()
+    }
+    index += 1
+  }
+  let len = clauses.length()
+  if len == 0 {
+    logic_true()
+  } else if len == 1 {
+    clauses[0]
+  } else {
+    logic_and(clauses)
+  }
 }
 
 ///|
@@ -599,6 +626,84 @@ fn assignment_from_index(index : Int, count : Int) -> Array[Bool] {
     i += 1
   }
   assignment
+}
+
+///|
+pub fn gate_not(input : Bool) -> Bool {
+  !input
+}
+
+///|
+pub fn gate_and(inputs : Array[Bool]) -> Bool {
+  let len = inputs.length()
+  let mut i = 0
+  while i < len {
+    if inputs[i] == false {
+      return false
+    }
+    i += 1
+  }
+  true
+}
+
+///|
+pub fn gate_or(inputs : Array[Bool]) -> Bool {
+  let len = inputs.length()
+  let mut i = 0
+  while i < len {
+    if inputs[i] {
+      return true
+    }
+    i += 1
+  }
+  false
+}
+
+///|
+pub fn gate_nand(inputs : Array[Bool]) -> Bool {
+  !gate_and(inputs)
+}
+
+///|
+pub fn gate_nor(inputs : Array[Bool]) -> Bool {
+  !gate_or(inputs)
+}
+
+///|
+pub fn gate_xor(inputs : Array[Bool]) -> Bool {
+  let len = inputs.length()
+  let mut parity = false
+  let mut i = 0
+  while i < len {
+    parity = parity != inputs[i]
+    i += 1
+  }
+  parity
+}
+
+///|
+pub fn gate_xnor(inputs : Array[Bool]) -> Bool {
+  !gate_xor(inputs)
+}
+
+///|
+fn cnf_clause_from_assignment(
+  variables : Array[String],
+  assignment : Array[Bool],
+) -> LogicExpr {
+  let len = variables.length()
+  let disjuncts = Array::new(capacity=len)
+  let mut i = 0
+  while i < len {
+    let symbol = logic_symbol(variables[i])
+    if assignment[i] {
+      disjuncts.push(logic_not(symbol))
+    } else {
+      disjuncts.push(symbol)
+    }
+    i += 1
+  }
+  logic_or(disjuncts)
 }
 
 ///|

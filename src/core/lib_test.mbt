@@ -1,4 +1,4 @@
-﻿///|
+///|
 test "simplify removes additive zero" {
   let expr = add(int(0), sym("x"))
   inspect(simplify(expr), content="x")

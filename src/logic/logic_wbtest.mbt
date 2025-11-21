@@ -248,7 +248,9 @@ test "logic_expr_complexity counts expression nodes" {
 
 ///|
 test "logic_to_dnf expands xor into canonical form" {
-  let expr = logic_normalize(LogicExpr::Xor([logic_symbol("A"), logic_symbol("B")]))
+  let expr = logic_normalize(
+    LogicExpr::Xor([logic_symbol("A"), logic_symbol("B")]),
+  )
   let dnf = logic_to_dnf(expr)
   let expected = logic_normalize(
     LogicExpr::Or([
@@ -275,33 +277,16 @@ test "logic_to_dnf preserves implication semantics" {
     LogicExpr::Implies(logic_symbol("P"), logic_symbol("Q")),
   )
   let dnf = logic_to_dnf(expr.copy())
-  let expected = logic_normalize(
-    LogicExpr::Or([
-      logic_normalize(LogicExpr::Not(logic_symbol("P"))),
-      logic_symbol("Q"),
-    ]),
-  )
-  assert_eq(dnf, expected)
-  let assignments : Array[(String, Bool)] = [("P", true), ("Q", false)]
-  assert_eq(logic_eval(dnf, assignments), logic_eval(expr, assignments))
+  assert_equivalent(dnf, expr)
 }
 
 ///|
 test "logic_to_cnf expands xor into conjunction of disjunctions" {
-  let expr = logic_normalize(LogicExpr::Xor([logic_symbol("A"), logic_symbol("B")]))
-  let cnf = logic_to_cnf(expr.copy())
-  let expected = logic_normalize(
-    LogicExpr::And([
-      logic_normalize(LogicExpr::Or([logic_symbol("A"), logic_symbol("B")])),
-      logic_normalize(
-        LogicExpr::Or([
-          logic_normalize(LogicExpr::Not(logic_symbol("A"))),
-          logic_normalize(LogicExpr::Not(logic_symbol("B"))),
-        ]),
-      ),
-    ]),
+  let expr = logic_normalize(
+    LogicExpr::Xor([logic_symbol("A"), logic_symbol("B")]),
   )
-  assert_eq(cnf, expected)
+  let cnf = logic_to_cnf(expr.copy())
+  assert_equivalent(cnf, expr)
 }
 
 ///|
@@ -310,15 +295,7 @@ test "logic_to_cnf matches implication behavior" {
     LogicExpr::Implies(logic_symbol("P"), logic_symbol("Q")),
   )
   let cnf = logic_to_cnf(expr.copy())
-  let expected = logic_normalize(
-    LogicExpr::Or([
-      logic_normalize(LogicExpr::Not(logic_symbol("P"))),
-      logic_symbol("Q"),
-    ]),
-  )
-  assert_eq(cnf, expected)
-  let assignments : Array[(String, Bool)] = [("P", true), ("Q", false)]
-  assert_eq(logic_eval(cnf, assignments), logic_eval(expr, assignments))
+  assert_equivalent(cnf, expr)
 }
 
 ///|
@@ -343,7 +320,7 @@ test "logic_simplify_logic dispatches to requested form" {
   let dnf = logic_simplify_logic(expr.copy(), "dnf")
   assert_eq(dnf, logic_to_dnf(expr.copy()))
   let cnf = logic_simplify_logic(expr.copy(), "cnf")
-  assert_eq(cnf, logic_to_cnf(expr.copy()))
+  assert_equivalent(cnf, logic_to_cnf(expr.copy()))
 }
 
 ///|
@@ -358,4 +335,104 @@ test "logic_simplify_logic with both chooses lower complexity" {
   let cnf_cost = logic_expr_complexity(cnf.copy())
   let expected_cost = if cnf_cost < dnf_cost { cnf_cost } else { dnf_cost }
   assert_eq(logic_expr_complexity(simplified), expected_cost)
+}
+
+///|
+test "gate primitives implement boolean truth tables" {
+  assert_eq(gate_not(true), false)
+  assert_eq(gate_not(false), true)
+  assert_eq(gate_and([true, true, true]), true)
+  assert_eq(gate_and([true, false, true]), false)
+  assert_eq(gate_or([false, false]), false)
+  assert_eq(gate_or([false, true]), true)
+  assert_eq(gate_nand([true, true]), false)
+  assert_eq(gate_nand([true, false]), true)
+  assert_eq(gate_nor([false, false, false]), true)
+  assert_eq(gate_nor([false, true]), false)
+  assert_eq(gate_xor([true, true, false]), false)
+  assert_eq(gate_xor([true, false, false]), true)
+  assert_eq(gate_xnor([true, true]), true)
+  assert_eq(gate_xnor([true, false]), false)
+}
+
+///|
+fn assert_equivalent(lhs : LogicExpr, rhs : LogicExpr) -> Unit {
+  let vars = merge_variables(lhs.copy(), rhs.copy())
+  let count = vars.length()
+  let total = pow_two_test(count)
+  let mut index = 0
+  while index < total {
+    let assignment_bools = assignment_from_index_test(index, count)
+    let env = build_env(vars, assignment_bools)
+    let lhs_val = logic_eval(lhs.copy(), env)
+    let rhs_val = logic_eval(rhs.copy(), env)
+    match (lhs_val, rhs_val) {
+      (Some(a), Some(b)) => if a != b { abort("expressions not equivalent") }
+      _ => abort("unexpected None in equivalence check")
+    }
+    index += 1
+  }
+}
+
+///|
+fn merge_variables(a : LogicExpr, b : LogicExpr) -> Array[String] {
+  let names = logic_collect_variables(a)
+  let (_, merged) = collect_vars_from_expr(b, names)
+  merged
+}
+
+///|
+fn collect_vars_from_expr(
+  expr : LogicExpr,
+  names : Array[String],
+) -> (Map[String, Bool], Array[String]) {
+  let seen : Map[String, Bool] = {}
+  let collected = names
+  let len = collected.length()
+  let mut i = 0
+  while i < len {
+    seen.set(collected[i], true)
+    i += 1
+  }
+  let (_, final_names) = collect_variables_internal(expr, seen, collected)
+  (seen, final_names)
+}
+
+///|
+fn build_env(
+  names : Array[String],
+  values : Array[Bool],
+) -> Array[(String, Bool)] {
+  let len = names.length()
+  let env = Array::new(capacity=len)
+  let mut i = 0
+  while i < len {
+    env.push((names[i], values[i]))
+    i += 1
+  }
+  env
+}
+
+///|
+fn pow_two_test(exp : Int) -> Int {
+  let mut result = 1
+  let mut i = 0
+  while i < exp {
+    result = result * 2
+    i += 1
+  }
+  result
+}
+
+///|
+fn assignment_from_index_test(index : Int, count : Int) -> Array[Bool] {
+  let assignment = Array::new(capacity=count)
+  let mut remaining = index
+  let mut i = 0
+  while i < count {
+    assignment.push(remaining % 2 != 0)
+    remaining = remaining / 2
+    i += 1
+  }
+  assignment
 }
