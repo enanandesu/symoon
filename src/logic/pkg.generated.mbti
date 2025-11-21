@@ -70,6 +70,12 @@ fn logic_symbol(String) -> LogicExpr
 
 fn logic_to_latex(LogicExpr) -> String
 
+fn logic_to_dnf(LogicExpr) -> LogicExpr
+
+fn logic_to_cnf(LogicExpr) -> LogicExpr
+
+fn logic_simplify_logic(LogicExpr, String) -> LogicExpr
+
 fn logic_true() -> LogicExpr
 
 fn logic_xor(Array[LogicExpr]) -> LogicExpr

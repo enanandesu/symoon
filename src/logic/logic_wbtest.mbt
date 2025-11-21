@@ -245,3 +245,117 @@ test "logic_expr_complexity counts expression nodes" {
   let simple = logic_symbol("Flag")
   assert_eq(logic_expr_complexity(simple), 1)
 }
+
+///|
+test "logic_to_dnf expands xor into canonical form" {
+  let expr = logic_normalize(LogicExpr::Xor([logic_symbol("A"), logic_symbol("B")]))
+  let dnf = logic_to_dnf(expr)
+  let expected = logic_normalize(
+    LogicExpr::Or([
+      logic_normalize(
+        LogicExpr::And([
+          logic_symbol("A"),
+          logic_normalize(LogicExpr::Not(logic_symbol("B"))),
+        ]),
+      ),
+      logic_normalize(
+        LogicExpr::And([
+          logic_normalize(LogicExpr::Not(logic_symbol("A"))),
+          logic_symbol("B"),
+        ]),
+      ),
+    ]),
+  )
+  assert_eq(dnf, expected)
+}
+
+///|
+test "logic_to_dnf preserves implication semantics" {
+  let expr = logic_normalize(
+    LogicExpr::Implies(logic_symbol("P"), logic_symbol("Q")),
+  )
+  let dnf = logic_to_dnf(expr.copy())
+  let expected = logic_normalize(
+    LogicExpr::Or([
+      logic_normalize(LogicExpr::Not(logic_symbol("P"))),
+      logic_symbol("Q"),
+    ]),
+  )
+  assert_eq(dnf, expected)
+  let assignments : Array[(String, Bool)] = [("P", true), ("Q", false)]
+  assert_eq(logic_eval(dnf, assignments), logic_eval(expr, assignments))
+}
+
+///|
+test "logic_to_cnf expands xor into conjunction of disjunctions" {
+  let expr = logic_normalize(LogicExpr::Xor([logic_symbol("A"), logic_symbol("B")]))
+  let cnf = logic_to_cnf(expr.copy())
+  let expected = logic_normalize(
+    LogicExpr::And([
+      logic_normalize(LogicExpr::Or([logic_symbol("A"), logic_symbol("B")])),
+      logic_normalize(
+        LogicExpr::Or([
+          logic_normalize(LogicExpr::Not(logic_symbol("A"))),
+          logic_normalize(LogicExpr::Not(logic_symbol("B"))),
+        ]),
+      ),
+    ]),
+  )
+  assert_eq(cnf, expected)
+}
+
+///|
+test "logic_to_cnf matches implication behavior" {
+  let expr = logic_normalize(
+    LogicExpr::Implies(logic_symbol("P"), logic_symbol("Q")),
+  )
+  let cnf = logic_to_cnf(expr.copy())
+  let expected = logic_normalize(
+    LogicExpr::Or([
+      logic_normalize(LogicExpr::Not(logic_symbol("P"))),
+      logic_symbol("Q"),
+    ]),
+  )
+  assert_eq(cnf, expected)
+  let assignments : Array[(String, Bool)] = [("P", true), ("Q", false)]
+  assert_eq(logic_eval(cnf, assignments), logic_eval(expr, assignments))
+}
+
+///|
+test "logic_simplify_logic dispatches to requested form" {
+  let expr = logic_normalize(
+    LogicExpr::Or([
+      logic_normalize(LogicExpr::And([logic_symbol("X"), logic_symbol("Y")])),
+      logic_normalize(
+        LogicExpr::And([
+          logic_symbol("X"),
+          logic_normalize(LogicExpr::Not(logic_symbol("Y"))),
+        ]),
+      ),
+      logic_normalize(
+        LogicExpr::And([
+          logic_normalize(LogicExpr::Not(logic_symbol("X"))),
+          logic_symbol("Z"),
+        ]),
+      ),
+    ]),
+  )
+  let dnf = logic_simplify_logic(expr.copy(), "dnf")
+  assert_eq(dnf, logic_to_dnf(expr.copy()))
+  let cnf = logic_simplify_logic(expr.copy(), "cnf")
+  assert_eq(cnf, logic_to_cnf(expr.copy()))
+}
+
+///|
+test "logic_simplify_logic with both chooses lower complexity" {
+  let expr = logic_normalize(
+    LogicExpr::Implies(logic_symbol("P"), logic_symbol("Q")),
+  )
+  let simplified = logic_simplify_logic(expr.copy(), "both")
+  let dnf = logic_to_dnf(expr.copy())
+  let cnf = logic_to_cnf(expr.copy())
+  let dnf_cost = logic_expr_complexity(dnf.copy())
+  let cnf_cost = logic_expr_complexity(cnf.copy())
+  let expected_cost = if cnf_cost < dnf_cost { cnf_cost } else { dnf_cost }
+  assert_eq(logic_expr_complexity(simplified), expected_cost)
+}

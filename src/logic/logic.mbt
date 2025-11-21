@@ -268,6 +268,61 @@ pub fn logic_collect_subexpressions(expr : LogicExpr) -> Array[LogicExpr] {
 }
 
 ///|
+pub fn logic_to_dnf(expr : LogicExpr) -> LogicExpr {
+  let normalized = logic_normalize(expr)
+  let variables = logic_collect_variables(normalized.copy())
+  let variable_count = variables.length()
+  let total = pow_two(variable_count)
+  let rows = Array::new(capacity=total)
+  let mut index = 0
+  while index < total {
+    let assignment = assignment_from_index(index, variable_count)
+    let env = Array::new(capacity=variable_count)
+    let mut i = 0
+    while i < variable_count {
+      env.push((variables[i], assignment[i]))
+      i += 1
+    }
+    match logic_eval(normalized.copy(), env) {
+      Some(value) => rows.push((assignment, value))
+      None => rows.push((assignment, false))
+    }
+    index += 1
+  }
+  logic_from_truth_table(variables, rows)
+}
+
+///|
+pub fn logic_to_cnf(expr : LogicExpr) -> LogicExpr {
+  let negated = logic_not(expr.copy())
+  let dnf_of_negation = logic_to_dnf(negated)
+  logic_not(dnf_of_negation)
+}
+
+///|
+pub fn logic_simplify_logic(expr : LogicExpr, mode : String) -> LogicExpr {
+  let normalized = logic_normalize(expr)
+  if mode == "dnf" {
+    return logic_to_dnf(normalized)
+  }
+  if mode == "cnf" {
+    return logic_to_cnf(normalized)
+  }
+  if mode == "both" {
+    let dnf = logic_to_dnf(normalized.copy())
+    let cnf = logic_to_cnf(normalized)
+    let dnf_cost = logic_expr_complexity(dnf.copy())
+    let cnf_cost = logic_expr_complexity(cnf.copy())
+    if cnf_cost < dnf_cost {
+      return cnf
+    } else {
+      return dnf
+    }
+  }
+  abort("unknown simplify mode: " + mode)
+}
+
+///|
 pub fn logic_expr_depth(expr : LogicExpr) -> Int {
   logic_expr_depth_internal(expr)
 }
@@ -520,6 +575,30 @@ fn sum_complexity_terms(terms : Array[LogicExpr]) -> Int {
     total += logic_expr_complexity_internal(term)
   }
   total
+}
+
+///|
+fn pow_two(exp : Int) -> Int {
+  let mut result = 1
+  let mut i = 0
+  while i < exp {
+    result = result * 2
+    i += 1
+  }
+  result
+}
+
+///|
+fn assignment_from_index(index : Int, count : Int) -> Array[Bool] {
+  let assignment = Array::new(capacity=count)
+  let mut remaining = index
+  let mut i = 0
+  while i < count {
+    assignment.push(remaining % 2 != 0)
+    remaining = remaining / 2
+    i += 1
+  }
+  assignment
 }
 
 ///|
