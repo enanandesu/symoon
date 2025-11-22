@@ -42,6 +42,8 @@ fn int(Int) -> Expr
 
 fn leading_coefficient(Expr, String) -> Expr
 
+fn limit(Expr, String, Expr, dir? : LimitDirection) -> LimitResult
+
 fn log(Expr) -> Expr
 
 fn match_expr(Pattern, Expr) -> PatternBindings?
@@ -145,6 +147,37 @@ impl Mul for Expr
 impl Neg for Expr
 impl Show for Expr
 impl Sub for Expr
+
+pub enum IndeterminateForm {
+  ZeroOverZero
+  InfinityOverInfinity
+  ZeroTimesInfinity
+  InfinityMinusInfinity
+  OnePowerInfinity
+  ZeroPowerZero
+  InfinityPowerZero
+  Oscillatory
+}
+impl Eq for IndeterminateForm
+impl Show for IndeterminateForm
+
+pub enum LimitDirection {
+  Both
+  FromLeft
+  FromRight
+}
+impl Eq for LimitDirection
+impl Show for LimitDirection
+
+pub enum LimitResult {
+  Value(Expr)
+  PosInf
+  NegInf
+  Divergent
+  Unknown
+}
+impl Eq for LimitResult
+impl Show for LimitResult
 
 pub enum Pattern {
   Any
