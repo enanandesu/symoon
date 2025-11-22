@@ -39,3 +39,20 @@ test "logic_apply_and_eval reports None when unknown remains" {
   assert_eq(reduced, windy)
   assert_eq(value, None)
 }
+
+///|
+test "logic_eval handles multi-operand and/or with substitutions" {
+  let x = logic_symbol("x")
+  let y = logic_symbol("y")
+  let z = logic_symbol("z")
+  let multi_and = logic_and([x.copy(), y.copy(), z.copy()])
+  let env1 : Array[(String, Bool)] = [("x", true), ("y", true), ("z", true)]
+  assert_eq(logic_eval(multi_and.copy(), env1), Some(true))
+  let env2 : Array[(String, Bool)] = [("x", true), ("y", false), ("z", true)]
+  assert_eq(logic_eval(multi_and, env2), Some(false))
+  let multi_or = logic_or([x.copy(), y.copy(), z.copy()])
+  let env3 : Array[(String, Bool)] = [("x", false), ("y", false), ("z", true)]
+  assert_eq(logic_eval(multi_or.copy(), env3), Some(true))
+  let env4 : Array[(String, Bool)] = [("x", false), ("y", false), ("z", false)]
+  assert_eq(logic_eval(multi_or, env4), Some(false))
+}

@@ -134,6 +134,27 @@ test "logic_and matches boolean conjunction truth table" {
 }
 
 ///|
+test "logic_connectives mirror common operators" {
+  let x = logic_symbol("x")
+  let y = logic_symbol("y")
+  let z = logic_symbol("z")
+  let env : Array[(String, Bool)] = [("x", true), ("y", false), ("z", true)]
+  assert_eq(logic_eval(logic_not(x.copy()), env), Some(false))
+  assert_eq(logic_eval(logic_and([x.copy(), y.copy()]), env), Some(false))
+  assert_eq(logic_eval(logic_or([x.copy(), y.copy()]), env), Some(true))
+  assert_eq(logic_eval(logic_xor([x.copy(), y.copy()]), env), Some(true))
+  assert_eq(logic_eval(logic_nand([x.copy(), y.copy()]), env), Some(true))
+  assert_eq(logic_eval(logic_nor([x.copy(), y.copy()]), env), Some(false))
+  assert_eq(logic_eval(logic_xnor([x.copy(), y.copy()]), env), Some(false))
+  assert_eq(logic_eval(logic_implies(x.copy(), y.copy()), env), Some(false))
+  assert_eq(logic_eval(logic_equivalent(x.copy(), y.copy()), env), Some(false))
+  let ite = logic_ite(x.copy(), y.copy(), z.copy())
+  assert_eq(logic_eval(ite.copy(), env), Some(false))
+  let env2 : Array[(String, Bool)] = [("x", false), ("y", false), ("z", true)]
+  assert_eq(logic_eval(ite, env2), Some(true))
+}
+
+///|
 test "logic_ite simplifies boolean branches" {
   let cond = logic_symbol("Cond")
   let direct = logic_ite(cond.copy(), logic_true(), logic_false())
@@ -178,6 +199,67 @@ test "logic_collect_variables returns sorted unique names" {
   )
   let vars = logic_collect_variables(expr)
   assert_eq(vars, ["A", "B", "C"])
+}
+
+///|
+test "logic_atoms func args and op count mirror structure" {
+  let x = logic_symbol("x")
+  let y = logic_symbol("y")
+  let z = logic_symbol("z")
+  let expr = logic_and([
+    logic_or([x.copy(), y.copy()]),
+    logic_implies(z.copy(), x.copy()),
+  ])
+  let atoms = logic_atoms(expr.copy())
+  assert_eq(atoms, [logic_symbol("x"), logic_symbol("y"), logic_symbol("z")])
+  assert_eq(logic_func(expr.copy()), LOGIC_AND_SYMBOL)
+  let args = logic_args(expr.copy())
+  assert_eq(args.length(), 2)
+  assert_eq(args[0], logic_or([logic_symbol("x"), logic_symbol("y")]))
+  assert_eq(args[1], logic_implies(logic_symbol("z"), logic_symbol("x")))
+  assert_eq(logic_op_count(expr), 4)
+}
+
+///|
+test "logic_preorder visits nodes in expected order" {
+  let x = logic_symbol("x")
+  let y = logic_symbol("y")
+  let z = logic_symbol("z")
+  let expr = logic_and([
+    logic_or([x.copy(), y.copy()]),
+    logic_implies(z.copy(), x.copy()),
+  ])
+  let traversal = logic_preorder(expr.copy())
+  assert_eq(traversal, [
+    logic_and([
+      logic_or([logic_symbol("x"), logic_symbol("y")]),
+      logic_or([logic_symbol("x"), logic_not(logic_symbol("z"))]),
+    ]),
+    logic_or([logic_symbol("x"), logic_symbol("y")]),
+    logic_symbol("x"),
+    logic_symbol("y"),
+    logic_or([logic_symbol("x"), logic_not(logic_symbol("z"))]),
+    logic_symbol("x"),
+    logic_not(logic_symbol("z")),
+    logic_symbol("z"),
+  ])
+  let with_depth = logic_preorder_with_depth(expr, depth=0)
+  assert_eq(with_depth, [
+    (
+      0,
+      logic_and([
+        logic_or([logic_symbol("x"), logic_symbol("y")]),
+        logic_or([logic_symbol("x"), logic_not(logic_symbol("z"))]),
+      ]),
+    ),
+    (1, logic_or([logic_symbol("x"), logic_symbol("y")])),
+    (2, logic_symbol("x")),
+    (2, logic_symbol("y")),
+    (1, logic_or([logic_symbol("x"), logic_not(logic_symbol("z"))])),
+    (2, logic_symbol("x")),
+    (2, logic_not(logic_symbol("z"))),
+    (3, logic_symbol("z")),
+  ])
 }
 
 ///|

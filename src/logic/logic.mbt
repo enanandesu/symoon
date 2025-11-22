@@ -48,13 +48,28 @@ pub fn logic_and(operands : Array[LogicExpr]) -> LogicExpr {
 }
 
 ///|
+pub fn logic_nand(operands : Array[LogicExpr]) -> LogicExpr {
+  logic_not(logic_and(operands))
+}
+
+///|
 pub fn logic_or(operands : Array[LogicExpr]) -> LogicExpr {
   logic_or_internal(normalize_operands(operands))
 }
 
 ///|
+pub fn logic_nor(operands : Array[LogicExpr]) -> LogicExpr {
+  logic_not(logic_or(operands))
+}
+
+///|
 pub fn logic_xor(operands : Array[LogicExpr]) -> LogicExpr {
   logic_xor_internal(normalize_operands(operands))
+}
+
+///|
+pub fn logic_xnor(operands : Array[LogicExpr]) -> LogicExpr {
+  logic_not(logic_xor(operands))
 }
 
 ///|
@@ -360,6 +375,83 @@ pub fn logic_expr_complexity(expr : LogicExpr) -> Int {
 }
 
 ///|
+pub fn logic_atoms(expr : LogicExpr) -> Array[LogicExpr] {
+  let names = logic_collect_variables(expr)
+  let atoms = Array::new(capacity=names.length())
+  for name in names {
+    atoms.push(logic_symbol(name))
+  }
+  atoms
+}
+
+///|
+pub fn logic_func(expr : LogicExpr) -> String {
+  match expr {
+    Bool(_) => "Bool"
+    Symbol(_) => "Symbol"
+    Not(_) => LOGIC_NOT_SYMBOL
+    And(_) => LOGIC_AND_SYMBOL
+    Or(_) => LOGIC_OR_SYMBOL
+    Xor(_) => LOGIC_XOR_SYMBOL
+    Ite(_, _, _) => LOGIC_ITE_SYMBOL
+    Implies(_, _) => LOGIC_IMPLIES_SYMBOL
+    Equivalent(_, _) => LOGIC_EQUIVALENT_SYMBOL
+  }
+}
+
+///|
+pub fn logic_args(expr : LogicExpr) -> Array[LogicExpr] {
+  match expr {
+    Bool(_) => Array::new()
+    Symbol(_) => Array::new()
+    Not(inner) => [inner]
+    And(terms) => terms
+    Or(terms) => terms
+    Xor(terms) => terms
+    Ite(condition, then_branch, else_branch) =>
+      [condition, then_branch, else_branch]
+    Implies(lhs, rhs) => [lhs, rhs]
+    Equivalent(lhs, rhs) => [lhs, rhs]
+  }
+}
+
+///|
+pub fn logic_op_count(expr : LogicExpr) -> Int {
+  match expr {
+    Bool(_) => 0
+    Symbol(_) => 0
+    Not(inner) => 1 + logic_op_count(inner)
+    And(terms) => 1 + sum_op_count_terms(terms)
+    Or(terms) => 1 + sum_op_count_terms(terms)
+    Xor(terms) => 1 + sum_op_count_terms(terms)
+    Ite(condition, then_branch, else_branch) => {
+      let mut total = 1
+      total += logic_op_count(condition)
+      total += logic_op_count(then_branch)
+      total += logic_op_count(else_branch)
+      total
+    }
+    Implies(lhs, rhs) => 1 + logic_op_count(lhs) + logic_op_count(rhs)
+    Equivalent(lhs, rhs) => 1 + logic_op_count(lhs) + logic_op_count(rhs)
+  }
+}
+
+///|
+pub fn logic_preorder(expr : LogicExpr) -> Array[LogicExpr] {
+  let nodes = Array::new()
+  preorder_collect(expr, nodes)
+}
+
+///|
+pub fn logic_preorder_with_depth(
+  expr : LogicExpr,
+  depth? : Int = 0,
+) -> Array[(Int, LogicExpr)] {
+  let nodes = Array::new()
+  preorder_collect_with_depth(expr, depth, nodes)
+}
+
+///|
 fn collect_variables_internal(
   expr : LogicExpr,
   seen : Map[String, Bool],
@@ -600,6 +692,48 @@ fn sum_complexity_terms(terms : Array[LogicExpr]) -> Int {
   let mut total = 0
   for term in terms {
     total += logic_expr_complexity_internal(term)
+  }
+  total
+}
+
+///|
+fn preorder_collect(
+  expr : LogicExpr,
+  nodes : Array[LogicExpr],
+) -> Array[LogicExpr] {
+  nodes.push(expr)
+  let children = logic_args(expr)
+  let len = children.length()
+  for i in 0..<len {
+    let child = children[i]
+    let _ = preorder_collect(child, nodes)
+
+  }
+  nodes
+}
+
+///|
+fn preorder_collect_with_depth(
+  expr : LogicExpr,
+  depth : Int,
+  nodes : Array[(Int, LogicExpr)],
+) -> Array[(Int, LogicExpr)] {
+  nodes.push((depth, expr))
+  let children = logic_args(expr)
+  let len = children.length()
+  for i in 0..<len {
+    let child = children[i]
+    let _ = preorder_collect_with_depth(child, depth + 1, nodes)
+
+  }
+  nodes
+}
+
+///|
+fn sum_op_count_terms(terms : Array[LogicExpr]) -> Int {
+  let mut total = 0
+  for term in terms {
+    total += logic_op_count(term)
   }
   total
 }

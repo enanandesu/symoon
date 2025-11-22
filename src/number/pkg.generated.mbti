@@ -2,15 +2,45 @@
 package "enanandesu/symoon/src/number"
 
 // Values
+fn nt_divisor_count(Int) -> Int
+
+fn nt_divisor_sigma(Int, power? : Int) -> Int
+
+fn nt_divisors(Int) -> Array[Int]
+
+fn nt_factorint(Int) -> Array[(Int, Int)]
+
 fn nt_first_n_primes(Int) -> Array[Int]
 
 fn nt_gcd(Int, Int) -> Int
+
+fn nt_gcd_ex(Int, Int) -> (Int, Int, Int)
+
+fn nt_is_divisible_by(Int, Int) -> Bool
+
+fn nt_is_divisible_by_all(Int, Array[Int]) -> Bool
+
+fn nt_is_divisible_by_any(Int, Array[Int]) -> Bool
 
 fn nt_is_prime(Int) -> Bool
 
 fn nt_lcm(Int, Int) -> Int
 
+fn nt_multiplicity(Int, Int) -> Int
+
+fn nt_next_prime(Int) -> Int
+
+fn nt_nth_prime(Int) -> Int
+
+fn nt_prev_prime(Int) -> Int
+
+fn nt_prime_factor_list(Int) -> Array[Int]
+
 fn nt_prime_factors(Int) -> Array[(Int, Int)]
+
+fn nt_prime_pi(Int) -> Int
+
+fn nt_prime_range(Int, Int) -> Array[Int]
 
 fn nt_primes_up_to(Int) -> Array[Int]
 
