@@ -618,7 +618,11 @@ test "rationalize expr full search finds simple fraction" {
   let full_expr = rationalize_expr(value, tolerance=1.0e-6, full=true)
   inspect(full_expr, content="1 / 3")
   match full_expr {
-    Expr::Binary(BinaryOp::Div, Expr::Int(numerator), Expr::Int(denominator)) => {
+    Expr::Binary(
+      BinaryOp::Div,
+      Constant(ConstantLiteral::Integer(numerator)),
+      Constant(ConstantLiteral::Integer(denominator))
+    ) => {
       assert_eq(numerator, 1)
       assert_eq(denominator, 3)
     }
@@ -651,7 +655,7 @@ test "simplify cancels double neg with inverse flag" {
 test "simplify respects custom measure" {
   let expr = add(int(2), int(3))
   let measure = (candidate : Expr) => match candidate {
-    Expr::Int(_) => 100.0
+    Constant(ConstantLiteral::Integer(_)) => 100.0
     _ => count_ops(candidate)
   }
   let result = simplify(expr, measure~)

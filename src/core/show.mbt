@@ -48,13 +48,11 @@ fn needs_parentheses(
 ///|
 fn format_expr(expr : Expr, wrap : Bool) -> String {
   match expr {
-    Int(value) => value.to_string()
-    Double(value) => value.to_string()
+    Constant(literal) => format_constant_literal(literal)
     Symbol(symbol) => symbol.name
     Unary(Neg, inner) => {
       let base = match inner {
-        Int(value) => "-" + value.to_string()
-        Double(value) => "-" + value.to_string()
+        Constant(literal) => "-" + format_constant_literal(literal)
         Symbol(symbol) => "-" + symbol.name
         other => "-(" + format_expr(other, false) + ")"
       }
@@ -165,13 +163,11 @@ fn format_symbol_latex(symbol : Symbol) -> String {
 ///|
 fn format_expr_latex(expr : Expr, wrap : Bool) -> String {
   match expr {
-    Int(value) => value.to_string()
-    Double(value) => value.to_string()
+    Constant(literal) => format_constant_literal_latex(literal)
     Symbol(symbol) => format_symbol_latex(symbol)
     Unary(Neg, inner) => {
       let base = match inner {
-        Int(value) => "-" + value.to_string()
-        Double(value) => "-" + value.to_string()
+        Constant(literal) => "-" + format_constant_literal_latex(literal)
         Symbol(symbol) => "-" + symbol.name
         other => "-\\left(" + format_expr_latex(other, false) + "\\right)"
       }
@@ -237,6 +233,28 @@ fn format_expr_latex(expr : Expr, wrap : Bool) -> String {
       latex_wrap(base, wrap)
     }
     FunctionCall(name, args) => format_function_call_latex(name, args, wrap)
+  }
+}
+
+///|
+fn format_constant_literal(literal : ConstantLiteral) -> String {
+  match literal {
+    ConstantLiteral::Integer(value) => value.to_string()
+    ConstantLiteral::Float(value) => value.to_string()
+    ConstantLiteral::PosInfinity => "Infinity"
+    ConstantLiteral::NegInfinity => "-Infinity"
+    ConstantLiteral::NaN => "NaN"
+  }
+}
+
+///|
+fn format_constant_literal_latex(literal : ConstantLiteral) -> String {
+  match literal {
+    ConstantLiteral::Integer(value) => value.to_string()
+    ConstantLiteral::Float(value) => value.to_string()
+    ConstantLiteral::PosInfinity => "\\infty"
+    ConstantLiteral::NegInfinity => "-\\infty"
+    ConstantLiteral::NaN => "\\operatorname{NaN}"
   }
 }
 

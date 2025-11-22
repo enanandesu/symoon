@@ -52,7 +52,11 @@ fn matches(Pattern, Expr) -> Bool
 
 fn mul(Expr, Expr) -> Expr
 
+fn nan() -> Expr
+
 fn neg(Expr) -> Expr
+
+fn neg_infinity() -> Expr
 
 fn pattern_all_of(Array[Pattern]) -> Pattern
 
@@ -83,6 +87,8 @@ fn pattern_symbol(name? : String?) -> Pattern
 fn pattern_unary(Pattern, op? : UnaryOp?) -> Pattern
 
 fn pattern_wildcard(String) -> Pattern
+
+fn pos_infinity() -> Expr
 
 fn pow(Expr, Expr) -> Expr
 
@@ -131,9 +137,18 @@ impl Eq for BinaryOp
 impl Hash for BinaryOp
 impl Show for BinaryOp
 
+pub enum ConstantLiteral {
+  Integer(Int)
+  Float(Double)
+  PosInfinity
+  NegInfinity
+  NaN
+}
+impl Eq for ConstantLiteral
+impl Show for ConstantLiteral
+
 pub enum Expr {
-  Int(Int)
-  Double(Double)
+  Constant(ConstantLiteral)
   Symbol(Symbol)
   Unary(UnaryOp, Expr)
   Binary(BinaryOp, Expr, Expr)

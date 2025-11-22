@@ -53,20 +53,20 @@ fn divide_by_factorial(expr : Expr, factorial_value : Int) -> Expr {
     return expr
   }
   match expr {
-    Int(value) =>
+    Constant(ConstantLiteral::Integer(value)) =>
       if value % factorial_value == 0 {
-        Int(value / factorial_value)
+        int(value / factorial_value)
       } else {
         let numerator = value.to_double()
         let denominator = factorial_value.to_double()
-        Double(numerator / denominator)
+        double(numerator / denominator)
       }
-    Double(value) => {
+    Constant(ConstantLiteral::Float(value)) => {
       let denominator = factorial_value.to_double()
-      Double(value / denominator)
+      double(value / denominator)
     }
     _ => {
-      let denominator_expr = Int(factorial_value)
+      let denominator_expr = int(factorial_value)
       simplify(Binary(Div, expr, denominator_expr))
     }
   }
@@ -75,8 +75,8 @@ fn divide_by_factorial(expr : Expr, factorial_value : Int) -> Expr {
 ///|
 fn is_zero_literal(expr : Expr) -> Bool {
   match expr {
-    Int(value) => value == 0
-    Double(value) => value == 0.0
+    Constant(ConstantLiteral::Integer(value)) => value == 0
+    Constant(ConstantLiteral::Float(value)) => value == 0.0
     Unary(Neg, inner) => is_zero_literal(inner)
     _ => false
   }
@@ -85,8 +85,7 @@ fn is_zero_literal(expr : Expr) -> Bool {
 ///|
 fn expr_contains_variable(expr : Expr, variable_name : String) -> Bool {
   match expr {
-    Int(_) => false
-    Double(_) => false
+    Constant(_) => false
     Symbol(symbol) => symbol.name == variable_name
     Unary(_, inner) => expr_contains_variable(inner, variable_name)
     Binary(_, left, right) =>

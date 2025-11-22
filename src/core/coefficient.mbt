@@ -10,11 +10,11 @@ pub fn coefficient_of(
   let simplified = simplify(expr)
   if degree == 0 {
     return simplify(
-      substitute_variable(simplified, variable_name, Expr::Int(0)),
+      substitute_variable(simplified, variable_name, int(0)),
     )
   }
   if !expr_contains_variable(simplified, variable_name) {
-    return Expr::Int(0)
+    return int(0)
   }
   if contains_diff_fallback(simplified) {
     return coefficient_fallback(variable_name, degree, simplified)
@@ -26,10 +26,10 @@ pub fn coefficient_of(
     return coefficient_fallback(variable_name, degree, derivative)
   }
   if is_zero_literal(derivative) {
-    return Expr::Int(0)
+    return int(0)
   }
   let evaluated = simplify(
-    substitute_variable(derivative, variable_name, Expr::Int(0)),
+    substitute_variable(derivative, variable_name, int(0)),
   )
   let factorial_value = factorial_int(degree)
   divide_by_factorial(evaluated, factorial_value)
@@ -42,8 +42,7 @@ fn substitute_variable(
   replacement : Expr,
 ) -> Expr {
   match expr {
-    Int(_) => expr
-    Double(_) => expr
+    Constant(_) => expr
     Symbol(symbol) =>
       if symbol.name == variable_name {
         replacement.copy()
@@ -74,6 +73,6 @@ fn coefficient_fallback(
   degree : Int,
   expr : Expr,
 ) -> Expr {
-  let args = [sym(variable_name), Expr::Int(degree), normalize_negation(expr)]
+  let args = [sym(variable_name), int(degree), normalize_negation(expr)]
   Expr::FunctionCall("coeff".to_string(), args)
 }

@@ -28,9 +28,8 @@ fn differentiate_order(
 ///|
 fn differentiate_once(expr : Expr, variable_name : String) -> Expr {
   match expr {
-    Int(_) => Int(0)
-    Double(_) => Int(0)
-    Symbol(symbol) => if symbol.name == variable_name { Int(1) } else { Int(0) }
+    Constant(_) => int(0)
+    Symbol(symbol) => if symbol.name == variable_name { int(1) } else { int(0) }
     Unary(op, inner) =>
       match op {
         Neg => {
@@ -54,32 +53,32 @@ fn differentiate_once(expr : Expr, variable_name : String) -> Expr {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
           let cos_inner = Expr::Unary(Cos, inner)
-          let cos_sq = Expr::Binary(Pow, cos_inner, Int(2))
-          let sec_sq = Expr::Binary(Div, Int(1), cos_sq)
+          let cos_sq = Expr::Binary(Pow, cos_inner, int(2))
+          let sec_sq = Expr::Binary(Div, int(1), cos_sq)
           Binary(Mul, sec_sq, inner_diff)
         }
         Asin => {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
-          let inner_sq = Expr::Binary(Pow, inner, Int(2))
-          let base = Expr::Binary(Sub, Int(1), inner_sq)
-          let denom = Expr::Binary(Pow, base, Double(0.5))
+          let inner_sq = Expr::Binary(Pow, inner, int(2))
+          let base = Expr::Binary(Sub, int(1), inner_sq)
+          let denom = Expr::Binary(Pow, base, double(0.5))
           Binary(Div, inner_diff, denom)
         }
         Acos => {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
-          let inner_sq = Expr::Binary(Pow, inner, Int(2))
-          let base = Expr::Binary(Sub, Int(1), inner_sq)
-          let denom = Expr::Binary(Pow, base, Double(0.5))
+          let inner_sq = Expr::Binary(Pow, inner, int(2))
+          let base = Expr::Binary(Sub, int(1), inner_sq)
+          let denom = Expr::Binary(Pow, base, double(0.5))
           let neg_diff = Expr::Unary(Neg, inner_diff)
           Binary(Div, neg_diff, denom)
         }
         Atan => {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
-          let inner_sq = Expr::Binary(Pow, inner, Int(2))
-          let denom = Expr::Binary(Add, Int(1), inner_sq)
+          let inner_sq = Expr::Binary(Pow, inner, int(2))
+          let denom = Expr::Binary(Add, int(1), inner_sq)
           Binary(Div, inner_diff, denom)
         }
         Sinh => {
@@ -98,33 +97,33 @@ fn differentiate_once(expr : Expr, variable_name : String) -> Expr {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
           let cosh_inner = Expr::Unary(Cosh, inner)
-          let cosh_sq = Expr::Binary(Pow, cosh_inner, Int(2))
-          let sech_sq = Expr::Binary(Div, Int(1), cosh_sq)
+          let cosh_sq = Expr::Binary(Pow, cosh_inner, int(2))
+          let sech_sq = Expr::Binary(Div, int(1), cosh_sq)
           Binary(Mul, sech_sq, inner_diff)
         }
         Asinh => {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
-          let inner_sq = Expr::Binary(Pow, inner, Int(2))
-          let base = Expr::Binary(Add, inner_sq, Int(1))
-          let denom = Expr::Binary(Pow, base, Double(0.5))
+          let inner_sq = Expr::Binary(Pow, inner, int(2))
+          let base = Expr::Binary(Add, inner_sq, int(1))
+          let denom = Expr::Binary(Pow, base, double(0.5))
           Binary(Div, inner_diff, denom)
         }
         Acosh => {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
-          let minus_one = Expr::Binary(Sub, inner, Int(1))
-          let plus_one = Expr::Binary(Add, inner, Expr::Int(1))
-          let sqrt_minus = Expr::Binary(Pow, minus_one, Double(0.5))
-          let sqrt_plus = Expr::Binary(Pow, plus_one, Double(0.5))
+          let minus_one = Expr::Binary(Sub, inner, int(1))
+          let plus_one = Expr::Binary(Add, inner, int(1))
+          let sqrt_minus = Expr::Binary(Pow, minus_one, double(0.5))
+          let sqrt_plus = Expr::Binary(Pow, plus_one, double(0.5))
           let denom = Expr::Binary(Mul, sqrt_minus, sqrt_plus)
           Binary(Div, inner_diff, denom)
         }
         Atanh => {
           let var_for_inner = variable_name
           let inner_diff = differentiate(inner, var_for_inner)
-          let inner_sq = Expr::Binary(Pow, inner, Int(2))
-          let denom = Expr::Binary(Sub, Int(1), inner_sq)
+          let inner_sq = Expr::Binary(Pow, inner, int(2))
+          let denom = Expr::Binary(Sub, int(1), inner_sq)
           Binary(Div, inner_diff, denom)
         }
         Exp => {
@@ -177,23 +176,23 @@ fn differentiate_once(expr : Expr, variable_name : String) -> Expr {
       let numerator_left = Expr::Binary(Mul, left_diff, right)
       let numerator_right = Expr::Binary(Mul, left, right_diff)
       let numerator = Expr::Binary(Sub, numerator_left, numerator_right)
-      let denominator_squared = Expr::Binary(Pow, right, Int(2))
+      let denominator_squared = Expr::Binary(Pow, right, int(2))
       Binary(Div, numerator, denominator_squared)
     }
     Binary(Pow, base, exponent) =>
       match exponent {
-        Int(exp_value) =>
+        Constant(ConstantLiteral::Integer(exp_value)) =>
           if exp_value == 0 {
-            Int(0)
+            int(0)
           } else {
-            let exponent_expr = Int(exp_value)
+            let exponent_expr = int(exp_value)
             diff_pow_general(base, exponent_expr, variable_name)
           }
-        Double(exp_value) =>
+        Constant(ConstantLiteral::Float(exp_value)) =>
           if exp_value == 0.0 {
-            Int(0)
+            int(0)
           } else {
-            let exponent_expr = Double(exp_value)
+            let exponent_expr = double(exp_value)
             diff_pow_general(base, exponent_expr, variable_name)
           }
         other_exponent => diff_pow_general(base, other_exponent, variable_name)

@@ -21,9 +21,17 @@ pub fn Symbol::copy(self : Symbol) -> Symbol {
 }
 
 ///|
+pub enum ConstantLiteral {
+  Integer(Int)
+  Float(Double)
+  PosInfinity
+  NegInfinity
+  NaN
+} derive(Eq, Show)
+
+///|
 pub enum Expr {
-  Int(Int)
-  Double(Double)
+  Constant(ConstantLiteral)
   Symbol(Symbol)
   Unary(UnaryOp, Expr)
   Binary(BinaryOp, Expr, Expr)
@@ -32,12 +40,27 @@ pub enum Expr {
 
 ///|
 pub fn int(value : Int) -> Expr {
-  Int(value)
+  Constant(ConstantLiteral::Integer(value))
 }
 
 ///|
 pub fn double(value : Double) -> Expr {
-  Double(value)
+  Constant(ConstantLiteral::Float(value))
+}
+
+///|
+pub fn pos_infinity() -> Expr {
+  Constant(ConstantLiteral::PosInfinity)
+}
+
+///|
+pub fn neg_infinity() -> Expr {
+  Constant(ConstantLiteral::NegInfinity)
+}
+
+///|
+pub fn nan() -> Expr {
+  Constant(ConstantLiteral::NaN)
 }
 
 ///|
@@ -48,8 +71,7 @@ pub fn sym(name : String) -> Expr {
 ///|
 pub fn Expr::copy(self : Expr) -> Expr {
   match self {
-    Int(value) => Expr::Int(value)
-    Double(value) => Double(value)
+    Constant(literal) => Constant(literal)
     Symbol(symbol) => Symbol(symbol.copy())
     Unary(op, inner) => Unary(op, inner.copy())
     Binary(op, left, right) => Binary(op, left.copy(), right.copy())

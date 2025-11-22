@@ -1,13 +1,13 @@
 ///|
 fn assert_expr_close(expr : Expr, expected : Double) -> Unit {
   match expr {
-    Expr::Int(value) => {
+    Constant(ConstantLiteral::Integer(value)) => {
       let diff = (value.to_double() - expected).abs()
       if diff >= 1.0e-9 {
         abort("expected close numeric value")
       }
     }
-    Expr::Double(value) => {
+    Constant(ConstantLiteral::Float(value)) => {
       let diff = (value - expected).abs()
       if diff >= 1.0e-9 {
         abort("expected close numeric value")

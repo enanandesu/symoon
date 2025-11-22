@@ -191,7 +191,7 @@ fn build_constant_multiple(
   denominator : Int,
 ) -> Expr {
   if numerator == 0 {
-    return Int(0)
+    return int(0)
   }
   let positive_num = numerator.abs()
   let multiple = rational_expr(positive_num, denominator)
@@ -229,7 +229,7 @@ fn build_constant_linear_combination_terms(
   }
   match result {
     Some(expr) => expr
-    None => Int(0)
+    None => int(0)
   }
 }
 
@@ -269,8 +269,8 @@ fn build_constant_linear_combination(
 ///|
 fn is_zero_expr(expr : Expr) -> Bool {
   match expr {
-    Int(value) => value == 0
-    Double(value) => value == 0.0
+    Constant(ConstantLiteral::Integer(value)) => value == 0
+    Constant(ConstantLiteral::Float(value)) => value == 0.0
     _ => false
   }
 }
@@ -647,9 +647,9 @@ fn rationalize_double_value(
 ///|
 fn rational_expr(numerator : Int, denominator : Int) -> Expr {
   if denominator == 1 {
-    Int(numerator)
+    int(numerator)
   } else {
-    Binary(Div, Int(numerator), Int(denominator))
+    Binary(Div, int(numerator), int(denominator))
   }
 }
 

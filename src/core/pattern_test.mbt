@@ -15,7 +15,7 @@ test "pattern wildcard binding captures operand" {
 test "pattern guarded wildcard enforces predicate" {
   let positive_guard = pattern_guarded("value", (candidate : Expr) => match
     candidate {
-    Expr::Int(n) => n > 0
+    Constant(ConstantLiteral::Integer(n)) => n > 0
     _ => false
   })
   assert_eq(matches(positive_guard, int(5)), true)

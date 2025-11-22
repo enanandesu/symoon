@@ -15,13 +15,13 @@ pub fn solve_linear_equation(
   }
   if is_zero_literal_linear(coeff) {
     match constant {
-      Expr::Int(value) =>
+      Constant(ConstantLiteral::Integer(value)) =>
         if value == 0 {
           return solve_linear_fallback(variable_name, lhs, rhs)
         } else {
           return no_solution_expr()
         }
-      Expr::Double(value) =>
+      Constant(ConstantLiteral::Float(value)) =>
         if value == 0.0 {
           return solve_linear_fallback(variable_name, lhs, rhs)
         } else {
@@ -187,8 +187,8 @@ fn contains_coeff_placeholder(expr : Expr) -> Bool {
 
 ///|
 fn constant_term(expr : Expr, var_x : String, var_y : String) -> Expr {
-  let without_x = substitute_variable_linear(expr, var_x, Expr::Int(0))
-  let without_y = substitute_variable_linear(without_x, var_y, Expr::Int(0))
+  let without_x = substitute_variable_linear(expr, var_x, int(0))
+  let without_y = substitute_variable_linear(without_x, var_y, int(0))
   simplify(without_y)
 }
 
@@ -196,7 +196,7 @@ fn constant_term(expr : Expr, var_x : String, var_y : String) -> Expr {
 fn constant_term_multi(expr : Expr, variable_names : Array[String]) -> Expr {
   let mut current = expr
   for name in variable_names {
-    current = substitute_variable_linear(current, name, Expr::Int(0))
+    current = substitute_variable_linear(current, name, int(0))
   }
   simplify(current)
 }
@@ -208,8 +208,7 @@ fn substitute_variable_linear(
   replacement : Expr,
 ) -> Expr {
   match expr {
-    Expr::Int(_) => expr
-    Expr::Double(_) => expr
+    Constant(_) => expr
     Expr::Symbol(symbol) =>
       if symbol.name == variable_name {
         replacement.copy()
@@ -318,8 +317,7 @@ fn has_non_linear_terms(expr : Expr, variable_name : String) -> Bool {
 ///|
 fn expr_contains_variable_linear(expr : Expr, variable_name : String) -> Bool {
   match expr {
-    Expr::Int(_) => false
-    Expr::Double(_) => false
+    Constant(_) => false
     Expr::Symbol(symbol) => symbol.name == variable_name
     Expr::Unary(_, inner) => expr_contains_variable_linear(inner, variable_name)
     Expr::Binary(_, left, right) =>
@@ -339,8 +337,8 @@ fn expr_contains_variable_linear(expr : Expr, variable_name : String) -> Bool {
 ///|
 fn literal_to_double(expr : Expr) -> Double? {
   match expr {
-    Expr::Int(value) => Some(value.to_double())
-    Expr::Double(value) => Some(value)
+    Constant(ConstantLiteral::Integer(value)) => Some(value.to_double())
+    Constant(ConstantLiteral::Float(value)) => Some(value)
     Expr::Unary(UnaryOp::Neg, inner) =>
       match literal_to_double(inner) {
         Some(inner_value) => Some(-inner_value)
@@ -374,9 +372,9 @@ fn literal_to_double(expr : Expr) -> Double? {
 fn double_to_expr(value : Double) -> Expr {
   let rounded = value.round()
   if (value - rounded).abs() < 1.0e-9 {
-    Expr::Int(rounded.to_int())
+    int(rounded.to_int())
   } else {
-    Expr::Double(value)
+    double(value)
   }
 }
 
@@ -492,16 +490,16 @@ fn solve_linear_system_fallback(
 ///|
 fn build_fraction(numerator : Expr, denominator : Expr) -> Expr {
   match denominator {
-    Expr::Int(value) =>
+    Constant(ConstantLiteral::Integer(value)) =>
       if value < 0 {
         let new_num = simplify(negate_expr(numerator))
-        let new_den = Expr::Int(-value)
+        let new_den = int(-value)
         return simplify(Expr::Binary(BinaryOp::Div, new_num, new_den))
       }
-    Expr::Double(value) =>
+    Constant(ConstantLiteral::Float(value)) =>
       if value < 0.0 {
         let new_num = simplify(negate_expr(numerator))
-        let new_den = Expr::Double(-value)
+        let new_den = double(-value)
         return simplify(Expr::Binary(BinaryOp::Div, new_num, new_den))
       }
     Expr::Unary(UnaryOp::Neg, inner) => {
@@ -524,8 +522,8 @@ fn negate_expr(expr : Expr) -> Expr {
 ///|
 fn is_zero_literal_linear(expr : Expr) -> Bool {
   match expr {
-    Expr::Int(value) => value == 0
-    Expr::Double(value) => value == 0.0
+    Constant(ConstantLiteral::Integer(value)) => value == 0
+    Constant(ConstantLiteral::Float(value)) => value == 0.0
     Expr::Unary(UnaryOp::Neg, inner) => is_zero_literal(inner)
     _ => false
   }

@@ -272,7 +272,7 @@ fn match_internal(
       }
     IntLiteral(maybe_value) =>
       match expr {
-        Int(value) =>
+        Constant(ConstantLiteral::Integer(value)) =>
           match maybe_value {
             Some(expected) =>
               if value == expected {
@@ -286,7 +286,7 @@ fn match_internal(
       }
     Pattern::DoubleLiteral(maybe_value) =>
       match expr {
-        Expr::Double(value) =>
+        Constant(ConstantLiteral::Float(value)) =>
           match maybe_value {
             Some(expected) =>
               if value == expected {

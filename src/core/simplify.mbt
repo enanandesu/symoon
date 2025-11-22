@@ -1,7 +1,7 @@
 ///|
 fn pow_root_guard(_expr : Expr, bindings : PatternBindings) -> Bool {
   match PatternBindings::get(bindings, "n_expr") {
-    Some(Expr::Int(value)) => value > 0
+    Some(Constant(ConstantLiteral::Integer(value))) => value > 0
     _ => false
   }
 }
@@ -95,7 +95,7 @@ fn match_pow(expr : Expr, op : UnaryOp, exponent : Int) -> Expr? {
   match expr {
     Expr::Binary(BinaryOp::Pow, base, exp_expr) =>
       match exp_expr {
-        Expr::Int(value) if value == exponent =>
+        Constant(ConstantLiteral::Integer(value)) if value == exponent =>
           match base {
             Expr::Unary(inner_op, inner_expr) if inner_op == op =>
               Some(inner_expr)
@@ -350,7 +350,7 @@ fn match_hyperbolic_double(expr : Expr) -> Expr? {
       let mut maybe_cosh : Expr? = None
       for factor in factors {
         match factor {
-          Expr::Int(value) =>
+          Constant(ConstantLiteral::Integer(value)) =>
             if value == 2 && !has_two {
               has_two = true
             } else {
@@ -504,8 +504,8 @@ fn remove_pair_and_insert(
 ///|
 fn is_literal_one(expr : Expr) -> Bool {
   match expr {
-    Expr::Int(value) => value == 1
-    Expr::Double(value) => value == 1.0
+    Constant(ConstantLiteral::Integer(value)) => value == 1
+    Constant(ConstantLiteral::Float(value)) => value == 1.0
     _ => false
   }
 }
@@ -515,11 +515,11 @@ fn match_one_over_tan_sq(expr : Expr) -> Expr? {
   match expr {
     Expr::Binary(BinaryOp::Div, numerator, denominator) =>
       match numerator {
-        Expr::Int(value) if value == 1 =>
+        Constant(ConstantLiteral::Integer(value)) if value == 1 =>
           match denominator {
             Expr::Binary(BinaryOp::Pow, base, exponent) =>
               match exponent {
-                Expr::Int(power) if power == 2 =>
+                Constant(ConstantLiteral::Integer(power)) if power == 2 =>
                   match base {
                     Expr::Unary(UnaryOp::Tan, angle) => Some(angle)
                     _ => None
@@ -860,7 +860,7 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
     let base_expr = PatternBindings::expect(bindings.copy(), "inner_base")
     let exponent_expr = PatternBindings::expect(bindings, "n_expr")
     match exponent_expr {
-      Expr::Int(value) =>
+      Constant(ConstantLiteral::Integer(value)) =>
         if value % 2 == 0 {
           abs(base_expr)
         } else {
@@ -970,6 +970,110 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
       neg(cos(mul(int(2), angle)))
     }),
   )
+  let sin_sq_factors = Array::new(capacity=2)
+  sin_sq_factors.push(two_literal.copy())
+  sin_sq_factors.push(sin_sq.copy())
+  let two_sin_sq = pattern_product(sin_sq_factors)
+  let cos_sq_factors = Array::new(capacity=2)
+  cos_sq_factors.push(two_literal.copy())
+  cos_sq_factors.push(cos_sq.copy())
+  let two_cos_sq = pattern_product(cos_sq_factors)
+  let neg_sin_sq_factors = Array::new(capacity=2)
+  neg_sin_sq_factors.push(neg_two_literal.copy())
+  neg_sin_sq_factors.push(sin_sq.copy())
+  let neg_two_sin_sq = pattern_product(neg_sin_sq_factors)
+  let neg_cos_sq_factors = Array::new(capacity=2)
+  neg_cos_sq_factors.push(neg_two_literal.copy())
+  neg_cos_sq_factors.push(cos_sq.copy())
+  let neg_two_cos_sq = pattern_product(neg_cos_sq_factors)
+  let one_minus_two_sin_sq = pattern_binary(
+    one_literal.copy(),
+    two_sin_sq.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  let two_sin_sq_minus_one = pattern_binary(
+    two_sin_sq.copy(),
+    one_literal.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  let two_cos_sq_minus_one = pattern_binary(
+    two_cos_sq.copy(),
+    one_literal.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  let one_minus_two_cos_sq = pattern_binary(
+    one_literal.copy(),
+    two_cos_sq.copy(),
+    op=Some(BinaryOp::Sub),
+  )
+  rules.push(
+    RewriteRule::new(one_minus_two_sin_sq, (bindings : PatternBindings) => {
+      let angle = PatternBindings::expect(bindings, "py_theta")
+      cos(mul(int(2), angle))
+    }),
+  )
+  rules.push(
+    RewriteRule::new(two_sin_sq_minus_one, (bindings : PatternBindings) => {
+      let angle = PatternBindings::expect(bindings, "py_theta")
+      neg(cos(mul(int(2), angle)))
+    }),
+  )
+  rules.push(
+    RewriteRule::new(two_cos_sq_minus_one, (bindings : PatternBindings) => {
+      let angle = PatternBindings::expect(bindings, "py_theta")
+      cos(mul(int(2), angle))
+    }),
+  )
+  rules.push(
+    RewriteRule::new(one_minus_two_cos_sq, (bindings : PatternBindings) => {
+      let angle = PatternBindings::expect(bindings, "py_theta")
+      neg(cos(mul(int(2), angle)))
+    }),
+  )
+  let add_neg_two_sin_sq = pattern_binary(
+    one_literal.copy(),
+    neg_two_sin_sq.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  let neg_two_sin_sq_add = pattern_binary(
+    neg_two_sin_sq.copy(),
+    one_literal.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  let add_neg_two_cos_sq = pattern_binary(
+    one_literal.copy(),
+    neg_two_cos_sq.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  let neg_two_cos_sq_add = pattern_binary(
+    neg_two_cos_sq.copy(),
+    one_literal.copy(),
+    op=Some(BinaryOp::Add),
+  )
+  rules.push(
+    RewriteRule::new(add_neg_two_sin_sq, (bindings : PatternBindings) => {
+      let angle = PatternBindings::expect(bindings, "py_theta")
+      cos(mul(int(2), angle))
+    }),
+  )
+  rules.push(
+    RewriteRule::new(neg_two_sin_sq_add, (bindings : PatternBindings) => {
+      let angle = PatternBindings::expect(bindings, "py_theta")
+      cos(mul(int(2), angle))
+    }),
+  )
+  rules.push(
+    RewriteRule::new(add_neg_two_cos_sq, (bindings : PatternBindings) => {
+      let angle = PatternBindings::expect(bindings, "py_theta")
+      neg(cos(mul(int(2), angle)))
+    }),
+  )
+  rules.push(
+    RewriteRule::new(neg_two_cos_sq_add, (bindings : PatternBindings) => {
+      let angle = PatternBindings::expect(bindings, "py_theta")
+      neg(cos(mul(int(2), angle)))
+    }),
+  )
   let tan_theta = pattern_wildcard("tan_theta")
   let tan_expr = pattern_unary(tan_theta.copy(), op=Some(UnaryOp::Tan))
   let tan_sq = pattern_binary(
@@ -1006,6 +1110,21 @@ fn identity_rewrite_rules() -> Array[RewriteRule] {
     one_literal.copy(),
     pattern_binary(tan_expr.copy(), two_literal.copy(), op=Some(BinaryOp::Pow)),
     op=Some(BinaryOp::Div),
+  )
+  let tan_double_num_factors = Array::new(capacity=2)
+  tan_double_num_factors.push(two_literal.copy())
+  tan_double_num_factors.push(tan_expr.copy())
+  let tan_double_numerator = pattern_product(tan_double_num_factors)
+  let tan_double_pattern = pattern_binary(
+    tan_double_numerator,
+    pattern_binary(one_literal.copy(), tan_sq.copy(), op=Some(BinaryOp::Sub)),
+    op=Some(BinaryOp::Div),
+  )
+  rules.push(
+    RewriteRule::new(tan_double_pattern, (bindings : PatternBindings) => {
+      let angle = PatternBindings::expect(bindings, "tan_theta")
+      tan(mul(int(2), angle))
+    }),
   )
   let tan_sq_div_sum_terms : Array[Pattern] = Array::new(capacity=2)
   tan_sq_div_sum_terms.push(one_literal.copy())
@@ -1863,8 +1982,7 @@ pub fn simplify(
 /// 自带评价式子复杂程度函数
 pub fn count_ops(expr : Expr) -> Double {
   match expr {
-    Expr::Int(_) => 0.0
-    Expr::Double(_) => 0.0
+    Constant(_) => 0.0
     Expr::Symbol(_) => 0.0
     Expr::Unary(_, inner) => 1 + count_ops(inner)
     Expr::Binary(_, left, right) => 1 + count_ops(left) + count_ops(right)
@@ -1935,13 +2053,13 @@ pub fn rationalize_expr(
     return expr
   }
   match expr {
-    Expr::Double(value) =>
+    Constant(ConstantLiteral::Float(value)) =>
       match
         rationalize_double_value(
           value, constants, tolerance, full, rational_conversion,
         ) {
         Some(expr) => expr
-        None => Expr::Double(value)
+        None => double(value)
       }
     Expr::Unary(op, inner) =>
       Expr::Unary(
@@ -1996,8 +2114,8 @@ fn simplify_reduce(expr : Expr) -> Expr {
     Expr::Unary(UnaryOp::Neg, inner) => {
       let simplified_inner = simplify_reduce(inner)
       match simplified_inner {
-        Expr::Int(value) => Expr::Int(-value)
-        Expr::Double(value) => Expr::Double(-value)
+        Constant(ConstantLiteral::Integer(value)) => int(-value)
+        Constant(ConstantLiteral::Float(value)) => double(-value)
         other => Expr::Unary(UnaryOp::Neg, other)
       }
     }
@@ -2088,7 +2206,7 @@ fn combine_polynomial_terms(terms : Array[Expr]) -> Expr {
   }
   match result {
     Some(expr) => expr
-    None => Expr::Int(0)
+    None => int(0)
   }
 }
 
@@ -2115,7 +2233,7 @@ fn gcd_of_coefficients(coeffs : Array[Expr]) -> Int {
   let mut current : Int? = None
   for coeff in coeffs {
     match coeff {
-      Expr::Int(value) => {
+      Constant(ConstantLiteral::Integer(value)) => {
         let abs_value = if value < 0 { -value } else { value }
         current = match current {
           Some(existing) => Some(gcd_int_values(existing, abs_value))
@@ -2137,7 +2255,7 @@ fn divide_coefficient_by_int(coeff : Expr, divisor : Int) -> Expr {
     return coeff
   }
   match coeff {
-    Expr::Int(value) => Expr::Int(value / divisor)
+    Constant(ConstantLiteral::Integer(value)) => int(value / divisor)
     _ => coeff
   }
 }
@@ -2268,7 +2386,7 @@ fn factor_common_addition(expr : Expr) -> Expr? {
   }
   let common_factors = expand_factor_counts(common_counts.copy())
   let common_factor_expr = build_monomial_from_factors(common_factors)
-  let outer_coeff_expr = Expr::Int(gcd_value)
+  let outer_coeff_expr = int(gcd_value)
   let outer_factor = term_from_parts(
     outer_coeff_expr,
     common_factor_expr.copy(),
@@ -2296,7 +2414,7 @@ fn factor_common_addition(expr : Expr) -> Expr? {
 ///|
 fn match_pow_base(expr : Expr, exponent : Int) -> Expr? {
   match expr {
-    Expr::Binary(BinaryOp::Pow, base, Expr::Int(value)) =>
+    Expr::Binary(BinaryOp::Pow, base, Constant(ConstantLiteral::Integer(value))) =>
       if value == exponent {
         Some(base)
       } else {
@@ -2318,7 +2436,7 @@ fn match_cross_term(
   let rem = Array::new()
   for factor in factors {
     match factor {
-      Expr::Int(value) => coeff = coeff * value
+      Constant(ConstantLiteral::Integer(value)) => coeff = coeff * value
       Expr::Unary(UnaryOp::Neg, inner) => {
         coeff = coeff * -1
         rem.push(inner)
@@ -2478,21 +2596,21 @@ fn extract_polynomial_term(expr : Expr) -> (Expr, Array[Expr]) {
     }
     Expr::Unary(UnaryOp::Neg, inner) => {
       let (inner_coeff, inner_factors) = extract_polynomial_term(inner)
-      let negated_coeff = multiply_coefficients(Expr::Int(-1), inner_coeff)
+      let negated_coeff = multiply_coefficients(int(-1), inner_coeff)
       (negated_coeff, inner_factors)
     }
-    Expr::Int(value) => {
+    Constant(ConstantLiteral::Integer(value)) => {
       let factors = Array::new()
-      (Expr::Int(value), factors)
+      (int(value), factors)
     }
-    Expr::Double(value) => {
+    Constant(ConstantLiteral::Float(value)) => {
       let factors = Array::new()
-      (Expr::Double(value), factors)
+      (double(value), factors)
     }
     other => {
       let factors = Array::new(capacity=1)
       factors.push(other)
-      (Expr::Int(1), factors)
+      (int(1), factors)
     }
   }
 }
@@ -2537,7 +2655,7 @@ fn normalize_factors(factors : Array[Expr]) -> Array[Expr] {
 fn build_monomial_from_factors(factors : Array[Expr]) -> Expr {
   let len = factors.length()
   if len == 0 {
-    Expr::Int(1)
+    int(1)
   } else if len == 1 {
     factors[0]
   } else {
@@ -2565,18 +2683,26 @@ fn find_monomial_index(monomials : Array[Expr], target : Expr) -> Int {
 /// 系数加法穷举
 fn add_coefficients(lhs : Expr, rhs : Expr) -> Expr {
   match (lhs, rhs) {
-    (Expr::Int(left_val), Expr::Int(right_val)) =>
-      Expr::Int(left_val + right_val)
-    (Expr::Double(left_val), Expr::Double(right_val)) =>
-      Expr::Double(left_val + right_val)
-    (Expr::Int(left_val), Expr::Double(right_val)) =>
-      Expr::Double(left_val.to_double() + right_val)
-    (Expr::Double(left_val), Expr::Int(right_val)) =>
-      Expr::Double(left_val + right_val.to_double())
-    (Expr::Int(0), other) => other
-    (other, Expr::Int(0)) => other
-    (Expr::Double(0.0), other) => other
-    (other, Expr::Double(0.0)) => other
+    (
+      Constant(ConstantLiteral::Integer(left_val)),
+      Constant(ConstantLiteral::Integer(right_val)),
+    ) => int(left_val + right_val)
+    (
+      Constant(ConstantLiteral::Float(left_val)),
+      Constant(ConstantLiteral::Float(right_val)),
+    ) => double(left_val + right_val)
+    (
+      Constant(ConstantLiteral::Integer(left_val)),
+      Constant(ConstantLiteral::Float(right_val)),
+    ) => double(left_val.to_double() + right_val)
+    (
+      Constant(ConstantLiteral::Float(left_val)),
+      Constant(ConstantLiteral::Integer(right_val)),
+    ) => double(left_val + right_val.to_double())
+    (Constant(ConstantLiteral::Integer(value)), other) if value == 0 => other
+    (other, Constant(ConstantLiteral::Integer(value))) if value == 0 => other
+    (Constant(ConstantLiteral::Float(value)), other) if value == 0.0 => other
+    (other, Constant(ConstantLiteral::Float(value))) if value == 0.0 => other
     (left_expr, right_expr) =>
       Expr::Binary(BinaryOp::Add, left_expr, right_expr)
   }
@@ -2586,18 +2712,26 @@ fn add_coefficients(lhs : Expr, rhs : Expr) -> Expr {
 /// 系数乘法穷举
 fn multiply_coefficients(lhs : Expr, rhs : Expr) -> Expr {
   match (lhs, rhs) {
-    (Expr::Int(left_val), Expr::Int(right_val)) =>
-      Expr::Int(left_val * right_val)
-    (Expr::Double(left_val), Expr::Double(right_val)) =>
-      Expr::Double(left_val * right_val)
-    (Expr::Int(left_val), Expr::Double(right_val)) =>
-      Expr::Double(left_val.to_double() * right_val)
-    (Expr::Double(left_val), Expr::Int(right_val)) =>
-      Expr::Double(left_val * right_val.to_double())
-    (Expr::Int(1), other) => other
-    (other, Expr::Int(1)) => other
-    (Expr::Double(1.0), other) => other
-    (other, Expr::Double(1.0)) => other
+    (
+      Constant(ConstantLiteral::Integer(left_val)),
+      Constant(ConstantLiteral::Integer(right_val)),
+    ) => int(left_val * right_val)
+    (
+      Constant(ConstantLiteral::Float(left_val)),
+      Constant(ConstantLiteral::Float(right_val)),
+    ) => double(left_val * right_val)
+    (
+      Constant(ConstantLiteral::Integer(left_val)),
+      Constant(ConstantLiteral::Float(right_val)),
+    ) => double(left_val.to_double() * right_val)
+    (
+      Constant(ConstantLiteral::Float(left_val)),
+      Constant(ConstantLiteral::Integer(right_val)),
+    ) => double(left_val * right_val.to_double())
+    (Constant(ConstantLiteral::Integer(value)), other) if value == 1 => other
+    (other, Constant(ConstantLiteral::Integer(value))) if value == 1 => other
+    (Constant(ConstantLiteral::Float(value)), other) if value == 1.0 => other
+    (other, Constant(ConstantLiteral::Float(value))) if value == 1.0 => other
     (left_expr, right_expr) =>
       Expr::Binary(BinaryOp::Mul, left_expr, right_expr)
   }
@@ -2607,10 +2741,10 @@ fn multiply_coefficients(lhs : Expr, rhs : Expr) -> Expr {
 fn term_from_parts(coeff : Expr, monomial : Expr) -> Expr {
   let (coeff_zero, coeff_clean) = simplify_is_zero_literal(coeff)
   if coeff_zero {
-    return Expr::Int(0)
+    return int(0)
   }
   let (coeff_one, coeff_value) = simplify_is_one_literal(coeff_clean)
-  if monomial == Expr::Int(1) {
+  if monomial == int(1) {
     coeff_value
   } else if coeff_one {
     monomial
@@ -2630,8 +2764,8 @@ fn is_zero_coefficient(expr : Expr) -> Bool {
 ///|
 fn simplify_is_minus_one_literal(expr : Expr) -> Bool {
   match expr {
-    Expr::Int(value) => value == -1
-    Expr::Double(value) => value == -1.0
+    Constant(ConstantLiteral::Integer(value)) => value == -1
+    Constant(ConstantLiteral::Float(value)) => value == -1.0
     _ => false
   }
 }
@@ -2646,9 +2780,15 @@ fn simplify_sub(left : Expr, right : Expr) -> Expr {
     left_s
   } else {
     match (left_s, right_clean) {
-      (Expr::Int(lhs), Expr::Int(rhs)) => Expr::Int(lhs - rhs)
-      (Expr::Double(lhs), Expr::Double(rhs)) => Expr::Double(lhs - rhs)
-      (lhs, rhs) => Expr::Binary(BinaryOp::Sub, lhs, rhs)
+      (
+        Constant(ConstantLiteral::Integer(lhs)),
+        Constant(ConstantLiteral::Integer(rhs)),
+      ) => int(lhs - rhs)
+      (
+        Constant(ConstantLiteral::Float(lhs)),
+        Constant(ConstantLiteral::Float(rhs)),
+      ) => double(lhs - rhs)
+      (lhs_expr, rhs_expr) => Expr::Binary(BinaryOp::Sub, lhs_expr, rhs_expr)
     }
   }
 }
@@ -2661,7 +2801,7 @@ fn simplify_mul(left : Expr, right : Expr) -> Expr {
   let (left_zero, left_clean) = simplify_is_zero_literal(left_s)
   let (right_zero, right_clean) = simplify_is_zero_literal(right_s)
   if left_zero || right_zero {
-    return Expr::Int(0)
+    return int(0)
   }
   let mut factors = Array::new()
   factors = collect_mul_factors(left_clean, factors)
@@ -2675,23 +2815,27 @@ fn simplify_mul(left : Expr, right : Expr) -> Expr {
   let mut is_negative = false
   for factor in factors {
     match factor {
-      Expr::Int(value) => {
+      Constant(ConstantLiteral::Integer(value)) => {
         if value == 0 {
-          return Expr::Int(0)
+          return int(0)
         }
         coeff_int = coeff_int * value
         has_int = true
       }
-      Expr::Double(value) => {
+      Constant(ConstantLiteral::Float(value)) => {
         if value == 0.0 {
-          return Expr::Double(0.0)
+          return double(0.0)
         }
         coeff_double = match coeff_double {
           Some(current) => Some(current * value)
           None => Some(value)
         }
       }
-      Expr::Binary(BinaryOp::Pow, Expr::Symbol(symbol), Expr::Int(exp)) => {
+      Expr::Binary(
+        BinaryOp::Pow,
+        Expr::Symbol(symbol),
+        Constant(ConstantLiteral::Integer(exp))
+      ) => {
         let base = Expr::Symbol(symbol)
         symbol_counts = add_symbol_power(symbol_counts, base, exp)
       }
@@ -2699,9 +2843,16 @@ fn simplify_mul(left : Expr, right : Expr) -> Expr {
         let base = Expr::Symbol(symbol)
         symbol_counts = add_symbol_power(symbol_counts, base, 1)
       }
-      Expr::Binary(BinaryOp::Div, Expr::Int(1), denominator) =>
-        denominator_factors.push(simplify_reduce(denominator))
-      Expr::Binary(BinaryOp::Div, Expr::Int(-1), denominator) => {
+      Expr::Binary(
+        BinaryOp::Div,
+        Constant(ConstantLiteral::Integer(1)),
+        denominator
+      ) => denominator_factors.push(simplify_reduce(denominator))
+      Expr::Binary(
+        BinaryOp::Div,
+        Constant(ConstantLiteral::Integer(-1)),
+        denominator
+      ) => {
         is_negative = !is_negative
         denominator_factors.push(simplify_reduce(denominator))
       }
@@ -2709,14 +2860,14 @@ fn simplify_mul(left : Expr, right : Expr) -> Expr {
     }
   }
   if has_int && coeff_int == 0 {
-    return Expr::Int(0)
+    return int(0)
   }
   let final_factors = Array::new()
   match coeff_double {
     Some(value) => {
       let combined = if has_int { value * coeff_int.to_double() } else { value }
       if combined == 0.0 {
-        return Expr::Double(0.0)
+        return double(0.0)
       }
       let magnitude = if combined < 0.0 {
         is_negative = !is_negative
@@ -2725,7 +2876,7 @@ fn simplify_mul(left : Expr, right : Expr) -> Expr {
         combined
       }
       if magnitude != 1.0 {
-        final_factors.push(Expr::Double(magnitude))
+        final_factors.push(double(magnitude))
       }
       has_int = false
       coeff_int = 1
@@ -2740,7 +2891,7 @@ fn simplify_mul(left : Expr, right : Expr) -> Expr {
       coeff_int
     }
     if magnitude != 1 {
-      final_factors.push(Expr::Int(magnitude))
+      final_factors.push(int(magnitude))
     }
   }
   for entry in symbol_counts {
@@ -2751,7 +2902,13 @@ fn simplify_mul(left : Expr, right : Expr) -> Expr {
     if power == 1 {
       final_factors.push(base)
     } else {
-      final_factors.push(Expr::Binary(BinaryOp::Pow, base, Expr::Int(power)))
+      final_factors.push(
+        Expr::Binary(
+          BinaryOp::Pow,
+          base,
+          Constant(ConstantLiteral::Integer(power)),
+        ),
+      )
     }
   }
   for factor in other_factors {
@@ -2759,7 +2916,7 @@ fn simplify_mul(left : Expr, right : Expr) -> Expr {
   }
   let len = final_factors.length()
   let base_expr = if len == 0 {
-    Expr::Int(1)
+    int(1)
   } else if len == 1 {
     final_factors[0]
   } else {
@@ -2767,11 +2924,13 @@ fn simplify_mul(left : Expr, right : Expr) -> Expr {
   }
   let signed_expr = if is_negative {
     match base_expr {
-      Expr::Int(value) => Expr::Int(-value)
-      Expr::Double(value) => Expr::Double(-value)
+      Constant(ConstantLiteral::Integer(value)) => int(-value)
+      Constant(ConstantLiteral::Float(value)) => double(-value)
       Expr::Unary(UnaryOp::Neg, inner) => inner
-      Expr::Binary(BinaryOp::Mul, Expr::Int(-1), rest) => rest
-      Expr::Binary(BinaryOp::Mul, rest, Expr::Int(-1)) => rest
+      Expr::Binary(BinaryOp::Mul, Constant(ConstantLiteral::Integer(-1)), rest) =>
+        rest
+      Expr::Binary(BinaryOp::Mul, rest, Constant(ConstantLiteral::Integer(-1))) =>
+        rest
       other => Expr::Unary(UnaryOp::Neg, other)
     }
   } else {
@@ -2803,7 +2962,7 @@ fn collect_mul_factors(expr : Expr, factors : Array[Expr]) -> Array[Expr] {
     }
     Expr::Unary(UnaryOp::Neg, inner) => {
       let updated = factors
-      updated.push(Expr::Int(-1))
+      updated.push(int(-1))
       collect_mul_factors(inner, updated)
     }
     other => {
@@ -2827,52 +2986,82 @@ fn collect_divisor_factors(expr : Expr, factors : Array[Expr]) -> Array[Expr] {
     }
     Expr::Unary(UnaryOp::Neg, inner) => {
       let updated = factors
-      updated.push(Expr::Int(-1))
+      updated.push(int(-1))
       collect_divisor_factors(inner, updated)
     }
-    Expr::Binary(BinaryOp::Pow, Expr::Symbol(symbol), Expr::Int(exp)) => {
+    Expr::Binary(
+      BinaryOp::Pow,
+      Expr::Symbol(symbol),
+      Constant(ConstantLiteral::Integer(exp))
+    ) => {
       let base = Expr::Symbol(symbol)
       let updated = factors
-      updated.push(Expr::Binary(BinaryOp::Pow, base, Expr::Int(-exp)))
+      updated.push(
+        Expr::Binary(
+          BinaryOp::Pow,
+          base,
+          Constant(ConstantLiteral::Integer(-exp)),
+        ),
+      )
       updated
     }
-    Expr::Binary(BinaryOp::Pow, base, Expr::Int(exp)) => {
+    Expr::Binary(BinaryOp::Pow, base, Constant(ConstantLiteral::Integer(exp))) => {
       let updated = factors
-      updated.push(Expr::Binary(BinaryOp::Pow, base, Expr::Int(-exp)))
+      updated.push(
+        Expr::Binary(
+          BinaryOp::Pow,
+          base,
+          Constant(ConstantLiteral::Integer(-exp)),
+        ),
+      )
       updated
     }
     Expr::Symbol(_) => {
       let updated = factors
-      updated.push(Expr::Binary(BinaryOp::Pow, expr, Expr::Int(-1)))
+      updated.push(
+        Expr::Binary(
+          BinaryOp::Pow,
+          expr,
+          Constant(ConstantLiteral::Integer(-1)),
+        ),
+      )
       updated
     }
-    Expr::Int(value) =>
+    Constant(ConstantLiteral::Integer(value)) =>
       if value == 0 {
         let updated = factors
-        updated.push(Expr::Binary(BinaryOp::Div, Expr::Int(1), Expr::Int(0)))
+        updated.push(
+          Expr::Binary(
+            BinaryOp::Div,
+            int(1),
+            Constant(ConstantLiteral::Integer(0)),
+          ),
+        )
         updated
       } else {
         let updated = factors
         updated.push(
-          Expr::Binary(BinaryOp::Div, Expr::Int(1), Expr::Int(value)),
+          Expr::Binary(
+            BinaryOp::Div,
+            int(1),
+            Constant(ConstantLiteral::Integer(value)),
+          ),
         )
         updated
       }
-    Expr::Double(value) =>
+    Constant(ConstantLiteral::Float(value)) =>
       if value == 0.0 {
         let updated = factors
-        updated.push(
-          Expr::Binary(BinaryOp::Div, Expr::Int(1), Expr::Double(0.0)),
-        )
+        updated.push(Expr::Binary(BinaryOp::Div, int(1), double(0.0)))
         updated
       } else {
         let updated = factors
-        updated.push(Expr::Double(1.0 / value))
+        updated.push(double(1.0 / value))
         updated
       }
     other => {
       let updated = factors
-      updated.push(Expr::Binary(BinaryOp::Div, Expr::Int(1), other))
+      updated.push(Expr::Binary(BinaryOp::Div, int(1), other))
       updated
     }
   }
@@ -2885,13 +3074,13 @@ fn pow_product_with_int(
   exponent : Int,
 ) -> Expr {
   if exponent == 0 {
-    return Expr::Int(1)
+    return int(1)
   }
-  let coeff_pow = simplify_pow(coeff, Expr::Int(exponent))
+  let coeff_pow = simplify_pow(coeff, int(exponent))
   let len = factors.length()
   let mut result = coeff_pow
   for i in 0..<len {
-    let factor_pow = simplify_pow(factors[i], Expr::Int(exponent))
+    let factor_pow = simplify_pow(factors[i], int(exponent))
     result = simplify_mul(result, factor_pow)
   }
   result
@@ -2905,18 +3094,18 @@ fn pow_product_with_double(
   exponent_value : Double,
 ) -> Expr {
   if exponent_value == 0.0 {
-    return Expr::Int(1)
+    return int(1)
   }
   let coeff_value = match coeff {
-    Expr::Int(v) => v.to_double()
-    Expr::Double(v) => v
+    Constant(ConstantLiteral::Integer(v)) => v.to_double()
+    Constant(ConstantLiteral::Float(v)) => v
     _ => 1.0
   }
   let coeff_pow = @math.pow(coeff_value, exponent_value)
   let coeff_expr = if is_integral_double(coeff_pow) {
-    Expr::Int(@math.round(coeff_pow).to_int())
+    int(@math.round(coeff_pow).to_int())
   } else {
-    Expr::Double(coeff_pow)
+    double(coeff_pow)
   }
   let len = factors.length()
   let mut result = coeff_expr
@@ -2983,13 +3172,19 @@ fn simplify_div(left : Expr, right : Expr) -> Expr {
     left_s
   } else {
     match (left_s, right_clean) {
-      (Expr::Int(lhs), Expr::Int(rhs)) =>
+      (
+        Constant(ConstantLiteral::Integer(lhs)),
+        Constant(ConstantLiteral::Integer(rhs)),
+      ) =>
         if rhs != 0 && lhs % rhs == 0 {
-          Expr::Int(lhs / rhs)
+          int(lhs / rhs)
         } else {
-          Expr::Binary(BinaryOp::Div, Expr::Int(lhs), Expr::Int(rhs))
+          Expr::Binary(BinaryOp::Div, int(lhs), int(rhs))
         }
-      (Expr::Double(lhs), Expr::Double(rhs)) => Expr::Double(lhs / rhs)
+      (
+        Constant(ConstantLiteral::Float(lhs)),
+        Constant(ConstantLiteral::Float(rhs)),
+      ) => double(lhs / rhs)
       (lhs, rhs) => {
         let (reduced_num, reduced_den) = cancel_fraction_factors(lhs, rhs)
         let (den_is_one, den_clean) = simplify_is_one_literal(reduced_den)
@@ -3038,7 +3233,7 @@ fn cancel_fraction_factors(
       if exp == 1 {
         result.push(factor.copy())
       } else {
-        result.push(Expr::Binary(BinaryOp::Pow, factor.copy(), Expr::Int(exp)))
+        result.push(Expr::Binary(BinaryOp::Pow, factor.copy(), int(exp)))
       }
     }
     result
@@ -3055,7 +3250,7 @@ fn cancel_fraction_factors(
     let mut map = counts
     for factor in factors {
       match factor {
-        Expr::Int(value) => {
+        Constant(ConstantLiteral::Integer(value)) => {
           let abs_val = if value < 0 { -value } else { value }
           if value < 0 {
             sign = sign * -1
@@ -3065,13 +3260,19 @@ fn cancel_fraction_factors(
         Expr::Unary(UnaryOp::Neg, inner) => {
           sign = sign * -1
           match inner {
-            Expr::Binary(BinaryOp::Pow, base, Expr::Int(exp)) =>
-              map = add_factor(map, base, exp)
+            Expr::Binary(
+              BinaryOp::Pow,
+              base,
+              Constant(ConstantLiteral::Integer(exp))
+            ) => map = add_factor(map, base, exp)
             _ => map = add_factor(map, inner, 1)
           }
         }
-        Expr::Binary(BinaryOp::Pow, base, Expr::Int(exp)) =>
-          map = add_factor(map, base, exp)
+        Expr::Binary(
+          BinaryOp::Pow,
+          base,
+          Constant(ConstantLiteral::Integer(exp))
+        ) => map = add_factor(map, base, exp)
         other => map = add_factor(map, other, 1)
       }
     }
@@ -3140,13 +3341,13 @@ fn cancel_fraction_factors(
   let with_num_coeff = if num_coeff_reduced == 1 {
     num_list
   } else {
-    num_list.push(Expr::Int(num_coeff_reduced))
+    num_list.push(int(num_coeff_reduced))
     num_list
   }
   let with_den_coeff = if den_coeff_reduced == 1 {
     den_list
   } else {
-    den_list.push(Expr::Int(den_coeff_reduced))
+    den_list.push(int(den_coeff_reduced))
     den_list
   }
   let num_final = push_counts(num_map, with_num_coeff)
@@ -3162,109 +3363,109 @@ fn simplify_pow(base : Expr, exponent : Expr) -> Expr {
   let exponent_s = simplify_reduce(exponent)
   let (exp_zero, exp_clean) = simplify_is_zero_literal(exponent_s)
   if exp_zero {
-    return Expr::Int(1)
+    return int(1)
   }
   let (exp_one, exp_value) = simplify_is_one_literal(exp_clean)
   if exp_one {
     return base_s
   }
   let exp_int = match exp_value {
-    Expr::Int(value) => Some(value)
+    Constant(ConstantLiteral::Integer(value)) => Some(value)
     _ => None
   }
   match base_s {
-    Expr::Int(value) =>
+    Constant(ConstantLiteral::Integer(value)) =>
       match exp_int {
         Some(exp_val) =>
           if exp_val >= 0 {
             if value == 0 {
-              return Expr::Int(0)
+              return int(0)
             }
             if value == 1 {
-              return Expr::Int(1)
+              return int(1)
             }
             if value == -1 {
               if exp_val % 2 == 0 {
-                return Expr::Int(1)
+                return int(1)
               } else {
-                return Expr::Int(-1)
+                return int(-1)
               }
             }
-            return Expr::Int(int_pow(value, exp_val))
+            return int(int_pow(value, exp_val))
           } else {
             let abs_exp = -exp_val
             if value == 0 {
-              return Expr::Binary(BinaryOp::Pow, Expr::Int(0), exp_value)
+              return Expr::Binary(BinaryOp::Pow, int(0), exp_value)
             }
             if value == 1 {
-              return Expr::Int(1)
+              return int(1)
             }
             if value == -1 {
               if abs_exp % 2 == 0 {
-                return Expr::Int(1)
+                return int(1)
               } else {
-                return Expr::Int(-1)
+                return int(-1)
               }
             }
-            let positive = simplify_pow(Expr::Int(value), Expr::Int(abs_exp))
-            return simplify_div(Expr::Int(1), positive)
+            let positive = simplify_pow(int(value), int(abs_exp))
+            return simplify_div(int(1), positive)
           }
         None => {
           if value == 0 {
-            return Expr::Int(0)
+            return int(0)
           }
           if value == 1 {
-            return Expr::Int(1)
+            return int(1)
           }
           if value == -1 {
             return Expr::Binary(BinaryOp::Pow, base_s, exp_value)
           }
         }
       }
-    Expr::Double(value) =>
+    Constant(ConstantLiteral::Float(value)) =>
       match exp_int {
         Some(exp_val) => {
           if value == 0.0 {
             if exp_val < 0 {
               return Expr::Binary(BinaryOp::Pow, base_s, exp_value)
             } else {
-              return Expr::Double(0.0)
+              return double(0.0)
             }
           }
           if value == 1.0 {
-            return Expr::Double(1.0)
+            return double(1.0)
           }
           if value == -1.0 {
             if exp_val % 2 == 0 {
-              return Expr::Double(1.0)
+              return double(1.0)
             } else {
-              return Expr::Double(-1.0)
+              return double(-1.0)
             }
           }
           let combined = @math.pow(value, exp_val.to_double())
-          return Expr::Double(combined)
+          return double(combined)
         }
         None =>
           match exp_value {
-            Expr::Double(exp_double) => {
+            Constant(ConstantLiteral::Float(exp_double)) => {
               if value == 0.0 && exp_double < 0.0 {
                 return Expr::Binary(BinaryOp::Pow, base_s, exp_value)
               }
               if value == 1.0 {
-                return Expr::Double(1.0)
+                return double(1.0)
               }
               if value == -1.0 {
                 return Expr::Binary(BinaryOp::Pow, base_s, exp_value)
               }
               let combined = @math.pow(value, exp_double)
-              return Expr::Double(combined)
+              return double(combined)
             }
             _ => {
               if value == 0.0 {
-                return Expr::Double(0.0)
+                return double(0.0)
               }
               if value == 1.0 {
-                return Expr::Double(1.0)
+                return double(1.0)
               }
               if value == -1.0 {
                 return Expr::Binary(BinaryOp::Pow, base_s, exp_value)
@@ -3277,13 +3478,14 @@ fn simplify_pow(base : Expr, exponent : Expr) -> Expr {
         Some(exp_val) => {
           let (coeff, factors) = extract_polynomial_term(base_s)
           match coeff {
-            Expr::Int(_) | Expr::Double(_) => {
+            Constant(ConstantLiteral::Integer(_))
+            | Constant(ConstantLiteral::Float(_)) => {
               let abs_exp = if exp_val < 0 { -exp_val } else { exp_val }
               let positive = pow_product_with_int(coeff, factors, abs_exp)
               if exp_val >= 0 {
                 return positive
               } else {
-                return simplify_div(Expr::Int(1), positive)
+                return simplify_div(int(1), positive)
               }
             }
             _ => ()
@@ -3291,10 +3493,10 @@ fn simplify_pow(base : Expr, exponent : Expr) -> Expr {
         }
         None =>
           match exp_value {
-            Expr::Double(exp_double) => {
+            Constant(ConstantLiteral::Float(exp_double)) => {
               let (coeff, factors) = extract_polynomial_term(base_s)
               match coeff {
-                Expr::Int(coeff_int) =>
+                Constant(ConstantLiteral::Integer(coeff_int)) =>
                   if coeff_int < 0 && !is_integral_double(exp_double) {
                     ()
                   } else {
@@ -3303,9 +3505,9 @@ fn simplify_pow(base : Expr, exponent : Expr) -> Expr {
                     } else {
                       exp_double
                     }
-                    let exponent_expr = Expr::Double(positive_exp)
+                    let exponent_expr = double(positive_exp)
                     let positive = pow_product_with_double(
-                      Expr::Int(coeff_int),
+                      int(coeff_int),
                       factors,
                       exponent_expr,
                       positive_exp,
@@ -3313,10 +3515,10 @@ fn simplify_pow(base : Expr, exponent : Expr) -> Expr {
                     if exp_double >= 0.0 {
                       return positive
                     } else {
-                      return simplify_div(Expr::Int(1), positive)
+                      return simplify_div(int(1), positive)
                     }
                   }
-                Expr::Double(coeff_double) =>
+                Constant(ConstantLiteral::Float(coeff_double)) =>
                   if coeff_double < 0.0 && !is_integral_double(exp_double) {
                     ()
                   } else {
@@ -3325,9 +3527,9 @@ fn simplify_pow(base : Expr, exponent : Expr) -> Expr {
                     } else {
                       exp_double
                     }
-                    let exponent_expr = Expr::Double(positive_exp)
+                    let exponent_expr = double(positive_exp)
                     let positive = pow_product_with_double(
-                      Expr::Double(coeff_double),
+                      double(coeff_double),
                       factors,
                       exponent_expr,
                       positive_exp,
@@ -3335,7 +3537,7 @@ fn simplify_pow(base : Expr, exponent : Expr) -> Expr {
                     if exp_double >= 0.0 {
                       return positive
                     } else {
-                      return simplify_div(Expr::Int(1), positive)
+                      return simplify_div(int(1), positive)
                     }
                   }
                 _ => ()
@@ -3347,8 +3549,12 @@ fn simplify_pow(base : Expr, exponent : Expr) -> Expr {
     Expr::Binary(BinaryOp::Pow, inner_base, inner_exp) => {
       match (inner_exp, exp_value) {
         (
-          Expr::Int(inner_n),
-          Expr::Binary(BinaryOp::Div, Expr::Int(1), Expr::Int(outer_n)),
+          Constant(ConstantLiteral::Integer(inner_n)),
+          Expr::Binary(
+            BinaryOp::Div,
+            Constant(ConstantLiteral::Integer(1)),
+            Constant(ConstantLiteral::Integer(outer_n))
+          ),
         ) =>
           if inner_n > 0 && outer_n > 0 && inner_n == outer_n {
             if inner_n % 2 == 0 {
@@ -3367,9 +3573,9 @@ fn simplify_pow(base : Expr, exponent : Expr) -> Expr {
   match exp_int {
     Some(exp_val) =>
       if exp_val < 0 {
-        let positive_exp = Expr::Int(-exp_val)
+        let positive_exp = int(-exp_val)
         let positive_pow = simplify_pow(base_s, positive_exp)
-        simplify_div(Expr::Int(1), positive_pow)
+        simplify_div(int(1), positive_pow)
       } else {
         Expr::Binary(BinaryOp::Pow, base_s, exp_value)
       }
@@ -3380,18 +3586,19 @@ fn simplify_pow(base : Expr, exponent : Expr) -> Expr {
 ///|
 fn simplify_is_zero_literal(expr : Expr) -> (Bool, Expr) {
   match expr {
-    Expr::Int(value) =>
+    Constant(ConstantLiteral::Integer(value)) =>
       if value == 0 {
-        (true, Expr::Int(0))
+        (true, int(0))
       } else {
-        (false, Expr::Int(value))
+        (false, int(value))
       }
-    Expr::Double(value) =>
+    Constant(ConstantLiteral::Float(value)) =>
       if value == 0.0 {
-        (true, Expr::Double(0.0))
+        (true, double(0.0))
       } else {
-        (false, Expr::Double(value))
+        (false, double(value))
       }
+    Constant(literal) => (false, Constant(literal))
     other => (false, other)
   }
 }
@@ -3399,18 +3606,19 @@ fn simplify_is_zero_literal(expr : Expr) -> (Bool, Expr) {
 ///|
 fn simplify_is_one_literal(expr : Expr) -> (Bool, Expr) {
   match expr {
-    Expr::Int(value) =>
+    Constant(ConstantLiteral::Integer(value)) =>
       if value == 1 {
-        (true, Expr::Int(1))
+        (true, int(1))
       } else {
-        (false, Expr::Int(value))
+        (false, int(value))
       }
-    Expr::Double(value) =>
+    Constant(ConstantLiteral::Float(value)) =>
       if value == 1.0 {
-        (true, Expr::Double(1.0))
+        (true, double(1.0))
       } else {
-        (false, Expr::Double(value))
+        (false, double(value))
       }
+    Constant(literal) => (false, Constant(literal))
     other => (false, other)
   }
 }

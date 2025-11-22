@@ -73,7 +73,8 @@ fn try_direct_substitution(
     limit_substitute_variable(expr, variable_name, point),
   )
   match substituted {
-    Int(_) | Double(_) => Some(LimitResult::Value(substituted))
+    Constant(ConstantLiteral::Integer(_)) |
+    Constant(ConstantLiteral::Float(_)) => Some(LimitResult::Value(substituted))
     _ => None
   }
 }
@@ -186,8 +187,7 @@ fn limit_substitute_variable(
   replacement : Expr,
 ) -> Expr {
   match expr {
-    Int(_) => expr
-    Double(_) => expr
+    Constant(_) => expr
     Symbol(symbol) =>
       if symbol.name == variable_name {
         replacement.copy()
@@ -219,8 +219,8 @@ fn limit_substitute_variable(
 ///|
 fn limit_is_zero_literal(expr : Expr) -> Bool {
   match expr {
-    Int(value) => value == 0
-    Double(value) => value == 0.0
+    Constant(ConstantLiteral::Integer(value)) => value == 0
+    Constant(ConstantLiteral::Float(value)) => value == 0.0
     _ => false
   }
 }
@@ -228,8 +228,8 @@ fn limit_is_zero_literal(expr : Expr) -> Bool {
 ///|
 fn limit_is_one_literal(expr : Expr) -> Bool {
   match expr {
-    Int(value) => value == 1
-    Double(value) => value == 1.0
+    Constant(ConstantLiteral::Integer(value)) => value == 1
+    Constant(ConstantLiteral::Float(value)) => value == 1.0
     _ => false
   }
 }
@@ -237,7 +237,9 @@ fn limit_is_one_literal(expr : Expr) -> Bool {
 ///|
 fn limit_detects_infinite_literal(expr : Expr) -> Bool {
   match expr {
-    // Placeholder: no dedicated infinity literal yet.
+    Constant(ConstantLiteral::PosInfinity) => true
+    Constant(ConstantLiteral::NegInfinity) => true
+    // Fallback for legacy placeholders
     FunctionCall(name, _) => name == "Infinity" || name == "oo"
     _ => false
   }

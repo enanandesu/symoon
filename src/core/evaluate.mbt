@@ -4,8 +4,7 @@ pub fn evaluate(
   lookup : (String) -> Double?, //TODO:再包装
 ) -> Result[Double, SymbolicError] {
   match expr {
-    Int(value) => Ok(value.to_double())
-    Double(value) => Ok(value)
+    Constant(literal) => evaluate_constant(literal)
     Symbol(symbol) => {
       let key = symbol.name
       let query_key = key
@@ -44,5 +43,19 @@ pub fn evaluate(
         (_, Err(err)) => Err(err)
       }
     FunctionCall(name, _) => Err(UnsupportedOperation("function call: " + name))
+  }
+}
+
+///|
+fn evaluate_constant(literal : ConstantLiteral) -> Result[Double, SymbolicError] {
+  match literal {
+    ConstantLiteral::Integer(value) => Ok(value.to_double())
+    ConstantLiteral::Float(value) => Ok(value)
+    ConstantLiteral::PosInfinity =>
+      Err(UnsupportedOperation("positive infinity literal".to_string()))
+    ConstantLiteral::NegInfinity =>
+      Err(UnsupportedOperation("negative infinity literal".to_string()))
+    ConstantLiteral::NaN =>
+      Err(UnsupportedOperation("nan literal".to_string()))
   }
 }
