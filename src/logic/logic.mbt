@@ -308,6 +308,12 @@ pub fn logic_to_dnf(expr : LogicExpr) -> LogicExpr {
 }
 
 ///|
+pub fn logic_to_nnf(expr : LogicExpr) -> LogicExpr {
+  // DNF output contains only Bool/Symbol/And/Or/Not(Symbol), which is NNF.
+  logic_to_dnf(expr)
+}
+
+///|
 pub fn logic_to_cnf(expr : LogicExpr) -> LogicExpr {
   let normalized = logic_normalize(expr)
   let variables = logic_collect_variables(normalized.copy())
@@ -433,6 +439,86 @@ pub fn logic_op_count(expr : LogicExpr) -> Int {
     }
     Implies(lhs, rhs) => 1 + logic_op_count(lhs) + logic_op_count(rhs)
     Equivalent(lhs, rhs) => 1 + logic_op_count(lhs) + logic_op_count(rhs)
+  }
+}
+
+///|
+pub fn logic_is_literal(expr : LogicExpr) -> Bool {
+  match expr {
+    Bool(_) => true
+    Symbol(_) => true
+    Not(inner) =>
+      match inner {
+        Symbol(_) => true
+        _ => false
+      }
+    _ => false
+  }
+}
+
+///|
+pub fn logic_is_cnf(expr : LogicExpr) -> Bool {
+  match expr {
+    Bool(_) => true
+    Symbol(_) => true
+    Not(_) => logic_is_literal(expr)
+    And(clauses) => {
+      for clause in clauses {
+        if !logic_is_clause(clause) {
+          return false
+        }
+      }
+      true
+    }
+    _ => logic_is_clause(expr)
+  }
+}
+
+///|
+pub fn logic_is_dnf(expr : LogicExpr) -> Bool {
+  match expr {
+    Bool(_) => true
+    Symbol(_) => true
+    Not(_) => logic_is_literal(expr)
+    Or(terms) => {
+      for term in terms {
+        if !logic_is_conjunction_of_literals(term) {
+          return false
+        }
+      }
+      true
+    }
+    _ => logic_is_conjunction_of_literals(expr)
+  }
+}
+
+///|
+fn logic_is_clause(expr : LogicExpr) -> Bool {
+  match expr {
+    Or(terms) => {
+      for term in terms {
+        if !logic_is_literal(term) {
+          return false
+        }
+      }
+      true
+    }
+    _ => logic_is_literal(expr)
+  }
+}
+
+///|
+fn logic_is_conjunction_of_literals(expr : LogicExpr) -> Bool {
+  match expr {
+    And(terms) => {
+      for term in terms {
+        if !logic_is_literal(term) {
+          return false
+        }
+      }
+      true
+    }
+    _ => logic_is_literal(expr)
   }
 }
 

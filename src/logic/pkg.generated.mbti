@@ -46,6 +46,8 @@ fn gate_xnor(Array[Bool]) -> Bool
 
 fn gate_xor(Array[Bool]) -> Bool
 
+fn logic_all_satisfying_assignments(LogicExpr, variables? : Array[String]) -> Array[Array[(String, Bool)]]
+
 fn logic_and(Array[LogicExpr]) -> LogicExpr
 
 fn logic_apply_and_eval(LogicExpr, Array[(String, Bool)]) -> (LogicExpr, Bool?)
@@ -59,6 +61,8 @@ fn logic_atoms(LogicExpr) -> Array[LogicExpr]
 fn logic_collect_subexpressions(LogicExpr) -> Array[LogicExpr]
 
 fn logic_collect_variables(LogicExpr) -> Array[String]
+
+fn logic_entails(Array[LogicExpr], LogicExpr) -> Bool
 
 fn logic_equivalent(LogicExpr, LogicExpr) -> LogicExpr
 
@@ -78,6 +82,12 @@ fn logic_implies(LogicExpr, LogicExpr) -> LogicExpr
 
 fn logic_infer(Array[LogicExpr], LogicExpr) -> Bool
 
+fn logic_is_cnf(LogicExpr) -> Bool
+
+fn logic_is_dnf(LogicExpr) -> Bool
+
+fn logic_is_literal(LogicExpr) -> Bool
+
 fn logic_ite(LogicExpr, LogicExpr, LogicExpr) -> LogicExpr
 
 fn logic_nand(Array[LogicExpr]) -> LogicExpr
@@ -96,6 +106,8 @@ fn logic_preorder(LogicExpr) -> Array[LogicExpr]
 
 fn logic_preorder_with_depth(LogicExpr, depth? : Int) -> Array[(Int, LogicExpr)]
 
+fn logic_satisfiable(LogicExpr) -> Array[(String, Bool)]?
+
 fn logic_simplify(LogicExpr) -> LogicExpr
 
 fn logic_simplify_logic(LogicExpr, String) -> LogicExpr
@@ -110,7 +122,13 @@ fn logic_to_dnf(LogicExpr) -> LogicExpr
 
 fn logic_to_latex(LogicExpr) -> String
 
+fn logic_to_nnf(LogicExpr) -> LogicExpr
+
 fn logic_true() -> LogicExpr
+
+fn logic_truth_table(LogicExpr, Array[String]) -> Array[(Array[Bool], Bool?)]
+
+fn logic_truth_table_lines(LogicExpr, Array[String]) -> Array[String]
 
 fn logic_xnor(Array[LogicExpr]) -> LogicExpr
 

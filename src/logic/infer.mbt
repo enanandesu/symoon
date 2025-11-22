@@ -25,6 +25,14 @@ pub fn logic_infer(premises : Array[LogicExpr], conclusion : LogicExpr) -> Bool 
 }
 
 ///|
+pub fn logic_entails(
+  premises : Array[LogicExpr],
+  conclusion : LogicExpr,
+) -> Bool {
+  logic_infer(premises, conclusion)
+}
+
+///|
 fn collect_logic_symbols(
   expr : LogicExpr,
   seen : Map[String, Bool],

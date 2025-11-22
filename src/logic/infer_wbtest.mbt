@@ -73,3 +73,26 @@ test "logic_infer rejects ambiguous xor conclusions" {
   let premises = [logic_normalize(LogicExpr::Xor([a.copy(), b.copy()]))]
   assert_eq(logic_infer(premises, a), false)
 }
+
+///|
+test "logic_entails matches simple and composite examples" {
+  let x = logic_symbol("x")
+  let y = logic_symbol("y")
+  let premises = [
+    logic_normalize(LogicExpr::Implies(x.copy(), y.copy())),
+    x.copy(),
+  ]
+  assert_eq(logic_entails(premises, y.copy()), true)
+  let z = logic_symbol("z")
+  let premises2 = [
+    logic_normalize(
+      LogicExpr::Implies(
+        logic_normalize(LogicExpr::And([x.copy(), y.copy()])),
+        z.copy(),
+      ),
+    ),
+    logic_normalize(LogicExpr::Not(z.copy())),
+    x.copy(),
+  ]
+  assert_eq(logic_entails(premises2, logic_not(y.copy())), true)
+}

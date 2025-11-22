@@ -263,6 +263,29 @@ test "logic_preorder visits nodes in expected order" {
 }
 
 ///|
+test "logic_to_nnf_cnf_dnf and shape checks" {
+  let x = logic_symbol("x")
+  let y = logic_symbol("y")
+  let z = logic_symbol("z")
+  let expr = logic_and([
+    logic_or([x.copy(), y.copy()]),
+    logic_implies(z.copy(), x.copy()),
+  ])
+  let cnf = logic_to_cnf(expr.copy())
+  let dnf = logic_to_dnf(expr.copy())
+  let nnf = logic_to_nnf(expr.copy())
+  assert_equivalent(cnf.copy(), expr.copy())
+  assert_equivalent(dnf.copy(), expr.copy())
+  assert_equivalent(nnf.copy(), expr.copy())
+  assert_eq(logic_is_cnf(cnf), true)
+  assert_eq(logic_is_dnf(dnf), true)
+  assert_eq(logic_is_cnf(dnf), false)
+  assert_eq(logic_is_dnf(cnf), false)
+  assert_eq(logic_is_cnf(nnf), false)
+  assert_eq(logic_is_dnf(nnf), true)
+}
+
+///|
 test "logic_collect_subexpressions gathers each unique expression" {
   let expr = logic_normalize(
     LogicExpr::And([
