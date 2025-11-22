@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "enanandesu/symoon/logic"
+package "enanandesu/symoon/src/logic"
 
 // Values
 const LOGIC_AND_SYMBOL : String = "And"
@@ -32,6 +32,20 @@ fn fo_predicate(Int, (Array[String]) -> Bool) -> FOPredicate
 
 fn fo_var(String) -> FOTerm
 
+fn gate_and(Array[Bool]) -> Bool
+
+fn gate_nand(Array[Bool]) -> Bool
+
+fn gate_nor(Array[Bool]) -> Bool
+
+fn gate_not(Bool) -> Bool
+
+fn gate_or(Array[Bool]) -> Bool
+
+fn gate_xnor(Array[Bool]) -> Bool
+
+fn gate_xor(Array[Bool]) -> Bool
+
 fn logic_and(Array[LogicExpr]) -> LogicExpr
 
 fn logic_apply_and_eval(LogicExpr, Array[(String, Bool)]) -> (LogicExpr, Bool?)
@@ -45,6 +59,10 @@ fn logic_collect_variables(LogicExpr) -> Array[String]
 fn logic_equivalent(LogicExpr, LogicExpr) -> LogicExpr
 
 fn logic_eval(LogicExpr, Array[(String, Bool)]) -> Bool?
+
+fn logic_expr_complexity(LogicExpr) -> Int
+
+fn logic_expr_depth(LogicExpr) -> Int
 
 fn logic_false() -> LogicExpr
 
@@ -64,31 +82,17 @@ fn logic_or(Array[LogicExpr]) -> LogicExpr
 
 fn logic_simplify(LogicExpr) -> LogicExpr
 
+fn logic_simplify_logic(LogicExpr, String) -> LogicExpr
+
 fn logic_simplify_with_assignments(LogicExpr, Array[(String, Bool)]) -> LogicExpr
 
 fn logic_symbol(String) -> LogicExpr
 
-fn logic_to_latex(LogicExpr) -> String
+fn logic_to_cnf(LogicExpr) -> LogicExpr
 
 fn logic_to_dnf(LogicExpr) -> LogicExpr
 
-fn logic_to_cnf(LogicExpr) -> LogicExpr
-
-fn logic_simplify_logic(LogicExpr, String) -> LogicExpr
-
-fn gate_and(Array[Bool]) -> Bool
-
-fn gate_nand(Array[Bool]) -> Bool
-
-fn gate_nor(Array[Bool]) -> Bool
-
-fn gate_not(Bool) -> Bool
-
-fn gate_or(Array[Bool]) -> Bool
-
-fn gate_xnor(Array[Bool]) -> Bool
-
-fn gate_xor(Array[Bool]) -> Bool
+fn logic_to_latex(LogicExpr) -> String
 
 fn logic_true() -> LogicExpr
 
@@ -151,3 +155,4 @@ impl Show for LogicExpr
 // Type aliases
 
 // Traits
+

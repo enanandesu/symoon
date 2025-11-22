@@ -1,0 +1,26 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "enanandesu/symoon/src/number"
+
+// Values
+fn nt_first_n_primes(Int) -> Array[Int]
+
+fn nt_gcd(Int, Int) -> Int
+
+fn nt_is_prime(Int) -> Bool
+
+fn nt_lcm(Int, Int) -> Int
+
+fn nt_prime_factors(Int) -> Array[(Int, Int)]
+
+fn nt_primes_up_to(Int) -> Array[Int]
+
+fn nt_totient(Int) -> Int
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+
