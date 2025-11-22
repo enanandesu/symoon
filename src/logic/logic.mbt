@@ -252,6 +252,461 @@ fn lookup_assignment(
 }
 
 ///|
+pub fn logic_collect_variables(expr : LogicExpr) -> Array[String] {
+  let seen : Map[String, Bool] = {}
+  let names = Array::new()
+  let (_, collected) = collect_variables_internal(expr, seen, names)
+  sort_strings(collected)
+}
+
+///|
+pub fn logic_collect_subexpressions(expr : LogicExpr) -> Array[LogicExpr] {
+  let seen : Map[String, Bool] = {}
+  let collected = Array::new()
+  let (_, results) = collect_subexpressions_internal(expr, seen, collected)
+  sort_terms_by_signature(results)
+}
+
+///|
+pub fn logic_to_dnf(expr : LogicExpr) -> LogicExpr {
+  let normalized = logic_normalize(expr)
+  let variables = logic_collect_variables(normalized.copy())
+  let variable_count = variables.length()
+  let total = pow_two(variable_count)
+  let rows = Array::new(capacity=total)
+  let mut index = 0
+  while index < total {
+    let assignment = assignment_from_index(index, variable_count)
+    let env = Array::new(capacity=variable_count)
+    let mut i = 0
+    while i < variable_count {
+      env.push((variables[i], assignment[i]))
+      i += 1
+    }
+    match logic_eval(normalized.copy(), env) {
+      Some(value) => rows.push((assignment, value))
+      None => rows.push((assignment, false))
+    }
+    index += 1
+  }
+  logic_from_truth_table(variables, rows)
+}
+
+///|
+pub fn logic_to_cnf(expr : LogicExpr) -> LogicExpr {
+  let normalized = logic_normalize(expr)
+  let variables = logic_collect_variables(normalized.copy())
+  let variable_count = variables.length()
+  let total = pow_two(variable_count)
+  let clauses = Array::new()
+  let mut index = 0
+  while index < total {
+    let assignment = assignment_from_index(index, variable_count)
+    let env = Array::new(capacity=variable_count)
+    let mut i = 0
+    while i < variable_count {
+      env.push((variables[i], assignment[i]))
+      i += 1
+    }
+    match logic_eval(normalized.copy(), env) {
+      Some(false) =>
+        clauses.push(cnf_clause_from_assignment(variables, assignment))
+      None => clauses.push(cnf_clause_from_assignment(variables, assignment))
+      _ => ()
+    }
+    index += 1
+  }
+  let len = clauses.length()
+  if len == 0 {
+    logic_true()
+  } else if len == 1 {
+    clauses[0]
+  } else {
+    logic_and(clauses)
+  }
+}
+
+///|
+pub fn logic_simplify_logic(expr : LogicExpr, mode : String) -> LogicExpr {
+  let normalized = logic_normalize(expr)
+  if mode == "dnf" {
+    return logic_to_dnf(normalized)
+  }
+  if mode == "cnf" {
+    return logic_to_cnf(normalized)
+  }
+  if mode == "both" {
+    let dnf = logic_to_dnf(normalized.copy())
+    let cnf = logic_to_cnf(normalized)
+    let dnf_cost = logic_expr_complexity(dnf.copy())
+    let cnf_cost = logic_expr_complexity(cnf.copy())
+    if cnf_cost < dnf_cost {
+      return cnf
+    } else {
+      return dnf
+    }
+  }
+  abort("unknown simplify mode: " + mode)
+}
+
+///|
+pub fn logic_expr_depth(expr : LogicExpr) -> Int {
+  logic_expr_depth_internal(expr)
+}
+
+///|
+pub fn logic_expr_complexity(expr : LogicExpr) -> Int {
+  logic_expr_complexity_internal(expr)
+}
+
+///|
+fn collect_variables_internal(
+  expr : LogicExpr,
+  seen : Map[String, Bool],
+  names : Array[String],
+) -> (Map[String, Bool], Array[String]) {
+  match expr {
+    Bool(_) => (seen, names)
+    Symbol(name) => register_variable(name, seen, names)
+    Not(inner) => collect_variables_internal(inner, seen, names)
+    And(terms) => collect_variables_from_terms(terms, seen, names)
+    Or(terms) => collect_variables_from_terms(terms, seen, names)
+    Xor(terms) => collect_variables_from_terms(terms, seen, names)
+    Ite(condition, then_branch, else_branch) => {
+      let (after_condition, names_after_condition) = collect_variables_internal(
+        condition, seen, names,
+      )
+      let (after_then, names_after_then) = collect_variables_internal(
+        then_branch, after_condition, names_after_condition,
+      )
+      collect_variables_internal(else_branch, after_then, names_after_then)
+    }
+    Implies(lhs, rhs) => {
+      let (after_lhs, names_after_lhs) = collect_variables_internal(
+        lhs, seen, names,
+      )
+      collect_variables_internal(rhs, after_lhs, names_after_lhs)
+    }
+    Equivalent(lhs, rhs) => {
+      let (after_lhs, names_after_lhs) = collect_variables_internal(
+        lhs, seen, names,
+      )
+      collect_variables_internal(rhs, after_lhs, names_after_lhs)
+    }
+  }
+}
+
+///|
+fn collect_variables_from_terms(
+  terms : Array[LogicExpr],
+  seen : Map[String, Bool],
+  names : Array[String],
+) -> (Map[String, Bool], Array[String]) {
+  let len = terms.length()
+  let mut current_seen = seen
+  let mut current_names = names
+  for i in 0..<len {
+    let (next_seen, next_names) = collect_variables_internal(
+      terms[i],
+      current_seen,
+      current_names,
+    )
+    current_seen = next_seen
+    current_names = next_names
+  }
+  (current_seen, current_names)
+}
+
+///|
+fn register_variable(
+  name : String,
+  seen : Map[String, Bool],
+  names : Array[String],
+) -> (Map[String, Bool], Array[String]) {
+  if seen.contains(name) {
+    (seen, names)
+  } else {
+    let updated_seen = seen
+    updated_seen.set(name, true)
+    let updated_names = names
+    updated_names.push(name)
+    (updated_seen, updated_names)
+  }
+}
+
+///|
+fn collect_subexpressions_internal(
+  expr : LogicExpr,
+  seen : Map[String, Bool],
+  subexprs : Array[LogicExpr],
+) -> (Map[String, Bool], Array[LogicExpr]) {
+  let signature = logic_signature(expr.copy())
+  let current_seen = seen
+  let current_subexprs = subexprs
+  if !current_seen.contains(signature) {
+    current_seen.set(signature, true)
+    current_subexprs.push(expr.copy())
+  }
+  match expr {
+    Bool(_) => (current_seen, current_subexprs)
+    Symbol(_) => (current_seen, current_subexprs)
+    Not(inner) =>
+      collect_subexpressions_internal(inner, current_seen, current_subexprs)
+    And(terms) =>
+      collect_subexpressions_from_terms(terms, current_seen, current_subexprs)
+    Or(terms) =>
+      collect_subexpressions_from_terms(terms, current_seen, current_subexprs)
+    Xor(terms) =>
+      collect_subexpressions_from_terms(terms, current_seen, current_subexprs)
+    Ite(condition, then_branch, else_branch) => {
+      let (after_condition, after_condition_subexprs) = collect_subexpressions_internal(
+        condition, current_seen, current_subexprs,
+      )
+      let (after_then, after_then_subexprs) = collect_subexpressions_internal(
+        then_branch, after_condition, after_condition_subexprs,
+      )
+      collect_subexpressions_internal(
+        else_branch, after_then, after_then_subexprs,
+      )
+    }
+    Implies(lhs, rhs) => {
+      let (after_lhs, after_lhs_subexprs) = collect_subexpressions_internal(
+        lhs, current_seen, current_subexprs,
+      )
+      collect_subexpressions_internal(rhs, after_lhs, after_lhs_subexprs)
+    }
+    Equivalent(lhs, rhs) => {
+      let (after_lhs, after_lhs_subexprs) = collect_subexpressions_internal(
+        lhs, current_seen, current_subexprs,
+      )
+      collect_subexpressions_internal(rhs, after_lhs, after_lhs_subexprs)
+    }
+  }
+}
+
+///|
+fn collect_subexpressions_from_terms(
+  terms : Array[LogicExpr],
+  seen : Map[String, Bool],
+  subexprs : Array[LogicExpr],
+) -> (Map[String, Bool], Array[LogicExpr]) {
+  let len = terms.length()
+  let mut current_seen = seen
+  let mut current_subexprs = subexprs
+  for i in 0..<len {
+    let (next_seen, next_subexprs) = collect_subexpressions_internal(
+      terms[i],
+      current_seen,
+      current_subexprs,
+    )
+    current_seen = next_seen
+    current_subexprs = next_subexprs
+  }
+  (current_seen, current_subexprs)
+}
+
+///|
+fn logic_expr_depth_internal(expr : LogicExpr) -> Int {
+  match expr {
+    Bool(_) => 1
+    Symbol(_) => 1
+    Not(inner) => 1 + logic_expr_depth_internal(inner)
+    And(terms) => 1 + maximum_depth_in_terms(terms)
+    Or(terms) => 1 + maximum_depth_in_terms(terms)
+    Xor(terms) => 1 + maximum_depth_in_terms(terms)
+    Ite(condition, then_branch, else_branch) => {
+      let cond_depth = logic_expr_depth_internal(condition)
+      let then_depth = logic_expr_depth_internal(then_branch)
+      let else_depth = logic_expr_depth_internal(else_branch)
+      let mut best = cond_depth
+      if then_depth > best {
+        best = then_depth
+      }
+      if else_depth > best {
+        best = else_depth
+      }
+      1 + best
+    }
+    Implies(lhs, rhs) => {
+      let left_depth = logic_expr_depth_internal(lhs)
+      let right_depth = logic_expr_depth_internal(rhs)
+      let mut best = left_depth
+      if right_depth > best {
+        best = right_depth
+      }
+      1 + best
+    }
+    Equivalent(lhs, rhs) => {
+      let left_depth = logic_expr_depth_internal(lhs)
+      let right_depth = logic_expr_depth_internal(rhs)
+      let mut best = left_depth
+      if right_depth > best {
+        best = right_depth
+      }
+      1 + best
+    }
+  }
+}
+
+///|
+fn maximum_depth_in_terms(terms : Array[LogicExpr]) -> Int {
+  let len = terms.length()
+  if len == 0 {
+    return 0
+  }
+  let mut best = 0
+  for term in terms {
+    let depth = logic_expr_depth_internal(term)
+    if depth > best {
+      best = depth
+    }
+  }
+  best
+}
+
+///|
+fn logic_expr_complexity_internal(expr : LogicExpr) -> Int {
+  match expr {
+    Bool(_) => 1
+    Symbol(_) => 1
+    Not(inner) => 1 + logic_expr_complexity_internal(inner)
+    And(terms) => 1 + sum_complexity_terms(terms)
+    Or(terms) => 1 + sum_complexity_terms(terms)
+    Xor(terms) => 1 + sum_complexity_terms(terms)
+    Ite(condition, then_branch, else_branch) => {
+      let mut total = 1
+      total += logic_expr_complexity_internal(condition)
+      total += logic_expr_complexity_internal(then_branch)
+      total += logic_expr_complexity_internal(else_branch)
+      total
+    }
+    Implies(lhs, rhs) => {
+      let mut total = 1
+      total += logic_expr_complexity_internal(lhs)
+      total += logic_expr_complexity_internal(rhs)
+      total
+    }
+    Equivalent(lhs, rhs) => {
+      let mut total = 1
+      total += logic_expr_complexity_internal(lhs)
+      total += logic_expr_complexity_internal(rhs)
+      total
+    }
+  }
+}
+
+///|
+fn sum_complexity_terms(terms : Array[LogicExpr]) -> Int {
+  let mut total = 0
+  for term in terms {
+    total += logic_expr_complexity_internal(term)
+  }
+  total
+}
+
+///|
+fn pow_two(exp : Int) -> Int {
+  let mut result = 1
+  let mut i = 0
+  while i < exp {
+    result = result * 2
+    i += 1
+  }
+  result
+}
+
+///|
+fn assignment_from_index(index : Int, count : Int) -> Array[Bool] {
+  let assignment = Array::new(capacity=count)
+  let mut remaining = index
+  let mut i = 0
+  while i < count {
+    assignment.push(remaining % 2 != 0)
+    remaining = remaining / 2
+    i += 1
+  }
+  assignment
+}
+
+///|
+pub fn gate_not(input : Bool) -> Bool {
+  !input
+}
+
+///|
+pub fn gate_and(inputs : Array[Bool]) -> Bool {
+  let len = inputs.length()
+  let mut i = 0
+  while i < len {
+    if inputs[i] == false {
+      return false
+    }
+    i += 1
+  }
+  true
+}
+
+///|
+pub fn gate_or(inputs : Array[Bool]) -> Bool {
+  let len = inputs.length()
+  let mut i = 0
+  while i < len {
+    if inputs[i] {
+      return true
+    }
+    i += 1
+  }
+  false
+}
+
+///|
+pub fn gate_nand(inputs : Array[Bool]) -> Bool {
+  !gate_and(inputs)
+}
+
+///|
+pub fn gate_nor(inputs : Array[Bool]) -> Bool {
+  !gate_or(inputs)
+}
+
+///|
+pub fn gate_xor(inputs : Array[Bool]) -> Bool {
+  let len = inputs.length()
+  let mut parity = false
+  let mut i = 0
+  while i < len {
+    parity = parity != inputs[i]
+    i += 1
+  }
+  parity
+}
+
+///|
+pub fn gate_xnor(inputs : Array[Bool]) -> Bool {
+  !gate_xor(inputs)
+}
+
+///|
+fn cnf_clause_from_assignment(
+  variables : Array[String],
+  assignment : Array[Bool],
+) -> LogicExpr {
+  let len = variables.length()
+  let disjuncts = Array::new(capacity=len)
+  let mut i = 0
+  while i < len {
+    let symbol = logic_symbol(variables[i])
+    if assignment[i] {
+      disjuncts.push(logic_not(symbol))
+    } else {
+      disjuncts.push(symbol)
+    }
+    i += 1
+  }
+  logic_or(disjuncts)
+}
+
+///|
 fn normalize_operands(operands : Array[LogicExpr]) -> Array[LogicExpr] {
   let len = operands.length()
   let normalized = Array::new(capacity=len)
