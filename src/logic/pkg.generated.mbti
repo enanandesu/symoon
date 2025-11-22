@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "enanandesu/symoon/logic"
+package "enanandesu/symoon/src/logic"
 
 // Values
 const LOGIC_AND_SYMBOL : String = "And"
