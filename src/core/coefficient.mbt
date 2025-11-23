@@ -9,9 +9,7 @@ pub fn coefficient_of(
   }
   let simplified = simplify(expr)
   if degree == 0 {
-    return simplify(
-      substitute_variable(simplified, variable_name, int(0)),
-    )
+    return simplify(substitute_variable(simplified, variable_name, int(0)))
   }
   if !expr_contains_variable(simplified, variable_name) {
     return int(0)

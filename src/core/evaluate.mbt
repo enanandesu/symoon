@@ -47,7 +47,9 @@ pub fn evaluate(
 }
 
 ///|
-fn evaluate_constant(literal : ConstantLiteral) -> Result[Double, SymbolicError] {
+fn evaluate_constant(
+  literal : ConstantLiteral,
+) -> Result[Double, SymbolicError] {
   match literal {
     ConstantLiteral::Integer(value) => Ok(value.to_double())
     ConstantLiteral::Float(value) => Ok(value)
@@ -55,7 +57,6 @@ fn evaluate_constant(literal : ConstantLiteral) -> Result[Double, SymbolicError]
       Err(UnsupportedOperation("positive infinity literal".to_string()))
     ConstantLiteral::NegInfinity =>
       Err(UnsupportedOperation("negative infinity literal".to_string()))
-    ConstantLiteral::NaN =>
-      Err(UnsupportedOperation("nan literal".to_string()))
+    ConstantLiteral::NaN => Err(UnsupportedOperation("nan literal".to_string()))
   }
 }

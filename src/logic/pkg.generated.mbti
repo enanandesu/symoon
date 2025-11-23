@@ -62,9 +62,17 @@ fn logic_collect_subexpressions(LogicExpr) -> Array[LogicExpr]
 
 fn logic_collect_variables(LogicExpr) -> Array[String]
 
+fn logic_conditional_probability(LogicExpr, LogicExpr, Array[(String, Double)]) -> Double
+
+fn logic_distribute_and_over_or(LogicExpr) -> LogicExpr
+
+fn logic_distribute_or_over_and(LogicExpr) -> LogicExpr
+
 fn logic_entails(Array[LogicExpr], LogicExpr) -> Bool
 
 fn logic_equivalent(LogicExpr, LogicExpr) -> LogicExpr
+
+fn logic_equivalent_expr(LogicExpr, LogicExpr, variables? : Array[String]) -> Bool
 
 fn logic_eval(LogicExpr, Array[(String, Bool)]) -> Bool?
 
@@ -76,7 +84,13 @@ fn logic_false() -> LogicExpr
 
 fn logic_from_truth_table(Array[String], Array[(Array[Bool], Bool)]) -> LogicExpr
 
+fn logic_full_adder(LogicExpr, LogicExpr, LogicExpr) -> (LogicExpr, LogicExpr)
+
 fn logic_func(LogicExpr) -> String
+
+fn logic_gate_model() -> LogicExpr
+
+fn logic_half_adder(LogicExpr, LogicExpr) -> (LogicExpr, LogicExpr)
 
 fn logic_implies(LogicExpr, LogicExpr) -> LogicExpr
 
@@ -87,6 +101,8 @@ fn logic_is_cnf(LogicExpr) -> Bool
 fn logic_is_dnf(LogicExpr) -> Bool
 
 fn logic_is_literal(LogicExpr) -> Bool
+
+fn logic_is_tautology(LogicExpr, variables? : Array[String]) -> Bool
 
 fn logic_ite(LogicExpr, LogicExpr, LogicExpr) -> LogicExpr
 
@@ -106,7 +122,9 @@ fn logic_preorder(LogicExpr) -> Array[LogicExpr]
 
 fn logic_preorder_with_depth(LogicExpr, depth? : Int) -> Array[(Int, LogicExpr)]
 
-fn logic_satisfiable(LogicExpr) -> Array[(String, Bool)]?
+fn logic_probability(LogicExpr, Array[(String, Double)]) -> Double
+
+fn logic_satisfiable(LogicExpr, all_models? : Bool, variables? : Array[String]) -> LogicSatResult
 
 fn logic_simplify(LogicExpr) -> LogicExpr
 
@@ -133,6 +151,32 @@ fn logic_truth_table_lines(LogicExpr, Array[String]) -> Array[String]
 fn logic_xnor(Array[LogicExpr]) -> LogicExpr
 
 fn logic_xor(Array[LogicExpr]) -> LogicExpr
+
+fn ltl_always(LTLExpr) -> LTLExpr
+
+fn ltl_and(Array[LTLExpr]) -> LTLExpr
+
+fn ltl_eval(LTLExpr, Array[Array[(String, Bool)]]) -> Bool?
+
+fn ltl_eventually(LTLExpr) -> LTLExpr
+
+fn ltl_false() -> LTLExpr
+
+fn ltl_next(LTLExpr) -> LTLExpr
+
+fn ltl_normalize(LTLExpr) -> LTLExpr
+
+fn ltl_not(LTLExpr) -> LTLExpr
+
+fn ltl_or(Array[LTLExpr]) -> LTLExpr
+
+fn ltl_release(LTLExpr, LTLExpr) -> LTLExpr
+
+fn ltl_symbol(String) -> LTLExpr
+
+fn ltl_true() -> LTLExpr
+
+fn ltl_until(LTLExpr, LTLExpr) -> LTLExpr
 
 // Errors
 
@@ -173,6 +217,22 @@ fn FOTerm::copy(Self) -> Self
 impl Eq for FOTerm
 impl Show for FOTerm
 
+pub enum LTLExpr {
+  Bool(Bool)
+  Symbol(String)
+  Not(LTLExpr)
+  And(Array[LTLExpr])
+  Or(Array[LTLExpr])
+  Next(LTLExpr)
+  Until(LTLExpr, LTLExpr)
+  Release(LTLExpr, LTLExpr)
+  Always(LTLExpr)
+  Eventually(LTLExpr)
+}
+fn LTLExpr::copy(Self) -> Self
+impl Eq for LTLExpr
+impl Show for LTLExpr
+
 pub enum LogicExpr {
   Bool(Bool)
   Symbol(String)
@@ -187,6 +247,14 @@ pub enum LogicExpr {
 fn LogicExpr::copy(Self) -> Self
 impl Eq for LogicExpr
 impl Show for LogicExpr
+
+pub enum LogicSatResult {
+  Unsatisfiable
+  Model(Array[(String, Bool)])
+  AllModels(Array[Array[(String, Bool)]])
+}
+impl Eq for LogicSatResult
+impl Show for LogicSatResult
 
 // Type aliases
 

@@ -73,8 +73,9 @@ fn try_direct_substitution(
     limit_substitute_variable(expr, variable_name, point),
   )
   match substituted {
-    Constant(ConstantLiteral::Integer(_)) |
-    Constant(ConstantLiteral::Float(_)) => Some(LimitResult::Value(substituted))
+    Constant(ConstantLiteral::Integer(_))
+    | Constant(ConstantLiteral::Float(_)) =>
+      Some(LimitResult::Value(substituted))
     _ => None
   }
 }
