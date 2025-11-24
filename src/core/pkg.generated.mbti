@@ -44,6 +44,10 @@ fn leading_coefficient(Expr, String) -> Expr
 
 fn limit(Expr, String, Expr, dir? : LimitDirection) -> LimitResult
 
+fn limit_left(Expr, String, Expr) -> LimitResult
+
+fn limit_right(Expr, String, Expr) -> LimitResult
+
 fn log(Expr) -> Expr
 
 fn match_expr(Pattern, Expr) -> PatternBindings?
