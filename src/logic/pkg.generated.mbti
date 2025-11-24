@@ -64,6 +64,8 @@ fn logic_collect_variables(LogicExpr) -> Array[String]
 
 fn logic_conditional_probability(LogicExpr, LogicExpr, Array[(String, Double)]) -> Double
 
+fn logic_deserialize(String) -> LogicExpr
+
 fn logic_distribute_and_over_or(LogicExpr) -> LogicExpr
 
 fn logic_distribute_or_over_and(LogicExpr) -> LogicExpr
@@ -118,6 +120,8 @@ fn logic_op_count(LogicExpr) -> Int
 
 fn logic_or(Array[LogicExpr]) -> LogicExpr
 
+fn logic_parse(String) -> LogicExpr
+
 fn logic_preorder(LogicExpr) -> Array[LogicExpr]
 
 fn logic_preorder_with_depth(LogicExpr, depth? : Int) -> Array[(Int, LogicExpr)]
@@ -125,6 +129,8 @@ fn logic_preorder_with_depth(LogicExpr, depth? : Int) -> Array[(Int, LogicExpr)]
 fn logic_probability(LogicExpr, Array[(String, Double)]) -> Double
 
 fn logic_satisfiable(LogicExpr, all_models? : Bool, variables? : Array[String]) -> LogicSatResult
+
+fn logic_serialize(LogicExpr) -> String
 
 fn logic_simplify(LogicExpr) -> LogicExpr
 

@@ -168,6 +168,48 @@ test "logic_probability computes Bernoulli combinations" {
 }
 
 ///|
+test "logic_parse_and_serialize round trips and matches structure" {
+  let expr_str = "x & y | ~z"
+  let parsed = logic_parse(expr_str)
+  let expected = logic_or([
+    logic_and([logic_symbol("x"), logic_symbol("y")]),
+    logic_not(logic_symbol("z")),
+  ])
+  assert_eq(parsed, expected)
+  let serialized = logic_serialize(parsed.copy())
+  let restored = logic_deserialize(serialized)
+  assert_eq(restored, parsed)
+  assert_eq(logic_equivalent_expr(parsed, restored), true)
+}
+
+///|
+test "logic_parse honors precedence and parentheses" {
+  let expr_str = "a | b & ~(c ^ d)"
+  let parsed = logic_parse(expr_str)
+  let expected = logic_or([
+    logic_symbol("a"),
+    logic_and([
+      logic_symbol("b"),
+      logic_not(logic_xor([logic_symbol("c"), logic_symbol("d")])),
+    ]),
+  ])
+  assert_eq(parsed, expected)
+  let roundtrip = logic_deserialize(logic_serialize(parsed.copy()))
+  assert_eq(roundtrip, expected)
+}
+
+///|
+test "logic_deserialize parses serialized text directly" {
+  let text = "And(Symbol(p),Or(Not(Symbol(q)),Symbol(r)))"
+  let expr = logic_deserialize(text)
+  let expected = logic_and([
+    logic_symbol("p"),
+    logic_or([logic_not(logic_symbol("q")), logic_symbol("r")]),
+  ])
+  assert_eq(expr, expected)
+}
+
+///|
 test "logic_gate_model builds and simplifies circuit" {
   let circuit = logic_gate_model()
   let expected = logic_and([logic_symbol("A"), logic_symbol("B")])
@@ -317,11 +359,7 @@ fn assert_full_adder(
 }
 
 ///|
-fn assert_close(
-  actual : Double,
-  expected : Double,
-  tolerance : Double,
-) -> Unit raise {
+fn assert_close(actual : Double, expected : Double, tolerance : Double) -> Unit {
   let diff = if actual > expected {
     actual - expected
   } else {

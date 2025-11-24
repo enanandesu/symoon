@@ -468,6 +468,455 @@ fn lookup_probability(
 }
 
 ///|
+priv enum LogicToken {
+  Ident(String)
+  LParen
+  RParen
+  Comma
+  Op(String)
+}
+
+///|
+pub fn logic_parse(text : String) -> LogicExpr {
+  let tokens = tokenize_logic(text)
+  let parsed = parse_logic_or(tokens, 0)
+  let next_pos = parsed.0
+  let expr = parsed.1
+  if next_pos != tokens.length() {
+    abort("unexpected trailing tokens in logic_parse")
+  }
+  logic_normalize(expr)
+}
+
+///|
+pub fn logic_serialize(expr : LogicExpr) -> String {
+  serialize_logic_expr(expr)
+}
+
+///|
+pub fn logic_deserialize(text : String) -> LogicExpr {
+  let tokens = tokenize_logic_repr(text)
+  let parsed = parse_logic_repr(tokens, 0)
+  let next_pos = parsed.0
+  let expr = parsed.1
+  if next_pos != tokens.length() {
+    abort("unexpected trailing tokens in logic_deserialize")
+  }
+  logic_normalize(expr)
+}
+
+///|
+fn tokenize_logic(source : String) -> Array[LogicToken] {
+  let tokens = Array::new()
+  let chars = source.to_array()
+  let len = chars.length()
+  let mut i = 0
+  while i < len {
+    let c = chars[i]
+    if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
+      i += 1
+      continue
+    }
+    if c == '(' {
+      tokens.push(LogicToken::LParen)
+      i += 1
+      continue
+    }
+    if c == ')' {
+      tokens.push(LogicToken::RParen)
+      i += 1
+      continue
+    }
+    if c == '&' || c == '|' || c == '^' {
+      tokens.push(LogicToken::Op(char_to_string(c)))
+      i += 1
+      continue
+    }
+    if c == '~' || c == '!' {
+      tokens.push(LogicToken::Op("~"))
+      i += 1
+      continue
+    }
+    if is_logic_ident_start(c) {
+      let start = i
+      i += 1
+      while i < len && is_logic_ident_part(chars[i]) {
+        i += 1
+      }
+      let ident = substring_chars(chars, start, i)
+      tokens.push(LogicToken::Ident(ident))
+      continue
+    }
+    abort("unexpected character in logic expression")
+  }
+  tokens
+}
+
+///|
+fn is_logic_ident_start(ch : Char) -> Bool {
+  (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_'
+}
+
+///|
+fn is_logic_ident_part(ch : Char) -> Bool {
+  is_logic_ident_start(ch) || (ch >= '0' && ch <= '9')
+}
+
+///|
+fn parse_logic_or(tokens : Array[LogicToken], pos : Int) -> (Int, LogicExpr) {
+  let base = parse_logic_and(tokens, pos)
+  let mut current_pos = base.0
+  let mut lhs = base.1
+  while current_pos < tokens.length() {
+    match tokens[current_pos] {
+      Op(symbol) =>
+        if symbol == "|" {
+          let rhs_pair = parse_logic_and(tokens, current_pos + 1)
+          lhs = logic_or([lhs, rhs_pair.1])
+          current_pos = rhs_pair.0
+          continue
+        } else {
+          break
+        }
+      _ => break
+    }
+  }
+  (current_pos, lhs)
+}
+
+///|
+fn parse_logic_and(tokens : Array[LogicToken], pos : Int) -> (Int, LogicExpr) {
+  let base = parse_logic_xor(tokens, pos)
+  let mut current_pos = base.0
+  let mut lhs = base.1
+  while current_pos < tokens.length() {
+    match tokens[current_pos] {
+      Op(symbol) =>
+        if symbol == "&" {
+          let rhs_pair = parse_logic_xor(tokens, current_pos + 1)
+          lhs = logic_and([lhs, rhs_pair.1])
+          current_pos = rhs_pair.0
+          continue
+        } else {
+          break
+        }
+      _ => break
+    }
+  }
+  (current_pos, lhs)
+}
+
+///|
+fn parse_logic_xor(tokens : Array[LogicToken], pos : Int) -> (Int, LogicExpr) {
+  let base = parse_logic_unary(tokens, pos)
+  let mut current_pos = base.0
+  let mut lhs = base.1
+  while current_pos < tokens.length() {
+    match tokens[current_pos] {
+      Op(symbol) =>
+        if symbol == "^" {
+          let rhs_pair = parse_logic_unary(tokens, current_pos + 1)
+          lhs = logic_xor([lhs, rhs_pair.1])
+          current_pos = rhs_pair.0
+          continue
+        } else {
+          break
+        }
+      _ => break
+    }
+  }
+  (current_pos, lhs)
+}
+
+///|
+fn parse_logic_unary(tokens : Array[LogicToken], pos : Int) -> (Int, LogicExpr) {
+  if pos >= tokens.length() {
+    abort("unexpected end of tokens")
+  }
+  match tokens[pos] {
+    Op(symbol) =>
+      if symbol == "~" {
+        let operand_pair = parse_logic_unary(tokens, pos + 1)
+        (operand_pair.0, logic_not(operand_pair.1))
+      } else {
+        abort("unexpected operator in unary position")
+      }
+    _ => parse_logic_primary(tokens, pos)
+  }
+}
+
+///|
+fn parse_logic_primary(
+  tokens : Array[LogicToken],
+  pos : Int,
+) -> (Int, LogicExpr) {
+  if pos >= tokens.length() {
+    abort("unexpected end of tokens")
+  }
+  match tokens[pos] {
+    Ident(name) => (pos + 1, logic_symbol(name))
+    LParen => {
+      let inner_pair = parse_logic_or(tokens, pos + 1)
+      let next_pos = inner_pair.0
+      if next_pos >= tokens.length() {
+        abort("missing closing parenthesis")
+      }
+      match tokens[next_pos] {
+        RParen => (next_pos + 1, inner_pair.1)
+        _ => abort("expected closing parenthesis")
+      }
+    }
+    _ => abort("unexpected token in logic expression")
+  }
+}
+
+///|
+fn serialize_logic_expr(expr : LogicExpr) -> String {
+  match expr {
+    Bool(true) => "Bool(true)"
+    Bool(false) => "Bool(false)"
+    Symbol(name) => "Symbol(" + name + ")"
+    Not(inner) => "Not(" + serialize_logic_expr(inner) + ")"
+    And(terms) => "And(" + join_logic_terms(terms) + ")"
+    Or(terms) => "Or(" + join_logic_terms(terms) + ")"
+    Xor(terms) => "Xor(" + join_logic_terms(terms) + ")"
+    Ite(cond, then_branch, else_branch) => {
+      let cond_str = serialize_logic_expr(cond)
+      let then_str = serialize_logic_expr(then_branch)
+      let else_str = serialize_logic_expr(else_branch)
+      "Ite(" + cond_str + "," + then_str + "," + else_str + ")"
+    }
+    Implies(lhs, rhs) =>
+      "Implies(" +
+      serialize_logic_expr(lhs) +
+      "," +
+      serialize_logic_expr(rhs) +
+      ")"
+    Equivalent(lhs, rhs) =>
+      "Equivalent(" +
+      serialize_logic_expr(lhs) +
+      "," +
+      serialize_logic_expr(rhs) +
+      ")"
+  }
+}
+
+///|
+fn join_logic_terms(terms : Array[LogicExpr]) -> String {
+  let builder = StringBuilder::new()
+  let len = terms.length()
+  let mut i = 0
+  while i < len {
+    if i > 0 {
+      builder.write_char(',')
+    }
+    builder.write_string(serialize_logic_expr(terms[i]))
+    i += 1
+  }
+  builder.to_string()
+}
+
+///|
+fn tokenize_logic_repr(source : String) -> Array[LogicToken] {
+  let tokens = Array::new()
+  let chars = source.to_array()
+  let len = chars.length()
+  let mut i = 0
+  while i < len {
+    let c = chars[i]
+    if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
+      i += 1
+      continue
+    }
+    if c == '(' {
+      tokens.push(LogicToken::LParen)
+      i += 1
+      continue
+    }
+    if c == ')' {
+      tokens.push(LogicToken::RParen)
+      i += 1
+      continue
+    }
+    if c == ',' {
+      tokens.push(LogicToken::Comma)
+      i += 1
+      continue
+    }
+    if is_logic_ident_start(c) {
+      let start = i
+      i += 1
+      while i < len && is_logic_ident_part(chars[i]) {
+        i += 1
+      }
+      let ident = substring_chars(chars, start, i)
+      tokens.push(LogicToken::Ident(ident))
+      continue
+    }
+    abort("unexpected character in logic serialization")
+  }
+  tokens
+}
+
+///|
+fn parse_logic_repr(tokens : Array[LogicToken], pos : Int) -> (Int, LogicExpr) {
+  if pos >= tokens.length() {
+    abort("empty logic representation")
+  }
+  match tokens[pos] {
+    Ident(name) => parse_logic_repr_call(name, tokens, pos + 1)
+    _ => abort("expected identifier in logic representation")
+  }
+}
+
+///|
+fn parse_logic_repr_call(
+  name : String,
+  tokens : Array[LogicToken],
+  pos : Int,
+) -> (Int, LogicExpr) {
+  if name == "Bool" {
+    match tokens[pos] {
+      LParen => ()
+      _ => abort("expected '(' after Bool")
+    }
+    match tokens[pos + 1] {
+      Ident(value) =>
+        if value == "true" {
+          expect_rparen(tokens, pos + 2)
+          (pos + 3, logic_true())
+        } else if value == "false" {
+          expect_rparen(tokens, pos + 2)
+          (pos + 3, logic_false())
+        } else {
+          abort("unknown Bool literal")
+        }
+      _ => abort("expected Bool literal")
+    }
+  } else if name == "Symbol" {
+    match tokens[pos] {
+      LParen => ()
+      _ => abort("expected '(' after Symbol")
+    }
+    match tokens[pos + 1] {
+      Ident(symbol_name) => {
+        expect_rparen(tokens, pos + 2)
+        (pos + 3, logic_symbol(symbol_name))
+      }
+      _ => abort("expected symbol name")
+    }
+  } else {
+    match tokens[pos] {
+      LParen => ()
+      _ => abort("expected '(' after constructor")
+    }
+    let args_pair = parse_logic_repr_args(tokens, pos + 1)
+    let expr = build_logic_from_repr(name, args_pair.1)
+    (args_pair.0, expr)
+  }
+}
+
+///|
+fn parse_logic_repr_args(
+  tokens : Array[LogicToken],
+  pos : Int,
+) -> (Int, Array[LogicExpr]) {
+  let args = Array::new()
+  let mut current = pos
+  let len = tokens.length()
+  if current < len {
+    match tokens[current] {
+      RParen => return (current + 1, args)
+      _ => ()
+    }
+  }
+  while current < len {
+    let arg_pair = parse_logic_repr(tokens, current)
+    args.push(arg_pair.1)
+    current = arg_pair.0
+    if current >= len {
+      abort("unexpected end while parsing arguments")
+    }
+    match tokens[current] {
+      Comma => {
+        current += 1
+        continue
+      }
+      RParen => {
+        current += 1
+        break
+      }
+      _ => abort("unexpected token in argument list")
+    }
+  }
+  (current, args)
+}
+
+///|
+fn expect_rparen(tokens : Array[LogicToken], pos : Int) -> Unit {
+  match tokens[pos] {
+    RParen => ()
+    _ => abort("expected closing parenthesis")
+  }
+}
+
+///|
+fn build_logic_from_repr(name : String, args : Array[LogicExpr]) -> LogicExpr {
+  if name == "Not" {
+    if args.length() != 1 {
+      abort("Not expects 1 argument")
+    }
+    return logic_not(args[0])
+  }
+  if name == "And" {
+    return logic_and(args)
+  }
+  if name == "Or" {
+    return logic_or(args)
+  }
+  if name == "Xor" {
+    return logic_xor(args)
+  }
+  if name == "Ite" {
+    if args.length() != 3 {
+      abort("Ite expects 3 arguments")
+    }
+    return logic_ite(args[0], args[1], args[2])
+  }
+  if name == "Implies" {
+    if args.length() != 2 {
+      abort("Implies expects 2 arguments")
+    }
+    return logic_implies(args[0], args[1])
+  }
+  if name == "Equivalent" {
+    if args.length() != 2 {
+      abort("Equivalent expects 2 arguments")
+    }
+    return logic_equivalent(args[0], args[1])
+  }
+  abort("unknown logic constructor: " + name)
+}
+
+///|
+fn char_to_string(c : Char) -> String {
+  let builder = StringBuilder::new()
+  builder.write_char(c)
+  builder.to_string()
+}
+
+///|
+fn substring_chars(chars : Array[Char], start : Int, end : Int) -> String {
+  let builder = StringBuilder::new()
+  let mut i = start
+  while i < end {
+    builder.write_char(chars[i])
+    i += 1
+  }
+  builder.to_string()
+}
+
+///|
 pub fn logic_satisfiable(
   expr : LogicExpr,
   all_models? : Bool = false,
