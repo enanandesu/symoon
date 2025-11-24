@@ -133,7 +133,7 @@ fn logic_eval_internal(
 ) -> (Array[(String, Bool)], Bool?) {
   match expr {
     Bool(value) => (assignments, Some(value))
-    Symbol(name) => lookup_assignment(assignments, name)
+    Symbol(name) => (assignments, lookup_assignment(assignments, name))
     Not(inner) => {
       let (env, value) = logic_eval_internal(inner, assignments)
       match value {
@@ -255,15 +255,14 @@ fn logic_eval_internal(
 fn lookup_assignment(
   assignments : Array[(String, Bool)],
   name : String,
-) -> (Array[(String, Bool)], Bool?) {
-  let len = assignments.length()
-  for i in 0..<len {
-    let (key, value) = assignments[i]
+) -> Bool? {
+  for i in assignments {
+    let (key, value) = i
     if key == name {
-      return (assignments, Some(value))
+      return Some(value)
     }
   }
-  (assignments, None)
+  None
 }
 
 ///|
