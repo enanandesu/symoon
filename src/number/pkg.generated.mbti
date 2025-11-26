@@ -2,6 +2,36 @@
 package "enanandesu/symoon/src/number"
 
 // Values
+fn divisor_count(Int) -> Int
+
+fn divisor_sigma(Int, power? : Int) -> Int
+
+fn divisors(Int) -> Array[Int]
+
+fn factorint(Int) -> Array[(Int, Int)]
+
+fn gcd(Int, Int) -> Int
+
+fn gcdex(Int, Int) -> (Int, Int, Int)
+
+fn igcd(Int, Int) -> Int
+
+fn ilcm(Int, Int) -> Int
+
+fn is_quad_residue(Int, Int) -> Bool
+
+fn jacobi_symbol(Int, Int) -> Int
+
+fn lcm(Int, Int) -> Int
+
+fn legendre_symbol(Int, Int) -> Int
+
+fn mobius(Int) -> Int
+
+fn mod_inverse(Int, Int) -> Int
+
+fn multiplicity(Int, Int) -> Int
+
 fn nt_divisor_count(Int) -> Int
 
 fn nt_divisor_sigma(Int, power? : Int) -> Int
@@ -34,6 +64,8 @@ fn nt_nth_prime(Int) -> Int
 
 fn nt_prev_prime(Int) -> Int
 
+fn nt_prime(Int) -> Int
+
 fn nt_prime_factor_list(Int) -> Array[Int]
 
 fn nt_prime_factors(Int) -> Array[(Int, Int)]
@@ -44,7 +76,21 @@ fn nt_prime_range(Int, Int) -> Array[Int]
 
 fn nt_primes_up_to(Int) -> Array[Int]
 
+fn nt_rand_prime(Int, Int, seed? : Int) -> Int
+
 fn nt_totient(Int) -> Int
+
+fn primenu(Int) -> Int
+
+fn primeomega(Int) -> Int
+
+fn quadratic_residues(Int) -> Array[Int]
+
+fn solve_congruence(Array[(Int, Int)]) -> (Int, Int)
+
+fn sqrt_mod(Int, Int) -> Array[Int]
+
+fn totient(Int) -> Int
 
 // Errors
 

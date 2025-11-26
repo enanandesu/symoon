@@ -7,6 +7,14 @@ test "nt_gcd and nt_lcm handle common cases" {
 }
 
 ///|
+test "gcd/lcm aliases match nt_ versions" {
+  assert_eq(gcd(12, 18), 6)
+  assert_eq(lcm(12, 18), 36)
+  assert_eq(igcd(12, 18), 6)
+  assert_eq(ilcm(12, 18), 36)
+}
+
+///|
 test "nt_gcd_ex finds Bézout coefficients" {
   let (x, y, g) = nt_gcd_ex(12, 18)
   assert_eq((x, y, g), (-1, 1, 6))
@@ -15,6 +23,84 @@ test "nt_gcd_ex finds Bézout coefficients" {
   let (x3, y3, g3) = nt_gcd_ex(-10, 15)
   assert_eq(-10 * x3 + 15 * y3, g3)
   assert_eq(g3, 5)
+}
+
+///|
+test "gcdex alias matches nt_gcd_ex" {
+  let (x, y, g) = gcdex(12, 18)
+  assert_eq((x, y, g), (-1, 1, 6))
+}
+
+///|
+test "mod_inverse and modular square roots" {
+  assert_eq(mod_inverse(3, 11), 4)
+  assert_eq(mod_inverse(2, 4), 0)
+  let roots = sqrt_mod(4, 7)
+  assert_eq(roots, [2, 5])
+  let none = sqrt_mod(3, 7)
+  assert_eq(none.length(), 0)
+}
+
+///|
+test "quadratic_residues lists squares modulo n" {
+  let residues = quadratic_residues(7)
+  assert_eq(residues, [0, 1, 2, 4])
+}
+
+///|
+test "totient mobius and prime factor counters" {
+  assert_eq(totient(12), 4)
+  assert_eq(mobius(12), 0)
+  assert_eq(mobius(11), -1)
+  assert_eq(primenu(12), 2)
+  assert_eq(primeomega(12), 3)
+}
+
+///|
+test "mobius and prime counters cover edge cases" {
+  assert_eq(mobius(-30), 1)
+  assert_eq(mobius(1), 1)
+  assert_eq(mobius(64), 0)
+  assert_eq(primenu(1), 0)
+  assert_eq(primenu(360), 3)
+  assert_eq(primeomega(360), 6)
+  assert_eq(primeomega(0), 0)
+}
+
+///|
+test "quadratic symbols and residue checks" {
+  assert_eq(legendre_symbol(2, 7), 1)
+  assert_eq(jacobi_symbol(15, 23), -1)
+  assert_eq(is_quad_residue(2, 7), true)
+  assert_eq(is_quad_residue(3, 7), false)
+}
+
+///|
+test "quadratic symbol edge cases and residue listing" {
+  assert_eq(legendre_symbol(0, 7), 0)
+  assert_eq(legendre_symbol(2, 8), 0)
+  assert_eq(jacobi_symbol(2, 9), 1)
+  assert_eq(jacobi_symbol(5, 21), 1)
+  let residues = quadratic_residues(11)
+  assert_eq(residues, [0, 1, 3, 4, 5, 9])
+  assert_eq(is_quad_residue(3, 11), true)
+  assert_eq(is_quad_residue(2, 11), false)
+}
+
+///|
+test "solve_congruence combines pairwise congruences" {
+  let (x, modulus) = solve_congruence([(2, 3), (3, 5), (2, 7)])
+  assert_eq((x, modulus), (23, 105))
+  let impossible = solve_congruence([(1, 2), (0, 4)])
+  assert_eq(impossible, (0, 0))
+}
+
+///|
+test "solve_congruence normalizes residues and negatives" {
+  let (x1, m1) = solve_congruence([(-1, 5), (1, 6)])
+  assert_eq((x1, m1), (19, 30))
+  let (x2, m2) = solve_congruence([(4, 5), (4, 10)])
+  assert_eq((x2, m2), (4, 10))
 }
 
 ///|
@@ -58,6 +144,7 @@ test "nt_nth_prime and nt_prime_pi" {
   assert_eq(nt_nth_prime(1), 2)
   assert_eq(nt_nth_prime(10), 29)
   assert_eq(nt_nth_prime(0), 0)
+  assert_eq(nt_prime(10), 29)
   assert_eq(nt_prime_pi(1), 0)
   assert_eq(nt_prime_pi(2), 1)
   assert_eq(nt_prime_pi(100), 25)
@@ -80,6 +167,17 @@ test "nt_prime_range builds half-open ranges" {
   assert_eq(small, [2, 3])
   let empty = nt_prime_range(20, 20)
   assert_eq(empty.length(), 0)
+}
+
+///|
+test "nt_rand_prime picks deterministic prime inside range" {
+  let default_pick = nt_rand_prime(100, 200)
+  assert_eq(default_pick, 131)
+  assert_eq(nt_is_prime(default_pick), true)
+  assert_eq(default_pick >= 100 && default_pick < 200, true)
+  let seeded = nt_rand_prime(100, 200, seed=7)
+  assert_eq(seeded, 137)
+  assert_eq(nt_rand_prime(14, 16), 0)
 }
 
 ///|
@@ -127,6 +225,14 @@ test "nt_factorint and nt_multiplicity match expectations" {
 }
 
 ///|
+test "factorint and multiplicity aliases mirror nt_ versions" {
+  assert_eq(factorint(100), [(2, 2), (5, 2)])
+  assert_eq(factorint(123456), [(2, 6), (3, 1), (643, 1)])
+  assert_eq(multiplicity(2, 100), 2)
+  assert_eq(multiplicity(5, 100), 2)
+}
+
+///|
 test "nt_divisors count and sigma" {
   let divisors = nt_divisors(12)
   assert_eq(divisors, [1, 2, 3, 4, 6, 12])
@@ -138,6 +244,14 @@ test "nt_divisors count and sigma" {
   assert_eq(nt_divisor_sigma(12, power=2), 210)
   assert_eq(nt_divisor_sigma(1), 1)
   assert_eq(nt_divisor_sigma(0), 0)
+}
+
+///|
+test "divisors, divisor_count, divisor_sigma aliases mirror nt_ versions" {
+  assert_eq(divisors(12), [1, 2, 3, 4, 6, 12])
+  assert_eq(divisor_count(12), 6)
+  assert_eq(divisor_sigma(12), 28)
+  assert_eq(divisor_sigma(12, power=2), 210)
 }
 
 ///|
