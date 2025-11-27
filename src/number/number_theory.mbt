@@ -450,6 +450,73 @@ pub fn totient(n : Int) -> Int {
 }
 
 ///|
+pub fn fibonacci(n : Int) -> Int {
+  if n < 0 {
+    return 0
+  }
+  if n == 0 {
+    return 0
+  }
+  if n == 1 {
+    return 1
+  }
+  let mut a = 0
+  let mut b = 1
+  let mut i = 1
+  while i < n {
+    let next = a + b
+    a = b
+    b = next
+    i += 1
+  }
+  b
+}
+
+///|
+pub fn lucas(n : Int) -> Int {
+  if n < 0 {
+    return 0
+  }
+  if n == 0 {
+    return 2
+  }
+  if n == 1 {
+    return 1
+  }
+  let mut a = 2
+  let mut b = 1
+  let mut i = 1
+  while i < n {
+    let next = a + b
+    a = b
+    b = next
+    i += 1
+  }
+  b
+}
+
+///|
+pub fn binomial(n : Int, k : Int) -> Int {
+  if n < 0 || k < 0 || k > n {
+    return 0
+  }
+  if k == 0 || k == n {
+    return 1
+  }
+  let mut kk = k
+  if kk > n - kk {
+    kk = n - kk
+  }
+  let mut result = 1
+  let mut i = 1
+  while i <= kk {
+    result = result * (n - kk + i) / i
+    i += 1
+  }
+  result
+}
+
+///|
 pub fn mobius(n : Int) -> Int {
   if n == 0 {
     return 0
@@ -493,8 +560,51 @@ pub fn primeomega(n : Int) -> Int {
 }
 
 ///|
+pub fn npartitions(n : Int) -> Int {
+  if n < 0 {
+    return 0
+  }
+  let target = n
+  let dp = Array::new()
+  let mut i = 0
+  while i <= target {
+    dp.push(0)
+    i += 1
+  }
+  dp[0] = 1
+  let mut part = 1
+  while part <= target {
+    let mut j = part
+    while j <= target {
+      dp[j] = dp[j] + dp[j - part]
+      j += 1
+    }
+    part += 1
+  }
+  dp[target]
+}
+
+///|
 pub fn divisors(n : Int) -> Array[Int] {
   nt_divisors(n)
+}
+
+///|
+pub fn sum_of_squares(n : Int) -> Int {
+  if n < 0 {
+    return 0
+  }
+  if n == 0 {
+    return 1
+  }
+  let factors = nt_prime_factors(n)
+  for pair in factors {
+    let (p, count) = pair
+    if p % 4 == 3 && count % 2 == 1 {
+      return 0
+    }
+  }
+  1
 }
 
 ///|
@@ -572,6 +682,75 @@ pub fn quadratic_residues(modulus : Int) -> Array[Int] {
 }
 
 ///|
+fn stirling_first_kind_unsigned(n : Int, k : Int) -> Int {
+  if n < 0 || k < 0 || k > n {
+    return 0
+  }
+  if n == 0 && k == 0 {
+    return 1
+  }
+  if k == 0 {
+    return 0
+  }
+  if k == n {
+    return 1
+  }
+  (n - 1) * stirling_first_kind_unsigned(n - 1, k) +
+  stirling_first_kind_unsigned(n - 1, k - 1)
+}
+
+///|
+fn stirling_second_kind(n : Int, k : Int) -> Int {
+  if n < 0 || k < 0 || k > n {
+    return 0
+  }
+  if n == 0 && k == 0 {
+    return 1
+  }
+  if k == 0 {
+    return 0
+  }
+  if k == n {
+    return 1
+  }
+  k * stirling_second_kind(n - 1, k) + stirling_second_kind(n - 1, k - 1)
+}
+
+///|
+pub fn stirling(n : Int, k : Int, kind? : Int = 2) -> Int {
+  if kind == 1 {
+    stirling_first_kind_unsigned(n, k)
+  } else if kind == 2 {
+    stirling_second_kind(n, k)
+  } else {
+    0
+  }
+}
+
+///|
+fn int_sqrt(n : Int) -> Int {
+  if n <= 0 {
+    return 0
+  }
+  let mut x = n
+  let mut y = (x + 1) / 2
+  while y < x {
+    x = y
+    y = (x + n / x) / 2
+  }
+  x
+}
+
+///|
+fn is_perfect_square(n : Int) -> Bool {
+  if n < 0 {
+    return false
+  }
+  let r = int_sqrt(n)
+  r * r == n
+}
+
+///|
 pub fn legendre_symbol(a : Int, p : Int) -> Int {
   if p <= 2 || !nt_is_prime(p) {
     return 0
@@ -632,6 +811,91 @@ pub fn is_quad_residue(a : Int, modulus : Int) -> Bool {
   }
   let roots = sqrt_mod(a, modulus)
   roots.length() > 0
+}
+
+///|
+pub fn diophantine_linear(a : Int, b : Int, c : Int) -> (Int, Int, Int, Int) {
+  if a == 0 && b == 0 {
+    return if c == 0 { (0, 0, 0, 0) } else { (0, 0, 0, 0) }
+  }
+  let g = nt_gcd(a, b)
+  if c % g != 0 {
+    return (0, 0, 0, 0)
+  }
+  let (s, t, _) = nt_gcd_ex(a, b)
+  let scale = c / g
+  let x0 = s * scale
+  let y0 = t * scale
+  let step_x = b / g
+  let step_y = -a / g
+  (x0, y0, step_x, step_y)
+}
+
+///|
+pub fn pell_solutions(d : Int, count? : Int = 5) -> Array[(Int, Int)] {
+  let solutions = Array::new()
+  if count <= 0 || d <= 0 || is_perfect_square(d) {
+    return solutions
+  }
+  let mut y = 1
+  let mut x1 = 0
+  let mut y1 = 0
+  let mut found = false
+  while y <= 10000 {
+    let candidate = 1 + d * y * y
+    if is_perfect_square(candidate) {
+      x1 = int_sqrt(candidate)
+      y1 = y
+      found = true
+      break
+    }
+    y += 1
+  }
+  if !found {
+    return solutions
+  }
+  let mut x = x1
+  let mut yy = y1
+  let mut i = 0
+  while i < count {
+    solutions.push((x, yy))
+    let next_x = x1 * x + d * y1 * yy
+    let next_y = x1 * yy + y1 * x
+    x = next_x
+    yy = next_y
+    i += 1
+  }
+  solutions
+}
+
+///|
+pub fn pythagorean_triples(count : Int) -> Array[(Int, Int, Int)] {
+  let triples = Array::new()
+  if count <= 0 {
+    return triples
+  }
+  let mut m = 2
+  while triples.length() < count {
+    let mut n = 1
+    while n < m {
+      if (m - n) % 2 == 1 && nt_gcd(m, n) == 1 {
+        let a = m * m - n * n
+        let b = 2 * m * n
+        let c = m * m + n * n
+        let mut triple = (a, b, c)
+        if triple.0 > triple.1 {
+          triple = (triple.1, triple.0, triple.2)
+        }
+        triples.push(triple)
+        if triples.length() >= count {
+          return triples
+        }
+      }
+      n += 1
+    }
+    m += 1
+  }
+  triples
 }
 
 ///|
