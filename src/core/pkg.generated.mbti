@@ -18,6 +18,8 @@ fn atan(Expr) -> Expr
 
 fn atanh(Expr) -> Expr
 
+fn classify_indeterminate(Expr, String, Expr) -> IndeterminateForm?
+
 fn coefficient_of(Expr, String, degree? : Int) -> Expr
 
 fn cos(Expr) -> Expr

@@ -152,69 +152,149 @@ fn detect_indeterminate_form(
   point : Expr,
 ) -> IndeterminateForm? {
   match expr {
-    Binary(Div, left, right) => {
-      let denom = simplify(
-        limit_substitute_variable(right, variable_name, point),
-      )
-      let numer = simplify(
-        limit_substitute_variable(left, variable_name, point),
-      )
-      if limit_is_zero_literal(numer) && limit_is_zero_literal(denom) {
-        Some(IndeterminateForm::ZeroOverZero)
-      } else {
-        None
-      }
-    }
-    Binary(Sub, left, right) => {
-      let lhs = simplify(limit_substitute_variable(left, variable_name, point))
-      let rhs = simplify(limit_substitute_variable(right, variable_name, point))
-      let lhs_inf = limit_detects_infinite_literal(lhs)
-      let rhs_inf = limit_detects_infinite_literal(rhs)
-      if lhs_inf && rhs_inf {
+    Binary(Div, left, right) =>
+      classify_div_indeterminate(left, right, variable_name, point)
+    Binary(Add, left, right) =>
+      classify_add_indeterminate(left, right, variable_name, point)
+    Binary(Sub, left, right) =>
+      classify_sub_indeterminate(left, right, variable_name, point)
+    Binary(Mul, left, right) =>
+      classify_mul_indeterminate(left, right, variable_name, point)
+    Binary(Pow, base, exponent) =>
+      classify_pow_indeterminate(base, exponent, variable_name, point)
+    Unary(op, inner) =>
+      classify_unary_indeterminate(op, inner, variable_name, point)
+    _ => None
+  }
+}
+
+///|
+fn classify_div_indeterminate(
+  left : Expr,
+  right : Expr,
+  variable_name : String,
+  point : Expr,
+) -> IndeterminateForm? {
+  let denom = simplify(limit_substitute_variable(right, variable_name, point))
+  let numer = simplify(limit_substitute_variable(left, variable_name, point))
+  if limit_is_zero_literal(numer) && limit_is_zero_literal(denom) {
+    return Some(IndeterminateForm::ZeroOverZero)
+  }
+  match (limit_infinite_sign(numer), limit_infinite_sign(denom)) {
+    (Some(_), Some(_)) => Some(IndeterminateForm::InfinityOverInfinity)
+    _ => None
+  }
+}
+
+///|
+fn classify_add_indeterminate(
+  left : Expr,
+  right : Expr,
+  variable_name : String,
+  point : Expr,
+) -> IndeterminateForm? {
+  let lhs = simplify(limit_substitute_variable(left, variable_name, point))
+  let rhs = simplify(limit_substitute_variable(right, variable_name, point))
+  match (limit_infinite_sign(lhs), limit_infinite_sign(rhs)) {
+    (Some(left_sign), Some(right_sign)) =>
+      if left_sign != right_sign {
         Some(IndeterminateForm::InfinityMinusInfinity)
       } else {
         None
       }
-    }
-    Binary(Mul, left, right) => {
-      let lhs = simplify(limit_substitute_variable(left, variable_name, point))
-      let rhs = simplify(limit_substitute_variable(right, variable_name, point))
-      let lhs_zero = limit_is_zero_literal(lhs)
-      let rhs_zero = limit_is_zero_literal(rhs)
-      let lhs_inf = limit_detects_infinite_literal(lhs)
-      let rhs_inf = limit_detects_infinite_literal(rhs)
-      if lhs_zero && rhs_inf {
-        Some(IndeterminateForm::ZeroTimesInfinity)
-      } else if rhs_zero && lhs_inf {
-        Some(IndeterminateForm::ZeroTimesInfinity)
-      } else {
-        None
-      }
-    }
-    Binary(Pow, base, exponent) => {
-      let base_value = simplify(
-        limit_substitute_variable(base, variable_name, point),
-      )
-      let exponent_value = simplify(
-        limit_substitute_variable(exponent, variable_name, point),
-      )
-      let base_one = limit_is_one_literal(base_value)
-      let base_zero = limit_is_zero_literal(base_value)
-      let base_inf = limit_detects_infinite_literal(base_value)
-      let exp_zero = limit_is_zero_literal(exponent_value)
-      let exp_inf = limit_detects_infinite_literal(exponent_value)
-      if base_one && exp_inf {
-        Some(IndeterminateForm::OnePowerInfinity)
-      } else if base_zero && exp_zero {
-        Some(IndeterminateForm::ZeroPowerZero)
-      } else if base_inf && exp_zero {
-        Some(IndeterminateForm::InfinityPowerZero)
-      } else {
-        None
-      }
-    }
     _ => None
   }
+}
+
+///|
+fn classify_sub_indeterminate(
+  left : Expr,
+  right : Expr,
+  variable_name : String,
+  point : Expr,
+) -> IndeterminateForm? {
+  let lhs = simplify(limit_substitute_variable(left, variable_name, point))
+  let rhs = simplify(limit_substitute_variable(right, variable_name, point))
+  if limit_detects_infinite_literal(lhs) && limit_detects_infinite_literal(rhs) {
+    Some(IndeterminateForm::InfinityMinusInfinity)
+  } else {
+    None
+  }
+}
+
+///|
+fn classify_mul_indeterminate(
+  left : Expr,
+  right : Expr,
+  variable_name : String,
+  point : Expr,
+) -> IndeterminateForm? {
+  let lhs = simplify(limit_substitute_variable(left, variable_name, point))
+  let rhs = simplify(limit_substitute_variable(right, variable_name, point))
+  let lhs_zero = limit_is_zero_literal(lhs)
+  let rhs_zero = limit_is_zero_literal(rhs)
+  let lhs_inf = limit_detects_infinite_literal(lhs)
+  let rhs_inf = limit_detects_infinite_literal(rhs)
+  if (lhs_zero && rhs_inf) || (rhs_zero && lhs_inf) {
+    Some(IndeterminateForm::ZeroTimesInfinity)
+  } else {
+    None
+  }
+}
+
+///|
+fn classify_pow_indeterminate(
+  base : Expr,
+  exponent : Expr,
+  variable_name : String,
+  point : Expr,
+) -> IndeterminateForm? {
+  let base_value = simplify(
+    limit_substitute_variable(base, variable_name, point),
+  )
+  let exponent_value = simplify(
+    limit_substitute_variable(exponent, variable_name, point),
+  )
+  let base_one = limit_is_one_literal(base_value)
+  let base_zero = limit_is_zero_literal(base_value)
+  let base_inf = limit_detects_infinite_literal(base_value)
+  let exp_zero = limit_is_zero_literal(exponent_value)
+  let exp_inf = limit_detects_infinite_literal(exponent_value)
+  if base_one && exp_inf {
+    Some(IndeterminateForm::OnePowerInfinity)
+  } else if base_zero && exp_zero {
+    Some(IndeterminateForm::ZeroPowerZero)
+  } else if base_inf && exp_zero {
+    Some(IndeterminateForm::InfinityPowerZero)
+  } else {
+    None
+  }
+}
+
+///|
+fn classify_unary_indeterminate(
+  op : UnaryOp,
+  inner : Expr,
+  variable_name : String,
+  point : Expr,
+) -> IndeterminateForm? {
+  if op == Sin || op == Cos {
+    match limit_directional_sign(inner, variable_name, point) {
+      Some(_) => Some(IndeterminateForm::Oscillatory)
+      None => None
+    }
+  } else {
+    None
+  }
+}
+
+///|
+pub fn classify_indeterminate(
+  expr : Expr,
+  variable_name : String,
+  point : Expr,
+) -> IndeterminateForm? {
+  detect_indeterminate_form(simplify(expr), variable_name, simplify(point))
 }
 
 ///|
@@ -273,12 +353,14 @@ fn limit_is_one_literal(expr : Expr) -> Bool {
 
 ///|
 fn limit_detects_infinite_literal(expr : Expr) -> Bool {
-  match expr {
-    Constant(ConstantLiteral::PosInfinity) => true
-    Constant(ConstantLiteral::NegInfinity) => true
-    // Fallback for legacy placeholders
-    FunctionCall(name, _) => name == "Infinity" || name == "oo"
-    _ => false
+  match limit_infinite_sign(expr) {
+    Some(_) => true
+    None =>
+      match expr {
+        // Fallback for legacy placeholders
+        FunctionCall(name, _) => name == "Infinity" || name == "oo"
+        _ => false
+      }
   }
 }
 
@@ -417,6 +499,25 @@ fn limit_directional_sign(
           }
         _ => None
       }
+    Binary(BinaryOp::Div, numerator, denominator) => {
+      let substituted = simplify(
+        limit_substitute_variable(denominator, variable_name, point),
+      )
+      if !limit_is_zero_literal(substituted) {
+        return None
+      }
+      match
+        (
+          limit_literal_sign(numerator),
+          limit_directional_sign(denominator, variable_name, point),
+        ) {
+        (Some(num_sign), Some((left, right))) =>
+          Some(
+            (multiply_signs(num_sign, left), multiply_signs(num_sign, right)),
+          )
+        _ => None
+      }
+    }
     _ => None
   }
 }
@@ -436,5 +537,19 @@ fn limit_expr_equals(lhs : Expr, rhs : Expr) -> Bool {
       Constant(ConstantLiteral::Integer(right)),
     ) => left == right.to_double()
     _ => false
+  }
+}
+
+///|
+fn limit_infinite_sign(expr : Expr) -> Sign? {
+  match expr {
+    Constant(ConstantLiteral::PosInfinity) => Some(Sign::Positive)
+    Constant(ConstantLiteral::NegInfinity) => Some(Sign::Negative)
+    Unary(UnaryOp::Neg, inner) =>
+      match limit_infinite_sign(inner) {
+        Some(sign) => Some(flip_sign(sign))
+        None => None
+      }
+    _ => None
   }
 }
