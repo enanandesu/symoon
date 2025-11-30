@@ -80,15 +80,16 @@ fn perform_limit(
   match
     detect_simple_divergence(expr.copy(), variable_name, point.copy(), dir) {
     Some(result) => result
-    None => {
-      let _ = detect_indeterminate_form(
-        expr.copy(),
-        variable_name,
-        point.copy(),
-      )
-      // TODO: plug in dominant-term analysis / series expansion / l'Hopital
-      LimitResult::Unknown
-    }
+    None =>
+      match
+        detect_indeterminate_form(expr.copy(), variable_name, point.copy()) {
+        Some(_) =>
+          match resolve_with_single_taylor(expr, variable_name, point, dir) {
+            Some(result) => result
+            None => LimitResult::Unknown
+          }
+        None => LimitResult::Unknown
+      }
   }
 }
 
@@ -104,8 +105,13 @@ fn try_direct_substitution(
   match substituted {
     Constant(ConstantLiteral::Integer(_))
     | Constant(ConstantLiteral::Float(_)) =>
-      Some(LimitResult::Value(substituted))
-    _ => None
+      Some(LimitResult::Value(rationalize_expr(substituted)))
+    _ =>
+      match limit_eval_literal(substituted.copy()) {
+        Some(literal) =>
+          Some(LimitResult::Value(rationalize_expr(Constant(literal))))
+        None => None
+      }
   }
 }
 
@@ -125,6 +131,7 @@ fn detect_simple_divergence(
       let denom = simplify(
         limit_substitute_variable(right, variable_name, point),
       )
+      let numer_literal_sign = limit_literal_sign(numer.copy())
       if limit_is_zero_literal(denom) {
         if limit_is_zero_literal(numer) {
           None
@@ -134,7 +141,11 @@ fn detect_simple_divergence(
               numer, denom_expr, variable_name, point, dir,
             ) {
             Some(result) => Some(result)
-            None => Some(LimitResult::Divergent)
+            None =>
+              match numer_literal_sign {
+                Some(_) => Some(LimitResult::Divergent)
+                None => None
+              }
           }
         }
       } else {
@@ -298,6 +309,244 @@ pub fn classify_indeterminate(
 }
 
 ///|
+fn resolve_with_single_taylor(
+  expr : Expr,
+  variable_name : String,
+  point : Expr,
+  dir : LimitDirection,
+) -> LimitResult? {
+  match attempt_taylor_linearization(expr, variable_name, point.copy()) {
+    Some(expanded) =>
+      match
+        evaluate_limit_candidate(
+          expanded.copy(),
+          variable_name,
+          point.copy(),
+          dir,
+        ) {
+        Some(result) => Some(result)
+        None =>
+          match
+            attempt_lhopital_once(expr.copy(), variable_name, point.copy()) {
+            Some(derived) => {
+              let simplified = simplify(derived)
+              match
+                evaluate_limit_candidate(
+                  simplified.copy(),
+                  variable_name,
+                  point.copy(),
+                  dir,
+                ) {
+                Some(result) => Some(result)
+                None => {
+                  let secondary_result = match
+                    attempt_taylor_linearization(
+                      simplified.copy(),
+                      variable_name,
+                      point.copy(),
+                    ) {
+                    Some(second_pass) =>
+                      evaluate_limit_candidate(
+                        second_pass,
+                        variable_name,
+                        point.copy(),
+                        dir,
+                      )
+                    None => None
+                  }
+                  match secondary_result {
+                    Some(result) => Some(result)
+                    None =>
+                      match
+                        attempt_lhopital_once(
+                          simplified,
+                          variable_name,
+                          point.copy(),
+                        ) {
+                        Some(second_derivative) => {
+                          let second_simplified = simplify(second_derivative)
+                          evaluate_limit_candidate(
+                            second_simplified, variable_name, point, dir,
+                          )
+                        }
+                        None => None
+                      }
+                  }
+                }
+              }
+            }
+            None => None
+          }
+      }
+    None => None
+  }
+}
+
+///|
+fn attempt_taylor_linearization(
+  expr : Expr,
+  variable_name : String,
+  point : Expr,
+) -> Expr? {
+  let (rewritten, changed) = taylor_linearize_expr(expr, variable_name, point)
+  if changed {
+    Some(simplify(rewritten))
+  } else {
+    None
+  }
+}
+
+///|
+fn taylor_linearize_expr(
+  expr : Expr,
+  variable_name : String,
+  point : Expr,
+) -> (Expr, Bool) {
+  match expr {
+    Constant(_) => (expr, false)
+    Symbol(_) => (expr, false)
+    Unary(op, inner) => {
+      let (new_inner, inner_changed) = taylor_linearize_expr(
+        inner,
+        variable_name,
+        point.copy(),
+      )
+      match maybe_linearize_unary(op, new_inner.copy(), variable_name, point) {
+        Some(replacement) => (replacement, true)
+        None => (Unary(op, new_inner), inner_changed)
+      }
+    }
+    Binary(op, left, right) => {
+      let (new_left, left_changed) = taylor_linearize_expr(
+        left,
+        variable_name,
+        point.copy(),
+      )
+      let (new_right, right_changed) = taylor_linearize_expr(
+        right,
+        variable_name,
+        point.copy(),
+      )
+      (Binary(op, new_left, new_right), left_changed || right_changed)
+    }
+    FunctionCall(name, args) => {
+      let rewritten = Array::new(capacity=args.length())
+      let mut any_changed = false
+      for arg in args {
+        let (new_arg, changed) = taylor_linearize_expr(
+          arg,
+          variable_name,
+          point.copy(),
+        )
+        rewritten.push(new_arg)
+        if changed {
+          any_changed = true
+        }
+      }
+      (FunctionCall(name, rewritten), any_changed)
+    }
+  }
+}
+
+///|
+fn maybe_linearize_unary(
+  op : UnaryOp,
+  inner : Expr,
+  variable_name : String,
+  point : Expr,
+) -> Expr? {
+  let substituted = simplify(
+    limit_substitute_variable(inner.copy(), variable_name, point.copy()),
+  )
+  match op {
+    UnaryOp::Sin
+    | UnaryOp::Tan
+    | UnaryOp::Sinh
+    | UnaryOp::Tanh
+    | UnaryOp::Asin
+    | UnaryOp::Atan
+    | UnaryOp::Asinh
+    | UnaryOp::Atanh =>
+      if limit_is_zero_literal(substituted) {
+        Some(inner)
+      } else {
+        None
+      }
+    UnaryOp::Exp =>
+      if limit_is_zero_literal(substituted) {
+        Some(add(int(1), inner))
+      } else {
+        None
+      }
+    UnaryOp::Log =>
+      if limit_is_one_literal(substituted) {
+        Some(sub(inner, int(1)))
+      } else {
+        None
+      }
+    UnaryOp::Cos | UnaryOp::Cosh =>
+      if limit_is_zero_literal(substituted) {
+        let squared = pow(inner.copy(), int(2))
+        let half = div(squared, int(2))
+        Some(sub(int(1), half))
+      } else {
+        None
+      }
+    _ => None
+  }
+}
+
+///|
+fn evaluate_limit_candidate(
+  expr : Expr,
+  variable_name : String,
+  point : Expr,
+  dir : LimitDirection,
+) -> LimitResult? {
+  match try_direct_substitution(expr.copy(), variable_name, point.copy()) {
+    Some(result) => Some(result)
+    None => detect_simple_divergence(expr, variable_name, point.copy(), dir)
+  }
+}
+
+///|
+fn attempt_lhopital_once(
+  expr : Expr,
+  variable_name : String,
+  point : Expr,
+) -> Expr? {
+  match expr {
+    Binary(Div, left, right) =>
+      match
+        detect_indeterminate_form(expr.copy(), variable_name, point.copy()) {
+        Some(form) => {
+          let applicable = form == IndeterminateForm::ZeroOverZero ||
+            form == IndeterminateForm::InfinityOverInfinity
+          if applicable {
+            let numerator_derivative = simplify(
+              differentiate(left, variable_name),
+            )
+            let denominator_derivative = simplify(
+              differentiate(right, variable_name),
+            )
+            Some(
+              Expr::Binary(
+                BinaryOp::Div,
+                numerator_derivative,
+                denominator_derivative,
+              ),
+            )
+          } else {
+            None
+          }
+        }
+        None => None
+      }
+    _ => None
+  }
+}
+
+///|
 fn limit_substitute_variable(
   expr : Expr,
   variable_name : String,
@@ -338,7 +587,11 @@ fn limit_is_zero_literal(expr : Expr) -> Bool {
   match expr {
     Constant(ConstantLiteral::Integer(value)) => value == 0
     Constant(ConstantLiteral::Float(value)) => value == 0.0
-    _ => false
+    _ =>
+      match limit_eval_literal(expr) {
+        Some(literal) => limit_literal_is_zero(literal)
+        None => false
+      }
   }
 }
 
@@ -347,7 +600,11 @@ fn limit_is_one_literal(expr : Expr) -> Bool {
   match expr {
     Constant(ConstantLiteral::Integer(value)) => value == 1
     Constant(ConstantLiteral::Float(value)) => value == 1.0
-    _ => false
+    _ =>
+      match limit_eval_literal(expr) {
+        Some(literal) => limit_literal_is_one(literal)
+        None => false
+      }
   }
 }
 
@@ -357,7 +614,9 @@ fn limit_detects_infinite_literal(expr : Expr) -> Bool {
     Some(_) => true
     None =>
       match expr {
+
         // Fallback for legacy placeholders
+
         FunctionCall(name, _) => name == "Infinity" || name == "oo"
         _ => false
       }
@@ -551,5 +810,134 @@ fn limit_infinite_sign(expr : Expr) -> Sign? {
         None => None
       }
     _ => None
+  }
+}
+
+///|
+fn limit_eval_literal(expr : Expr) -> ConstantLiteral? {
+  match expr {
+    Constant(literal) => Some(literal)
+    Unary(op, inner) =>
+      match limit_eval_literal(inner) {
+        Some(value) => limit_eval_unary(op, value)
+        None => None
+      }
+    Binary(op, left, right) =>
+      match (limit_eval_literal(left), limit_eval_literal(right)) {
+        (Some(lhs), Some(rhs)) => limit_eval_binary(op, lhs, rhs)
+        _ => None
+      }
+    _ => None
+  }
+}
+
+///|
+fn limit_eval_unary(
+  op : UnaryOp,
+  literal : ConstantLiteral,
+) -> ConstantLiteral? {
+  match op {
+    UnaryOp::Neg =>
+      match literal {
+        ConstantLiteral::Integer(value) =>
+          Some(ConstantLiteral::Integer(-value))
+        ConstantLiteral::Float(value) => Some(ConstantLiteral::Float(-value))
+        _ => None
+      }
+    UnaryOp::Sin
+    | UnaryOp::Tan
+    | UnaryOp::Sinh
+    | UnaryOp::Tanh
+    | UnaryOp::Asin
+    | UnaryOp::Atan
+    | UnaryOp::Asinh
+    | UnaryOp::Atanh =>
+      if limit_literal_is_zero(literal) {
+        Some(ConstantLiteral::Integer(0))
+      } else {
+        None
+      }
+    UnaryOp::Cos | UnaryOp::Cosh =>
+      if limit_literal_is_zero(literal) {
+        Some(ConstantLiteral::Integer(1))
+      } else {
+        None
+      }
+    UnaryOp::Exp =>
+      if limit_literal_is_zero(literal) {
+        Some(ConstantLiteral::Integer(1))
+      } else {
+        None
+      }
+    UnaryOp::Log =>
+      if limit_literal_is_one(literal) {
+        Some(ConstantLiteral::Integer(0))
+      } else {
+        None
+      }
+    _ => None
+  }
+}
+
+///|
+fn limit_eval_binary(
+  op : BinaryOp,
+  lhs : ConstantLiteral,
+  rhs : ConstantLiteral,
+) -> ConstantLiteral? {
+  match (limit_literal_to_double(lhs), limit_literal_to_double(rhs)) {
+    (Some(left_value), Some(right_value)) =>
+      match op {
+        BinaryOp::Add => Some(limit_double_to_literal(left_value + right_value))
+        BinaryOp::Sub => Some(limit_double_to_literal(left_value - right_value))
+        BinaryOp::Mul => Some(limit_double_to_literal(left_value * right_value))
+        BinaryOp::Div =>
+          if right_value == 0.0 {
+            None
+          } else {
+            Some(limit_double_to_literal(left_value / right_value))
+          }
+        BinaryOp::Pow =>
+          Some(limit_double_to_literal(@math.pow(left_value, right_value)))
+      }
+    _ => None
+  }
+}
+
+///|
+fn limit_literal_to_double(literal : ConstantLiteral) -> Double? {
+  match literal {
+    ConstantLiteral::Integer(value) => Some(value.to_double())
+    ConstantLiteral::Float(value) => Some(value)
+    _ => None
+  }
+}
+
+///|
+fn limit_double_to_literal(value : Double) -> ConstantLiteral {
+  let rounded = value.round()
+  let difference = (value - rounded).abs()
+  if difference < 1.0e-10 {
+    ConstantLiteral::Integer(rounded.to_int())
+  } else {
+    ConstantLiteral::Float(value)
+  }
+}
+
+///|
+fn limit_literal_is_zero(literal : ConstantLiteral) -> Bool {
+  match literal {
+    ConstantLiteral::Integer(value) => value == 0
+    ConstantLiteral::Float(value) => value == 0.0
+    _ => false
+  }
+}
+
+///|
+fn limit_literal_is_one(literal : ConstantLiteral) -> Bool {
+  match literal {
+    ConstantLiteral::Integer(value) => value == 1
+    ConstantLiteral::Float(value) => value == 1.0
+    _ => false
   }
 }

@@ -47,3 +47,31 @@ test "classify oscillatory sine" {
     None => abort("expected oscillatory behavior")
   }
 }
+
+///|
+test "limit sin over identity via taylor" {
+  let x = sym("x")
+  let expr = div(sin(x), x)
+  inspect(limit(expr, "x", int(0)), content="Value(1)")
+}
+
+///|
+test "limit one minus cos over square" {
+  let x = sym("x")
+  let expr = div(sub(int(1), cos(x)), pow(x, int(2)))
+  inspect(limit(expr, "x", int(0)), content="Value(1 / 2)")
+}
+
+///|
+test "limit exp minus one over identity" {
+  let x = sym("x")
+  let expr = div(sub(exp(x), int(1)), x)
+  inspect(limit(expr, "x", int(0)), content="Value(1)")
+}
+
+///|
+test "limit log one plus over identity" {
+  let x = sym("x")
+  let expr = div(log(add(int(1), x)), x)
+  inspect(limit(expr, "x", int(0)), content="Value(1)")
+}
