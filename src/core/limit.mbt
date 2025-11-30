@@ -315,6 +315,21 @@ fn resolve_with_single_taylor(
   point : Expr,
   dir : LimitDirection,
 ) -> LimitResult? {
+  match
+    attempt_linear_then_eval(expr.copy(), variable_name, point.copy(), dir, 3) {
+    Some(result) => Some(result)
+    None => attempt_lhopital_chain(expr, variable_name, point, dir, 3)
+  }
+}
+
+///|
+fn attempt_linear_then_eval(
+  expr : Expr,
+  variable_name : String,
+  point : Expr,
+  dir : LimitDirection,
+  remaining_lhopital : Int,
+) -> LimitResult? {
   match attempt_taylor_linearization(expr, variable_name, point.copy()) {
     Some(expanded) =>
       match
@@ -326,56 +341,12 @@ fn resolve_with_single_taylor(
         ) {
         Some(result) => Some(result)
         None =>
-          match
-            attempt_lhopital_once(expr.copy(), variable_name, point.copy()) {
-            Some(derived) => {
-              let simplified = simplify(derived)
-              match
-                evaluate_limit_candidate(
-                  simplified.copy(),
-                  variable_name,
-                  point.copy(),
-                  dir,
-                ) {
-                Some(result) => Some(result)
-                None => {
-                  let secondary_result = match
-                    attempt_taylor_linearization(
-                      simplified.copy(),
-                      variable_name,
-                      point.copy(),
-                    ) {
-                    Some(second_pass) =>
-                      evaluate_limit_candidate(
-                        second_pass,
-                        variable_name,
-                        point.copy(),
-                        dir,
-                      )
-                    None => None
-                  }
-                  match secondary_result {
-                    Some(result) => Some(result)
-                    None =>
-                      match
-                        attempt_lhopital_once(
-                          simplified,
-                          variable_name,
-                          point.copy(),
-                        ) {
-                        Some(second_derivative) => {
-                          let second_simplified = simplify(second_derivative)
-                          evaluate_limit_candidate(
-                            second_simplified, variable_name, point, dir,
-                          )
-                        }
-                        None => None
-                      }
-                  }
-                }
-              }
-            }
-            None => None
+          if remaining_lhopital > 0 {
+            attempt_lhopital_chain(
+              expanded, variable_name, point, dir, remaining_lhopital,
+            )
+          } else {
+            None
           }
       }
     None => None
@@ -543,6 +514,62 @@ fn attempt_lhopital_once(
         None => None
       }
     _ => None
+  }
+}
+
+///|
+fn attempt_lhopital_chain(
+  expr : Expr,
+  variable_name : String,
+  point : Expr,
+  dir : LimitDirection,
+  remaining_steps : Int,
+) -> LimitResult? {
+  if remaining_steps <= 0 {
+    return None
+  }
+  match detect_indeterminate_form(expr.copy(), variable_name, point.copy()) {
+    Some(form) =>
+      if form == IndeterminateForm::ZeroOverZero ||
+        form == IndeterminateForm::InfinityOverInfinity {
+        match attempt_lhopital_once(expr, variable_name, point.copy()) {
+          Some(derived) => {
+            let simplified = simplify(derived)
+            match
+              evaluate_limit_candidate(
+                simplified.copy(),
+                variable_name,
+                point.copy(),
+                dir,
+              ) {
+              Some(result) => Some(result)
+              None =>
+                match
+                  attempt_linear_then_eval(
+                    simplified.copy(),
+                    variable_name,
+                    point.copy(),
+                    dir,
+                    remaining_steps - 1,
+                  ) {
+                  Some(result) => Some(result)
+                  None =>
+                    attempt_lhopital_chain(
+                      simplified,
+                      variable_name,
+                      point,
+                      dir,
+                      remaining_steps - 1,
+                    )
+                }
+            }
+          }
+          None => None
+        }
+      } else {
+        None
+      }
+    None => None
   }
 }
 
