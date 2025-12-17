@@ -2,187 +2,187 @@
 package "enanandesu/symoon/src/logic"
 
 // Values
-const LOGIC_AND_SYMBOL : String = "And"
+pub const LOGIC_AND_SYMBOL : String = "And"
 
-const LOGIC_EQUIVALENT_SYMBOL : String = "Equivalent"
+pub const LOGIC_EQUIVALENT_SYMBOL : String = "Equivalent"
 
-const LOGIC_FALSE_SYMBOL : String = "False"
+pub const LOGIC_FALSE_SYMBOL : String = "False"
 
-const LOGIC_IMPLIES_SYMBOL : String = "Implies"
+pub const LOGIC_IMPLIES_SYMBOL : String = "Implies"
 
-const LOGIC_ITE_SYMBOL : String = "Ite"
+pub const LOGIC_ITE_SYMBOL : String = "Ite"
 
-const LOGIC_NOT_SYMBOL : String = "Not"
+pub const LOGIC_NOT_SYMBOL : String = "Not"
 
-const LOGIC_OR_SYMBOL : String = "Or"
+pub const LOGIC_OR_SYMBOL : String = "Or"
 
-const LOGIC_TRUE_SYMBOL : String = "True"
+pub const LOGIC_TRUE_SYMBOL : String = "True"
 
-const LOGIC_XOR_SYMBOL : String = "Xor"
+pub const LOGIC_XOR_SYMBOL : String = "Xor"
 
-fn fo_const(String) -> FOTerm
+pub fn fo_const(String) -> FOTerm
 
-fn fo_eval(FOFormula, FOInterpretation) -> Bool?
+pub fn fo_eval(FOFormula, FOInterpretation) -> Bool?
 
-fn fo_eval_with_assignments(FOFormula, FOInterpretation, Array[(String, String)]) -> Bool?
+pub fn fo_eval_with_assignments(FOFormula, FOInterpretation, Array[(String, String)]) -> Bool?
 
-fn fo_interpretation(Array[String]) -> FOInterpretation
+pub fn fo_interpretation(Array[String]) -> FOInterpretation
 
-fn fo_predicate(Int, (Array[String]) -> Bool) -> FOPredicate
+pub fn fo_predicate(Int, (Array[String]) -> Bool) -> FOPredicate
 
-fn fo_var(String) -> FOTerm
+pub fn fo_var(String) -> FOTerm
 
-fn gate_and(Array[Bool]) -> Bool
+pub fn gate_and(Array[Bool]) -> Bool
 
-fn gate_nand(Array[Bool]) -> Bool
+pub fn gate_nand(Array[Bool]) -> Bool
 
-fn gate_nor(Array[Bool]) -> Bool
+pub fn gate_nor(Array[Bool]) -> Bool
 
-fn gate_not(Bool) -> Bool
+pub fn gate_not(Bool) -> Bool
 
-fn gate_or(Array[Bool]) -> Bool
+pub fn gate_or(Array[Bool]) -> Bool
 
-fn gate_xnor(Array[Bool]) -> Bool
+pub fn gate_xnor(Array[Bool]) -> Bool
 
-fn gate_xor(Array[Bool]) -> Bool
+pub fn gate_xor(Array[Bool]) -> Bool
 
-fn logic_all_satisfying_assignments(LogicExpr, variables? : Array[String]) -> Array[Array[(String, Bool)]]
+pub fn logic_all_satisfying_assignments(LogicExpr, variables? : Array[String]) -> Array[Array[(String, Bool)]]
 
-fn logic_and(Array[LogicExpr]) -> LogicExpr
+pub fn logic_and(Array[LogicExpr]) -> LogicExpr
 
-fn logic_apply_and_eval(LogicExpr, Array[(String, Bool)]) -> (LogicExpr, Bool?)
+pub fn logic_apply_and_eval(LogicExpr, Array[(String, Bool)]) -> (LogicExpr, Bool?)
 
-fn logic_apply_assignments(LogicExpr, Array[(String, Bool)]) -> LogicExpr
+pub fn logic_apply_assignments(LogicExpr, Array[(String, Bool)]) -> LogicExpr
 
-fn logic_args(LogicExpr) -> Array[LogicExpr]
+pub fn logic_args(LogicExpr) -> Array[LogicExpr]
 
-fn logic_atoms(LogicExpr) -> Array[LogicExpr]
+pub fn logic_atoms(LogicExpr) -> Array[LogicExpr]
 
-fn logic_collect_subexpressions(LogicExpr) -> Array[LogicExpr]
+pub fn logic_collect_subexpressions(LogicExpr) -> Array[LogicExpr]
 
-fn logic_collect_variables(LogicExpr) -> Array[String]
+pub fn logic_collect_variables(LogicExpr) -> Array[String]
 
-fn logic_conditional_probability(LogicExpr, LogicExpr, Array[(String, Double)]) -> Double
+pub fn logic_conditional_probability(LogicExpr, LogicExpr, Array[(String, Double)]) -> Double
 
-fn logic_deserialize(String) -> LogicExpr
+pub fn logic_deserialize(String) -> LogicExpr
 
-fn logic_distribute_and_over_or(LogicExpr) -> LogicExpr
+pub fn logic_distribute_and_over_or(LogicExpr) -> LogicExpr
 
-fn logic_distribute_or_over_and(LogicExpr) -> LogicExpr
+pub fn logic_distribute_or_over_and(LogicExpr) -> LogicExpr
 
-fn logic_entails(Array[LogicExpr], LogicExpr) -> Bool
+pub fn logic_entails(Array[LogicExpr], LogicExpr) -> Bool
 
-fn logic_equivalent(LogicExpr, LogicExpr) -> LogicExpr
+pub fn logic_equivalent(LogicExpr, LogicExpr) -> LogicExpr
 
-fn logic_equivalent_expr(LogicExpr, LogicExpr, variables? : Array[String]) -> Bool
+pub fn logic_equivalent_expr(LogicExpr, LogicExpr, variables? : Array[String]) -> Bool
 
-fn logic_eval(LogicExpr, Array[(String, Bool)]) -> Bool?
+pub fn logic_eval(LogicExpr, Array[(String, Bool)]) -> Bool?
 
-fn logic_expr_complexity(LogicExpr) -> Int
+pub fn logic_expr_complexity(LogicExpr) -> Int
 
-fn logic_expr_depth(LogicExpr) -> Int
+pub fn logic_expr_depth(LogicExpr) -> Int
 
-fn logic_false() -> LogicExpr
+pub fn logic_false() -> LogicExpr
 
-fn logic_from_truth_table(Array[String], Array[(Array[Bool], Bool)]) -> LogicExpr
+pub fn logic_from_truth_table(Array[String], Array[(Array[Bool], Bool)]) -> LogicExpr
 
-fn logic_full_adder(LogicExpr, LogicExpr, LogicExpr) -> (LogicExpr, LogicExpr)
+pub fn logic_full_adder(LogicExpr, LogicExpr, LogicExpr) -> (LogicExpr, LogicExpr)
 
-fn logic_func(LogicExpr) -> String
+pub fn logic_func(LogicExpr) -> String
 
-fn logic_gate_model() -> LogicExpr
+pub fn logic_gate_model() -> LogicExpr
 
-fn logic_half_adder(LogicExpr, LogicExpr) -> (LogicExpr, LogicExpr)
+pub fn logic_half_adder(LogicExpr, LogicExpr) -> (LogicExpr, LogicExpr)
 
-fn logic_implies(LogicExpr, LogicExpr) -> LogicExpr
+pub fn logic_implies(LogicExpr, LogicExpr) -> LogicExpr
 
-fn logic_infer(Array[LogicExpr], LogicExpr) -> Bool
+pub fn logic_infer(Array[LogicExpr], LogicExpr) -> Bool
 
-fn logic_is_cnf(LogicExpr) -> Bool
+pub fn logic_is_cnf(LogicExpr) -> Bool
 
-fn logic_is_dnf(LogicExpr) -> Bool
+pub fn logic_is_dnf(LogicExpr) -> Bool
 
-fn logic_is_literal(LogicExpr) -> Bool
+pub fn logic_is_literal(LogicExpr) -> Bool
 
-fn logic_is_tautology(LogicExpr, variables? : Array[String]) -> Bool
+pub fn logic_is_tautology(LogicExpr, variables? : Array[String]) -> Bool
 
-fn logic_ite(LogicExpr, LogicExpr, LogicExpr) -> LogicExpr
+pub fn logic_ite(LogicExpr, LogicExpr, LogicExpr) -> LogicExpr
 
-fn logic_nand(Array[LogicExpr]) -> LogicExpr
+pub fn logic_nand(Array[LogicExpr]) -> LogicExpr
 
-fn logic_nor(Array[LogicExpr]) -> LogicExpr
+pub fn logic_nor(Array[LogicExpr]) -> LogicExpr
 
-fn logic_normalize(LogicExpr) -> LogicExpr
+pub fn logic_normalize(LogicExpr) -> LogicExpr
 
-fn logic_not(LogicExpr) -> LogicExpr
+pub fn logic_not(LogicExpr) -> LogicExpr
 
-fn logic_op_count(LogicExpr) -> Int
+pub fn logic_op_count(LogicExpr) -> Int
 
-fn logic_or(Array[LogicExpr]) -> LogicExpr
+pub fn logic_or(Array[LogicExpr]) -> LogicExpr
 
-fn logic_parse(String) -> LogicExpr
+pub fn logic_parse(String) -> LogicExpr
 
-fn logic_preorder(LogicExpr) -> Array[LogicExpr]
+pub fn logic_preorder(LogicExpr) -> Array[LogicExpr]
 
-fn logic_preorder_with_depth(LogicExpr, depth? : Int) -> Array[(Int, LogicExpr)]
+pub fn logic_preorder_with_depth(LogicExpr, depth? : Int) -> Array[(Int, LogicExpr)]
 
-fn logic_probability(LogicExpr, Array[(String, Double)]) -> Double
+pub fn logic_probability(LogicExpr, Array[(String, Double)]) -> Double
 
-fn logic_satisfiable(LogicExpr, all_models? : Bool, variables? : Array[String]) -> LogicSatResult
+pub fn logic_satisfiable(LogicExpr, all_models? : Bool, variables? : Array[String]) -> LogicSatResult
 
-fn logic_serialize(LogicExpr) -> String
+pub fn logic_serialize(LogicExpr) -> String
 
-fn logic_simplify(LogicExpr) -> LogicExpr
+pub fn logic_simplify(LogicExpr) -> LogicExpr
 
-fn logic_simplify_logic(LogicExpr, String) -> LogicExpr
+pub fn logic_simplify_logic(LogicExpr, String) -> LogicExpr
 
-fn logic_simplify_with_assignments(LogicExpr, Array[(String, Bool)]) -> LogicExpr
+pub fn logic_simplify_with_assignments(LogicExpr, Array[(String, Bool)]) -> LogicExpr
 
-fn logic_symbol(String) -> LogicExpr
+pub fn logic_symbol(String) -> LogicExpr
 
-fn logic_to_cnf(LogicExpr) -> LogicExpr
+pub fn logic_to_cnf(LogicExpr) -> LogicExpr
 
-fn logic_to_dnf(LogicExpr) -> LogicExpr
+pub fn logic_to_dnf(LogicExpr) -> LogicExpr
 
-fn logic_to_latex(LogicExpr) -> String
+pub fn logic_to_latex(LogicExpr) -> String
 
-fn logic_to_nnf(LogicExpr) -> LogicExpr
+pub fn logic_to_nnf(LogicExpr) -> LogicExpr
 
-fn logic_true() -> LogicExpr
+pub fn logic_true() -> LogicExpr
 
-fn logic_truth_table(LogicExpr, Array[String]) -> Array[(Array[Bool], Bool?)]
+pub fn logic_truth_table(LogicExpr, Array[String]) -> Array[(Array[Bool], Bool?)]
 
-fn logic_truth_table_lines(LogicExpr, Array[String]) -> Array[String]
+pub fn logic_truth_table_lines(LogicExpr, Array[String]) -> Array[String]
 
-fn logic_xnor(Array[LogicExpr]) -> LogicExpr
+pub fn logic_xnor(Array[LogicExpr]) -> LogicExpr
 
-fn logic_xor(Array[LogicExpr]) -> LogicExpr
+pub fn logic_xor(Array[LogicExpr]) -> LogicExpr
 
-fn ltl_always(LTLExpr) -> LTLExpr
+pub fn ltl_always(LTLExpr) -> LTLExpr
 
-fn ltl_and(Array[LTLExpr]) -> LTLExpr
+pub fn ltl_and(Array[LTLExpr]) -> LTLExpr
 
-fn ltl_eval(LTLExpr, Array[Array[(String, Bool)]]) -> Bool?
+pub fn ltl_eval(LTLExpr, Array[Array[(String, Bool)]]) -> Bool?
 
-fn ltl_eventually(LTLExpr) -> LTLExpr
+pub fn ltl_eventually(LTLExpr) -> LTLExpr
 
-fn ltl_false() -> LTLExpr
+pub fn ltl_false() -> LTLExpr
 
-fn ltl_next(LTLExpr) -> LTLExpr
+pub fn ltl_next(LTLExpr) -> LTLExpr
 
-fn ltl_normalize(LTLExpr) -> LTLExpr
+pub fn ltl_normalize(LTLExpr) -> LTLExpr
 
-fn ltl_not(LTLExpr) -> LTLExpr
+pub fn ltl_not(LTLExpr) -> LTLExpr
 
-fn ltl_or(Array[LTLExpr]) -> LTLExpr
+pub fn ltl_or(Array[LTLExpr]) -> LTLExpr
 
-fn ltl_release(LTLExpr, LTLExpr) -> LTLExpr
+pub fn ltl_release(LTLExpr, LTLExpr) -> LTLExpr
 
-fn ltl_symbol(String) -> LTLExpr
+pub fn ltl_symbol(String) -> LTLExpr
 
-fn ltl_true() -> LTLExpr
+pub fn ltl_true() -> LTLExpr
 
-fn ltl_until(LTLExpr, LTLExpr) -> LTLExpr
+pub fn ltl_until(LTLExpr, LTLExpr) -> LTLExpr
 
 // Errors
 
@@ -198,30 +198,30 @@ pub enum FOFormula {
   ForAll(String, FOFormula)
   Exists(String, FOFormula)
 }
-fn FOFormula::copy(Self) -> Self
-impl Eq for FOFormula
-impl Show for FOFormula
+pub fn FOFormula::copy(Self) -> Self
+pub impl Eq for FOFormula
+pub impl Show for FOFormula
 
 pub struct FOInterpretation {
   domain : Array[String]
   predicates : Map[String, FOPredicate]
 }
-fn FOInterpretation::copy(Self) -> Self
-fn FOInterpretation::with_predicate(Self, String, FOPredicate) -> Self
+pub fn FOInterpretation::copy(Self) -> Self
+pub fn FOInterpretation::with_predicate(Self, String, FOPredicate) -> Self
 
 pub struct FOPredicate {
   arity : Int
   evaluator : (Array[String]) -> Bool
 }
-fn FOPredicate::evaluate(Self, Array[String]) -> Bool
+pub fn FOPredicate::evaluate(Self, Array[String]) -> Bool
 
 pub enum FOTerm {
   Variable(String)
   Constant(String)
 }
-fn FOTerm::copy(Self) -> Self
-impl Eq for FOTerm
-impl Show for FOTerm
+pub fn FOTerm::copy(Self) -> Self
+pub impl Eq for FOTerm
+pub impl Show for FOTerm
 
 pub enum LTLExpr {
   Bool(Bool)
@@ -235,9 +235,9 @@ pub enum LTLExpr {
   Always(LTLExpr)
   Eventually(LTLExpr)
 }
-fn LTLExpr::copy(Self) -> Self
-impl Eq for LTLExpr
-impl Show for LTLExpr
+pub fn LTLExpr::copy(Self) -> Self
+pub impl Eq for LTLExpr
+pub impl Show for LTLExpr
 
 pub enum LogicExpr {
   Bool(Bool)
@@ -250,17 +250,17 @@ pub enum LogicExpr {
   Implies(LogicExpr, LogicExpr)
   Equivalent(LogicExpr, LogicExpr)
 }
-fn LogicExpr::copy(Self) -> Self
-impl Eq for LogicExpr
-impl Show for LogicExpr
+pub fn LogicExpr::copy(Self) -> Self
+pub impl Eq for LogicExpr
+pub impl Show for LogicExpr
 
 pub enum LogicSatResult {
   Unsatisfiable
   Model(Array[(String, Bool)])
   AllModels(Array[Array[(String, Bool)]])
 }
-impl Eq for LogicSatResult
-impl Show for LogicSatResult
+pub impl Eq for LogicSatResult
+pub impl Show for LogicSatResult
 
 // Type aliases
 

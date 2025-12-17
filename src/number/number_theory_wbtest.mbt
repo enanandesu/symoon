@@ -228,12 +228,34 @@ test "nt_nth_prime and nt_prime_pi" {
 }
 
 ///|
+test "prime helpers aliases" {
+  assert_eq(isprime(17), true)
+  assert_eq(isprime(1), false)
+  assert_eq(prime(6), 13)
+  assert_eq(prime(0), 0)
+  assert_eq(primepi(10), 4)
+  assert_eq(primepi(100), 25)
+  let range = primerange(10, 20)
+  assert_eq(range, [11, 13, 17, 19])
+  let small = primerange(-5, 5)
+  assert_eq(small, [2, 3])
+}
+
+///|
 test "nt_next_prev_prime locate neighbors" {
   assert_eq(nt_next_prime(50), 53)
   assert_eq(nt_prev_prime(50), 47)
   assert_eq(nt_next_prime(2), 3)
   assert_eq(nt_prev_prime(3), 2)
   assert_eq(nt_prev_prime(2), 0)
+}
+
+///|
+test "nextprime and prevprime aliases mirror nt versions" {
+  assert_eq(nextprime(50), 53)
+  assert_eq(prevprime(50), 47)
+  assert_eq(nextprime(-10), 2)
+  assert_eq(prevprime(2), 0)
 }
 
 ///|
@@ -292,9 +314,23 @@ test "nt_prime_factor_list expands factors with multiplicity" {
 ///|
 test "nt_factorint and nt_multiplicity match expectations" {
   let f100 = nt_factorint(100)
-  assert_eq(f100, [(2, 2), (5, 2)])
+  assert_eq(f100.get(2), Some(2))
+  assert_eq(f100.get(5), Some(2))
+  assert_eq(f100.get(7), None)
+  let mut entries = 0
+  for _ in f100 {
+    entries += 1
+  }
+  assert_eq(entries, 2)
   let f123456 = nt_factorint(123456)
-  assert_eq(f123456, [(2, 6), (3, 1), (643, 1)])
+  assert_eq(f123456.get(2), Some(6))
+  assert_eq(f123456.get(3), Some(1))
+  assert_eq(f123456.get(643), Some(1))
+  let mut entries2 = 0
+  for _ in f123456 {
+    entries2 += 1
+  }
+  assert_eq(entries2, 3)
   assert_eq(nt_multiplicity(2, 100), 2)
   assert_eq(nt_multiplicity(5, 100), 2)
   assert_eq(nt_multiplicity(7, 100), 0)
@@ -303,8 +339,13 @@ test "nt_factorint and nt_multiplicity match expectations" {
 
 ///|
 test "factorint and multiplicity aliases mirror nt_ versions" {
-  assert_eq(factorint(100), [(2, 2), (5, 2)])
-  assert_eq(factorint(123456), [(2, 6), (3, 1), (643, 1)])
+  let f100 = factorint(100)
+  assert_eq(f100.get(2), Some(2))
+  assert_eq(f100.get(5), Some(2))
+  let f123456 = factorint(123456)
+  assert_eq(f123456.get(2), Some(6))
+  assert_eq(f123456.get(3), Some(1))
+  assert_eq(f123456.get(643), Some(1))
   assert_eq(multiplicity(2, 100), 2)
   assert_eq(multiplicity(5, 100), 2)
 }

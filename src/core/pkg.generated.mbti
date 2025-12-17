@@ -2,131 +2,131 @@
 package "enanandesu/symoon/src/core"
 
 // Values
-fn abs(Expr) -> Expr
+pub fn abs(Expr) -> Expr
 
-fn acos(Expr) -> Expr
+pub fn acos(Expr) -> Expr
 
-fn acosh(Expr) -> Expr
+pub fn acosh(Expr) -> Expr
 
-fn add(Expr, Expr) -> Expr
+pub fn add(Expr, Expr) -> Expr
 
-fn asin(Expr) -> Expr
+pub fn asin(Expr) -> Expr
 
-fn asinh(Expr) -> Expr
+pub fn asinh(Expr) -> Expr
 
-fn atan(Expr) -> Expr
+pub fn atan(Expr) -> Expr
 
-fn atanh(Expr) -> Expr
+pub fn atanh(Expr) -> Expr
 
-fn classify_indeterminate(Expr, String, Expr) -> IndeterminateForm?
+pub fn classify_indeterminate(Expr, String, Expr) -> IndeterminateForm?
 
-fn coefficient_of(Expr, String, degree? : Int) -> Expr
+pub fn coefficient_of(Expr, String, degree? : Int) -> Expr
 
-fn cos(Expr) -> Expr
+pub fn cos(Expr) -> Expr
 
-fn cosh(Expr) -> Expr
+pub fn cosh(Expr) -> Expr
 
-fn count_ops(Expr) -> Double
+pub fn count_ops(Expr) -> Double
 
-fn default_rational_constants() -> Array[RationalConstant]
+pub fn default_rational_constants() -> Array[RationalConstant]
 
-fn differentiate(Expr, String, order? : Int) -> Expr
+pub fn differentiate(Expr, String, order? : Int) -> Expr
 
-fn div(Expr, Expr) -> Expr
+pub fn div(Expr, Expr) -> Expr
 
-fn double(Double) -> Expr
+pub fn double(Double) -> Expr
 
-fn evaluate(Expr, (String) -> Double?) -> Result[Double, SymbolicError]
+pub fn evaluate(Expr, (String) -> Double?) -> Result[Double, SymbolicError]
 
-fn exp(Expr) -> Expr
+pub fn exp(Expr) -> Expr
 
-fn int(Int) -> Expr
+pub fn int(Int) -> Expr
 
-fn leading_coefficient(Expr, String) -> Expr
+pub fn leading_coefficient(Expr, String) -> Expr
 
-fn limit(Expr, String, Expr, dir? : LimitDirection) -> LimitResult
+pub fn limit(Expr, String, Expr, dir? : LimitDirection) -> LimitResult
 
-fn limit_left(Expr, String, Expr) -> LimitResult
+pub fn limit_left(Expr, String, Expr) -> LimitResult
 
-fn limit_right(Expr, String, Expr) -> LimitResult
+pub fn limit_right(Expr, String, Expr) -> LimitResult
 
-fn log(Expr) -> Expr
+pub fn log(Expr) -> Expr
 
-fn match_expr(Pattern, Expr) -> PatternBindings?
+pub fn match_expr(Pattern, Expr) -> PatternBindings?
 
-fn matches(Pattern, Expr) -> Bool
+pub fn matches(Pattern, Expr) -> Bool
 
-fn mul(Expr, Expr) -> Expr
+pub fn mul(Expr, Expr) -> Expr
 
-fn nan() -> Expr
+pub fn nan() -> Expr
 
-fn neg(Expr) -> Expr
+pub fn neg(Expr) -> Expr
 
-fn neg_infinity() -> Expr
+pub fn neg_infinity() -> Expr
 
-fn pattern_all_of(Array[Pattern]) -> Pattern
+pub fn pattern_all_of(Array[Pattern]) -> Pattern
 
-fn pattern_any() -> Pattern
+pub fn pattern_any() -> Pattern
 
-fn pattern_binary(Pattern, Pattern, op? : BinaryOp?) -> Pattern
+pub fn pattern_binary(Pattern, Pattern, op? : BinaryOp?) -> Pattern
 
-fn pattern_call(name? : String?, Array[Pattern]) -> Pattern
+pub fn pattern_call(name? : String?, Array[Pattern]) -> Pattern
 
-fn pattern_double(value? : Double?) -> Pattern
+pub fn pattern_double(value? : Double?) -> Pattern
 
-fn pattern_exact(Expr) -> Pattern
+pub fn pattern_exact(Expr) -> Pattern
 
-fn pattern_guard(Pattern, (Expr, PatternBindings) -> Bool) -> Pattern
+pub fn pattern_guard(Pattern, (Expr, PatternBindings) -> Bool) -> Pattern
 
-fn pattern_guarded(String, (Expr) -> Bool) -> Pattern
+pub fn pattern_guarded(String, (Expr) -> Bool) -> Pattern
 
-fn pattern_int(value? : Int?) -> Pattern
+pub fn pattern_int(value? : Int?) -> Pattern
 
-fn pattern_one_of(Array[Pattern]) -> Pattern
+pub fn pattern_one_of(Array[Pattern]) -> Pattern
 
-fn pattern_product(Array[Pattern]) -> Pattern
+pub fn pattern_product(Array[Pattern]) -> Pattern
 
-fn pattern_sum(Array[Pattern]) -> Pattern
+pub fn pattern_sum(Array[Pattern]) -> Pattern
 
-fn pattern_symbol(name? : String?) -> Pattern
+pub fn pattern_symbol(name? : String?) -> Pattern
 
-fn pattern_unary(Pattern, op? : UnaryOp?) -> Pattern
+pub fn pattern_unary(Pattern, op? : UnaryOp?) -> Pattern
 
-fn pattern_wildcard(String) -> Pattern
+pub fn pattern_wildcard(String) -> Pattern
 
-fn pos_infinity() -> Expr
+pub fn pos_infinity() -> Expr
 
-fn pow(Expr, Expr) -> Expr
+pub fn pow(Expr, Expr) -> Expr
 
-fn rationalize_expr(Expr, constants? : Array[RationalConstant], tolerance? : Double, full? : Bool, rational? : Bool, rational_conversion? : String) -> Expr
+pub fn rationalize_expr(Expr, constants? : Array[RationalConstant], tolerance? : Double, full? : Bool, rational? : Bool, rational_conversion? : String) -> Expr
 
-fn rewrite(Expr, Array[RewriteRule], max_iterations? : Int) -> Expr
+pub fn rewrite(Expr, Array[RewriteRule], max_iterations? : Int) -> Expr
 
-fn rewrite_once(Expr, Array[RewriteRule]) -> Expr?
+pub fn rewrite_once(Expr, Array[RewriteRule]) -> Expr?
 
-fn simplify(Expr, ratio? : Double, measure? : (Expr) -> Double, rational? : Bool, inverse? : Bool, doit? : Bool) -> Expr
+pub fn simplify(Expr, ratio? : Double, measure? : (Expr) -> Double, rational? : Bool, inverse? : Bool, doit? : Bool) -> Expr
 
-fn sin(Expr) -> Expr
+pub fn sin(Expr) -> Expr
 
-fn sinh(Expr) -> Expr
+pub fn sinh(Expr) -> Expr
 
-fn solve_linear_equation(Expr, Expr, String) -> Expr
+pub fn solve_linear_equation(Expr, Expr, String) -> Expr
 
-fn solve_linear_system(Expr, Expr, Expr, Expr, String, String) -> (Expr, Expr)
+pub fn solve_linear_system(Expr, Expr, Expr, Expr, String, String) -> (Expr, Expr)
 
-fn solve_linear_system_n(Array[(Expr, Expr)], Array[String]) -> Array[Expr]
+pub fn solve_linear_system_n(Array[(Expr, Expr)], Array[String]) -> Array[Expr]
 
-fn sub(Expr, Expr) -> Expr
+pub fn sub(Expr, Expr) -> Expr
 
-fn sym(String) -> Expr
+pub fn sym(String) -> Expr
 
-fn tan(Expr) -> Expr
+pub fn tan(Expr) -> Expr
 
-fn tanh(Expr) -> Expr
+pub fn tanh(Expr) -> Expr
 
-fn to_latex(Expr) -> String
+pub fn to_latex(Expr) -> String
 
-fn try_apply_rule(RewriteRule, Expr) -> Expr?
+pub fn try_apply_rule(RewriteRule, Expr) -> Expr?
 
 // Errors
 
@@ -138,10 +138,10 @@ pub enum BinaryOp {
   Div
   Pow
 }
-fn BinaryOp::copy(Self) -> Self
-impl Eq for BinaryOp
-impl Hash for BinaryOp
-impl Show for BinaryOp
+pub fn BinaryOp::copy(Self) -> Self
+pub impl Eq for BinaryOp
+pub impl Hash for BinaryOp
+pub impl Show for BinaryOp
 
 pub enum ConstantLiteral {
   Integer(Int)
@@ -150,8 +150,8 @@ pub enum ConstantLiteral {
   NegInfinity
   NaN
 }
-impl Eq for ConstantLiteral
-impl Show for ConstantLiteral
+pub impl Eq for ConstantLiteral
+pub impl Show for ConstantLiteral
 
 pub enum Expr {
   Constant(ConstantLiteral)
@@ -160,14 +160,14 @@ pub enum Expr {
   Binary(BinaryOp, Expr, Expr)
   FunctionCall(String, Array[Expr])
 }
-fn Expr::copy(Self) -> Self
-impl Add for Expr
-impl Div for Expr
-impl Eq for Expr
-impl Mul for Expr
-impl Neg for Expr
-impl Show for Expr
-impl Sub for Expr
+pub fn Expr::copy(Self) -> Self
+pub impl Add for Expr
+pub impl Div for Expr
+pub impl Eq for Expr
+pub impl Mul for Expr
+pub impl Neg for Expr
+pub impl Show for Expr
+pub impl Sub for Expr
 
 pub enum IndeterminateForm {
   ZeroOverZero
@@ -179,16 +179,16 @@ pub enum IndeterminateForm {
   InfinityPowerZero
   Oscillatory
 }
-impl Eq for IndeterminateForm
-impl Show for IndeterminateForm
+pub impl Eq for IndeterminateForm
+pub impl Show for IndeterminateForm
 
 pub enum LimitDirection {
   Both
   FromLeft
   FromRight
 }
-impl Eq for LimitDirection
-impl Show for LimitDirection
+pub impl Eq for LimitDirection
+pub impl Show for LimitDirection
 
 pub enum LimitResult {
   Value(Expr)
@@ -197,8 +197,8 @@ pub enum LimitResult {
   Divergent
   Unknown
 }
-impl Eq for LimitResult
-impl Show for LimitResult
+pub impl Eq for LimitResult
+pub impl Show for LimitResult
 
 pub enum Pattern {
   Any
@@ -216,53 +216,53 @@ pub enum Pattern {
   All(Array[Pattern])
   Guard(Pattern, (Expr, PatternBindings) -> Bool)
 }
-fn Pattern::copy(Self) -> Self
+pub fn Pattern::copy(Self) -> Self
 
 pub struct PatternBindings {
   entries : Map[String, Expr]
 }
-fn PatternBindings::bind_expr(Self, String, Expr) -> Self?
-fn PatternBindings::contains(Self, String) -> Bool
-fn PatternBindings::copy(Self) -> Self
-fn PatternBindings::expect(Self, String) -> Expr
-fn PatternBindings::get(Self, String) -> Expr?
-fn PatternBindings::is_empty(Self) -> Bool
-fn PatternBindings::len(Self) -> Int
-fn PatternBindings::new() -> Self
-fn PatternBindings::to_array(Self) -> Array[(String, Expr)]
+pub fn PatternBindings::bind_expr(Self, String, Expr) -> Self?
+pub fn PatternBindings::contains(Self, String) -> Bool
+pub fn PatternBindings::copy(Self) -> Self
+pub fn PatternBindings::expect(Self, String) -> Expr
+pub fn PatternBindings::get(Self, String) -> Expr?
+pub fn PatternBindings::is_empty(Self) -> Bool
+pub fn PatternBindings::len(Self) -> Int
+pub fn PatternBindings::new() -> Self
+pub fn PatternBindings::to_array(Self) -> Array[(String, Expr)]
 
 pub struct RationalConstant {
   symbol : Expr
   numeric : Double?
 }
-fn RationalConstant::copy(Self) -> Self
-fn RationalConstant::new(Expr, Double?) -> Self
+pub fn RationalConstant::copy(Self) -> Self
+pub fn RationalConstant::new(Expr, Double?) -> Self
 
 pub struct RewriteRule {
   pattern : Pattern
   builder : (PatternBindings) -> Expr
   condition : ((PatternBindings) -> Bool)?
 }
-fn RewriteRule::new(Pattern, (PatternBindings) -> Expr) -> Self
-fn RewriteRule::with_condition(Self, (PatternBindings) -> Bool) -> Self
+pub fn RewriteRule::new(Pattern, (PatternBindings) -> Expr) -> Self
+pub fn RewriteRule::with_condition(Self, (PatternBindings) -> Bool) -> Self
 
 pub struct Symbol {
   name : String
 }
-fn Symbol::copy(Self) -> Self
-fn Symbol::new(String) -> Self
-impl Eq for Symbol
-impl Hash for Symbol
-impl Show for Symbol
+pub fn Symbol::copy(Self) -> Self
+pub fn Symbol::new(String) -> Self
+pub impl Eq for Symbol
+pub impl Hash for Symbol
+pub impl Show for Symbol
 
 pub enum SymbolicError {
   UndefinedSymbol(String)
   DomainViolation(String, String)
   UnsupportedOperation(String)
 }
-fn SymbolicError::copy(Self) -> Self
-impl Eq for SymbolicError
-impl Show for SymbolicError
+pub fn SymbolicError::copy(Self) -> Self
+pub impl Eq for SymbolicError
+pub impl Show for SymbolicError
 
 pub enum UnaryOp {
   Neg
@@ -282,10 +282,10 @@ pub enum UnaryOp {
   Log
   Abs
 }
-fn UnaryOp::copy(Self) -> Self
-impl Eq for UnaryOp
-impl Hash for UnaryOp
-impl Show for UnaryOp
+pub fn UnaryOp::copy(Self) -> Self
+pub impl Eq for UnaryOp
+pub impl Hash for UnaryOp
+pub impl Show for UnaryOp
 
 // Type aliases
 

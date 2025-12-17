@@ -2,113 +2,125 @@
 package "enanandesu/symoon/src/number"
 
 // Values
-fn binomial(Int, Int) -> Int
+pub fn binomial(Int, Int) -> Int
 
-fn diophantine_linear(Int, Int, Int) -> (Int, Int, Int, Int)
+pub fn diophantine_linear(Int, Int, Int) -> (Int, Int, Int, Int)
 
-fn divisor_count(Int) -> Int
+pub fn divisor_count(Int) -> Int
 
-fn divisor_sigma(Int, power? : Int) -> Int
+pub fn divisor_sigma(Int, power? : Int) -> Int
 
-fn divisors(Int) -> Array[Int]
+pub fn divisors(Int) -> Array[Int]
 
-fn factorint(Int) -> Array[(Int, Int)]
+pub fn factorint(Int) -> Map[Int, Int]
 
-fn fibonacci(Int) -> Int
+pub fn fibonacci(Int) -> Int
 
-fn gcd(Int, Int) -> Int
+pub fn gcd(Int, Int) -> Int
 
-fn gcdex(Int, Int) -> (Int, Int, Int)
+pub fn gcdex(Int, Int) -> (Int, Int, Int)
 
-fn igcd(Int, Int) -> Int
+pub fn igcd(Int, Int) -> Int
 
-fn ilcm(Int, Int) -> Int
+pub fn ilcm(Int, Int) -> Int
 
-fn is_quad_residue(Int, Int) -> Bool
+pub fn is_quad_residue(Int, Int) -> Bool
 
-fn jacobi_symbol(Int, Int) -> Int
+pub fn isprime(Int) -> Bool
 
-fn lcm(Int, Int) -> Int
+pub fn jacobi_symbol(Int, Int) -> Int
 
-fn legendre_symbol(Int, Int) -> Int
+pub fn lcm(Int, Int) -> Int
 
-fn lucas(Int) -> Int
+pub fn legendre_symbol(Int, Int) -> Int
 
-fn mobius(Int) -> Int
+pub fn lucas(Int) -> Int
 
-fn mod_inverse(Int, Int) -> Int
+pub fn mobius(Int) -> Int
 
-fn multiplicity(Int, Int) -> Int
+pub fn mod_inverse(Int, Int) -> Int
 
-fn npartitions(Int) -> Int
+pub fn multiplicity(Int, Int) -> Int
 
-fn nt_divisor_count(Int) -> Int
+pub fn nextprime(Int) -> Int
 
-fn nt_divisor_sigma(Int, power? : Int) -> Int
+pub fn npartitions(Int) -> Int
 
-fn nt_divisors(Int) -> Array[Int]
+pub fn nt_divisor_count(Int) -> Int
 
-fn nt_factorint(Int) -> Array[(Int, Int)]
+pub fn nt_divisor_sigma(Int, power? : Int) -> Int
 
-fn nt_first_n_primes(Int) -> Array[Int]
+pub fn nt_divisors(Int) -> Array[Int]
 
-fn nt_gcd(Int, Int) -> Int
+pub fn nt_factorint(Int) -> Map[Int, Int]
 
-fn nt_gcd_ex(Int, Int) -> (Int, Int, Int)
+pub fn nt_first_n_primes(Int) -> Array[Int]
 
-fn nt_is_divisible_by(Int, Int) -> Bool
+pub fn nt_gcd(Int, Int) -> Int
 
-fn nt_is_divisible_by_all(Int, Array[Int]) -> Bool
+pub fn nt_gcd_ex(Int, Int) -> (Int, Int, Int)
 
-fn nt_is_divisible_by_any(Int, Array[Int]) -> Bool
+pub fn nt_is_divisible_by(Int, Int) -> Bool
 
-fn nt_is_prime(Int) -> Bool
+pub fn nt_is_divisible_by_all(Int, Array[Int]) -> Bool
 
-fn nt_lcm(Int, Int) -> Int
+pub fn nt_is_divisible_by_any(Int, Array[Int]) -> Bool
 
-fn nt_multiplicity(Int, Int) -> Int
+pub fn nt_is_prime(Int) -> Bool
 
-fn nt_next_prime(Int) -> Int
+pub fn nt_lcm(Int, Int) -> Int
 
-fn nt_nth_prime(Int) -> Int
+pub fn nt_multiplicity(Int, Int) -> Int
 
-fn nt_prev_prime(Int) -> Int
+pub fn nt_next_prime(Int) -> Int
 
-fn nt_prime(Int) -> Int
+pub fn nt_nth_prime(Int) -> Int
 
-fn nt_prime_factor_list(Int) -> Array[Int]
+pub fn nt_prev_prime(Int) -> Int
 
-fn nt_prime_factors(Int) -> Array[(Int, Int)]
+pub fn nt_prime(Int) -> Int
 
-fn nt_prime_pi(Int) -> Int
+pub fn nt_prime_factor_list(Int) -> Array[Int]
 
-fn nt_prime_range(Int, Int) -> Array[Int]
+pub fn nt_prime_factors(Int) -> Array[(Int, Int)]
 
-fn nt_primes_up_to(Int) -> Array[Int]
+pub fn nt_prime_pi(Int) -> Int
 
-fn nt_rand_prime(Int, Int, seed? : Int) -> Int
+pub fn nt_prime_range(Int, Int) -> Array[Int]
 
-fn nt_totient(Int) -> Int
+pub fn nt_primes_up_to(Int) -> Array[Int]
 
-fn pell_solutions(Int, count? : Int) -> Array[(Int, Int)]
+pub fn nt_rand_prime(Int, Int, seed? : Int) -> Int
 
-fn primenu(Int) -> Int
+pub fn nt_totient(Int) -> Int
 
-fn primeomega(Int) -> Int
+pub fn pell_solutions(Int, count? : Int) -> Array[(Int, Int)]
 
-fn pythagorean_triples(Int) -> Array[(Int, Int, Int)]
+pub fn prevprime(Int) -> Int
 
-fn quadratic_residues(Int) -> Array[Int]
+pub fn prime(Int) -> Int
 
-fn solve_congruence(Array[(Int, Int)]) -> (Int, Int)
+pub fn primenu(Int) -> Int
 
-fn sqrt_mod(Int, Int) -> Array[Int]
+pub fn primeomega(Int) -> Int
 
-fn stirling(Int, Int, kind? : Int) -> Int
+pub fn primepi(Int) -> Int
 
-fn sum_of_squares(Int) -> Int
+pub fn primerange(Int, Int) -> Array[Int]
 
-fn totient(Int) -> Int
+pub fn pythagorean_triples(Int) -> Array[(Int, Int, Int)]
+
+pub fn quadratic_residues(Int) -> Array[Int]
+
+pub fn solve_congruence(Array[(Int, Int)]) -> (Int, Int)
+
+pub fn sqrt_mod(Int, Int) -> Array[Int]
+
+pub fn stirling(Int, Int, kind? : Int) -> Int
+
+pub fn sum_of_squares(Int) -> Int
+
+pub fn totient(Int) -> Int
 
 // Errors
 
