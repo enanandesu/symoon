@@ -165,6 +165,16 @@ test "quadratic symbol edge cases and residue listing" {
 }
 
 ///|
+test "kronecker symbol and multiplicative order" {
+  assert_eq(kronecker_symbol(3, 8), -1)
+  assert_eq(kronecker_symbol(5, 8), -1)
+  assert_eq(kronecker_symbol(5, -7), -1)
+  assert_eq(n_order(3, 7), 6)
+  assert_eq(n_order(2, 9), 6)
+  assert_eq(n_order(2, 10), 0)
+}
+
+///|
 test "solve_congruence combines pairwise congruences" {
   let (x, modulus) = solve_congruence([(2, 3), (3, 5), (2, 7)])
   assert_eq((x, modulus), (23, 105))
@@ -377,4 +387,16 @@ test "nt_totient matches known values" {
   assert_eq(nt_totient(1), 1)
   assert_eq(nt_totient(9), 6)
   assert_eq(nt_totient(36), 12)
+}
+
+///|
+test "carmichael function computes lambda" {
+  assert_eq(carmichael(1), 1)
+  assert_eq(carmichael(2), 1)
+  assert_eq(carmichael(4), 2)
+  assert_eq(carmichael(8), 2)
+  assert_eq(carmichael(9), 6)
+  assert_eq(carmichael(15), 4)
+  assert_eq(carmichael(21), 6)
+  assert_eq(carmichael(0), 0)
 }

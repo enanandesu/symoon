@@ -147,6 +147,34 @@ pub fn primeomega(n : Int) -> Int {
 }
 
 ///|
+pub fn carmichael(n : Int) -> Int {
+  if n == 0 {
+    return 0
+  }
+  if n == 1 {
+    return 1
+  }
+  let factors = nt_prime_factors(if n < 0 { -n } else { n })
+  let mut result = 1
+  for pair in factors {
+    let (p, k) = pair
+    let lambda_p = if p == 2 {
+      if k == 1 {
+        1
+      } else if k == 2 {
+        2
+      } else {
+        pow_int(2, k - 2)
+      }
+    } else {
+      (p - 1) * pow_int(p, k - 1)
+    }
+    result = nt_lcm(result, lambda_p)
+  }
+  result
+}
+
+///|
 pub fn nt_divisors(n : Int) -> Array[Int] {
   let value = if n < 0 { -n } else { n }
   let divisors = Array::new()

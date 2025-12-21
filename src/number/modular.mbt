@@ -202,3 +202,65 @@ pub fn is_quad_residue(a : Int, modulus : Int) -> Bool {
   let roots = sqrt_mod(a, modulus)
   roots.length() > 0
 }
+
+///|
+pub fn kronecker_symbol(a : Int, n : Int) -> Int {
+  if n == 0 {
+    return if a == 1 || a == -1 { 1 } else { 0 }
+  }
+  if n == 1 {
+    return 1
+  }
+  let mut value = n
+  let mut result = 1
+  if value < 0 {
+    value = -value
+    if a < 0 {
+      result = -result
+    }
+  }
+  let mut nn = value
+  while nn % 2 == 0 {
+    let a_mod8 = (a % 8 + 8) % 8
+    if a_mod8 == 3 || a_mod8 == 5 {
+      result = -result
+    }
+    nn = nn / 2
+  }
+  if nn == 1 {
+    return result
+  }
+  let jac = jacobi_symbol(a, nn)
+  if jac == 0 {
+    0
+  } else {
+    result * jac
+  }
+}
+
+///|
+pub fn n_order(a : Int, n : Int) -> Int {
+  if n <= 0 {
+    return 0
+  }
+  if nt_gcd(a, n) != 1 {
+    return 0
+  }
+  let phi = nt_totient(n)
+  let factors = nt_prime_factors(phi)
+  let mut order = phi
+  for pair in factors {
+    let (p, count) = pair
+    let mut i = 0
+    while i < count && order % p == 0 {
+      let candidate = order / p
+      if pow_mod(a, candidate, n) == 1 {
+        order = candidate
+      } else {
+        break
+      }
+      i += 1
+    }
+  }
+  order
+}

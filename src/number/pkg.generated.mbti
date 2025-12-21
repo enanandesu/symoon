@@ -4,6 +4,8 @@ package "enanandesu/symoon/src/number"
 // Values
 pub fn binomial(Int, Int) -> Int
 
+pub fn carmichael(Int) -> Int
+
 pub fn diophantine_linear(Int, Int, Int) -> (Int, Int, Int, Int)
 
 pub fn divisor_count(Int) -> Int
@@ -30,6 +32,8 @@ pub fn isprime(Int) -> Bool
 
 pub fn jacobi_symbol(Int, Int) -> Int
 
+pub fn kronecker_symbol(Int, Int) -> Int
+
 pub fn lcm(Int, Int) -> Int
 
 pub fn legendre_symbol(Int, Int) -> Int
@@ -41,6 +45,8 @@ pub fn mobius(Int) -> Int
 pub fn mod_inverse(Int, Int) -> Int
 
 pub fn multiplicity(Int, Int) -> Int
+
+pub fn n_order(Int, Int) -> Int
 
 pub fn nextprime(Int) -> Int
 
