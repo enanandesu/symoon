@@ -116,6 +116,150 @@ test "sum_of_squares detects representability" {
 }
 
 ///|
+test "set partitions from RGS" {
+  let p = Partition::from_rgs([0, 1, 1, 0], [10, 20, 30, 40])
+  let blocks = p.partition()
+  assert_eq(blocks.length(), 2)
+  assert_eq(blocks[0], [10, 40])
+  assert_eq(blocks[1], [20, 30])
+  assert_eq(p.rgs(), [0, 1, 1, 0])
+  assert_eq(p.rank(), 2)
+  assert_eq(p.sort_key(), "0,1,1,0")
+  let invalid = Partition::from_rgs([0, 1], [1])
+  assert_eq(invalid.partition().length(), 0)
+}
+
+///|
+test "integer partition utilities" {
+  let p = IntegerPartition::new([3, 1, 1, 0])
+  let counts = p.as_dict()
+  assert_eq(counts.get(3), Some(1))
+  assert_eq(counts.get(1), Some(2))
+  let ferrers = p.as_ferrers()
+  assert_eq(ferrers, "###\n#\n#")
+  let ferrers_star = p.as_ferrers(char="*")
+  assert_eq(ferrers_star, "***\n*\n*")
+  let conjugate = p.conjugate()
+  assert_eq(conjugate.parts(), [3, 1, 1])
+  let lex = IntegerPartition::new([3, 1])
+  assert_eq(lex.next_lex().parts(), [2, 2])
+  assert_eq(lex.prev_lex().parts(), [4])
+  let last = IntegerPartition::new([1, 1, 1, 1])
+  assert_eq(last.next_lex().parts(), [4])
+  assert_eq(last.prev_lex().parts(), [2, 1, 1])
+}
+
+///|
+test "random integer partitions are deterministic with seed" {
+  let p = random_integer_partition(10, seed=123)
+  assert_eq(p, [7, 3])
+  let q = random_integer_partition(5)
+  let mut total = 0
+  for value in q {
+    total += value
+  }
+  assert_eq(total, 5)
+  let empty = random_integer_partition(0)
+  assert_eq(empty.length(), 0)
+}
+
+///|
+test "RGS helpers enumerate and rank" {
+  let list3 = rgs_generalized(3)
+  assert_eq(list3, [[0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1], [0, 1, 2]])
+  assert_eq(rgs_enum(3), 5)
+  assert_eq(rgs_rank([0, 1, 0]), 2)
+  assert_eq(rgs_rank([1]), -1)
+  assert_eq(rgs_unrank(4, 3), [0, 1, 2])
+  let none = rgs_unrank(10, 3)
+  assert_eq(none.length(), 0)
+}
+
+///|
+test "permutation basics and composition" {
+  let p = Permutation::new([2, 0, 1])
+  assert_eq(p.length(), 3)
+  assert_eq(p.array_form(), [2, 0, 1])
+  assert_eq(p.apply(1), 0)
+  assert_eq(p.apply(-1), -1)
+  let q = Permutation::new([1, 2, 0])
+  let composed = p.compose(q)
+  assert_eq(composed.array_form(), [0, 1, 2])
+  let inv = p.inverse()
+  assert_eq(inv.array_form(), [1, 2, 0])
+  let bad = Permutation::new([0, 0])
+  assert_eq(bad.length(), 0)
+}
+
+///|
+test "permutation cycles parity and commutators" {
+  let p = Permutation::new([2, 0, 1, 4, 3])
+  let cycles = p.cycles()
+  assert_eq(cycles, [[0, 2, 1], [3, 4]])
+  assert_eq(p.cycle_structure(), [2, 3])
+  assert_eq(p.cyclic_form(), "(0 2 1)(3 4)")
+  assert_eq(p.parity(), -1)
+  assert_eq(p.ascents(), [1, 2])
+  assert_eq(p.descents(), [0, 3])
+  let id = Permutation::identity(5)
+  let comm = p.commutator(id)
+  assert_eq(comm.array_form(), id.array_form())
+  assert_eq(p.commutes_with(id), true)
+}
+
+///|
+test "permutation rank and lex navigation" {
+  let p = Permutation::new([1, 0, 2])
+  assert_eq(p.rank_lex(), 2)
+  let back = Permutation::unrank_lex(3, 2)
+  assert_eq(back.array_form(), [1, 0, 2])
+  assert_eq(p.next_lex().array_form(), [1, 2, 0])
+  assert_eq(p.prev_lex().array_form(), [0, 2, 1])
+}
+
+///|
+test "permutation group basic data and order" {
+  let gen = Permutation::new([1, 0, 2])
+  let group = PermutationGroup::new([gen])
+  assert_eq(group.order(), 2)
+  let base = group.base()
+  assert_eq(base, [0, 1, 2])
+  let orbits = group.basic_orbits()
+  assert_eq(orbits[0], [0, 1])
+  assert_eq(orbits[1], [1])
+  assert_eq(orbits[2], [2])
+  let stabilizers = group.basic_stabilizers()
+  assert_eq(stabilizers.length(), 3)
+  assert_eq(stabilizers[0].length(), 1)
+  assert_eq(stabilizers[1].length(), 1)
+  let transversals = group.basic_transversals()
+  let t0 = transversals[0].get(0).unwrap()
+  let t1 = transversals[0].get(1).unwrap()
+  assert_eq(t0.apply(0), 0)
+  assert_eq(t1.apply(0), 1)
+  let invs = group.abelian_invariants()
+  assert_eq(invs, [2])
+}
+
+///|
+test "permutation group with 3-cycle" {
+  let cycle = Permutation::new([1, 2, 0])
+  let group = PermutationGroup::new([cycle])
+  assert_eq(group.order(), 3)
+  let orbits = group.basic_orbits()
+  assert_eq(orbits[0], [0, 1, 2])
+  let transversals = group.basic_transversals()
+  let t0 = transversals[0].get(0).unwrap().array_form()
+  let t1 = transversals[0].get(1).unwrap().array_form()
+  let t2 = transversals[0].get(2).unwrap().array_form()
+  assert_eq(t0, [0, 1, 2])
+  assert_eq(t1, [1, 2, 0])
+  assert_eq(t2, [2, 0, 1])
+  let invs = group.abelian_invariants()
+  assert_eq(invs, [3])
+}
+
+///|
 test "linear diophantine solver returns parametric form" {
   let (x0, y0, sx, sy) = diophantine_linear(2, 3, 10)
   assert_eq(2 * x0 + 3 * y0, 10)

@@ -118,6 +118,16 @@ pub fn pythagorean_triples(Int) -> Array[(Int, Int, Int)]
 
 pub fn quadratic_residues(Int) -> Array[Int]
 
+pub fn random_integer_partition(Int, seed? : Int) -> Array[Int]
+
+pub fn rgs_enum(Int) -> Int
+
+pub fn rgs_generalized(Int) -> Array[Array[Int]]
+
+pub fn rgs_rank(Array[Int]) -> Int
+
+pub fn rgs_unrank(Int, Int) -> Array[Int]
+
 pub fn solve_congruence(Array[(Int, Int)]) -> (Int, Int)
 
 pub fn sqrt_mod(Int, Int) -> Array[Int]
@@ -131,6 +141,64 @@ pub fn totient(Int) -> Int
 // Errors
 
 // Types and methods
+pub struct IntegerPartition {
+  parts : Array[Int]
+}
+pub fn IntegerPartition::as_dict(Self) -> Map[Int, Int]
+pub fn IntegerPartition::as_ferrers(Self, char? : String) -> String
+pub fn IntegerPartition::conjugate(Self) -> Self
+pub fn IntegerPartition::new(Array[Int]) -> Self
+pub fn IntegerPartition::next_lex(Self) -> Self
+pub fn IntegerPartition::parts(Self) -> Array[Int]
+pub fn IntegerPartition::prev_lex(Self) -> Self
+
+pub struct Partition {
+  blocks : Array[Array[Int]]
+  rgs : Array[Int]
+}
+pub fn Partition::from_rgs(Array[Int], Array[Int]) -> Self
+pub fn Partition::partition(Self) -> Array[Array[Int]]
+pub fn Partition::rank(Self) -> Int
+pub fn Partition::rgs(Self) -> Array[Int]
+pub fn Partition::sort_key(Self) -> String
+
+pub struct Permutation {
+  mapping : Array[Int]
+}
+pub fn Permutation::apply(Self, Int) -> Int
+pub fn Permutation::array_form(Self) -> Array[Int]
+pub fn Permutation::ascents(Self) -> Array[Int]
+pub fn Permutation::commutator(Self, Self) -> Self
+pub fn Permutation::commutes_with(Self, Self) -> Bool
+pub fn Permutation::compose(Self, Self) -> Self
+pub fn Permutation::cycle_structure(Self) -> Array[Int]
+pub fn Permutation::cycles(Self) -> Array[Array[Int]]
+pub fn Permutation::cyclic_form(Self) -> String
+pub fn Permutation::descents(Self) -> Array[Int]
+pub fn Permutation::identity(Int) -> Self
+pub fn Permutation::inverse(Self) -> Self
+pub fn Permutation::length(Self) -> Int
+pub fn Permutation::new(Array[Int]) -> Self
+pub fn Permutation::next_lex(Self) -> Self
+pub fn Permutation::parity(Self) -> Int
+pub fn Permutation::prev_lex(Self) -> Self
+pub fn Permutation::rank_lex(Self) -> Int
+pub fn Permutation::unrank_lex(Int, Int) -> Self
+
+pub struct PermutationGroup {
+  generators : Array[Permutation]
+  degree : Int
+}
+pub fn PermutationGroup::abelian_invariants(Self) -> Array[Int]
+pub fn PermutationGroup::base(Self) -> Array[Int]
+pub fn PermutationGroup::basic_data(Self) -> (Array[Array[Int]], Array[Array[Permutation]], Array[Map[Int, Permutation]])
+pub fn PermutationGroup::basic_orbits(Self) -> Array[Array[Int]]
+pub fn PermutationGroup::basic_stabilizers(Self) -> Array[Array[Permutation]]
+pub fn PermutationGroup::basic_transversals(Self) -> Array[Map[Int, Permutation]]
+pub fn PermutationGroup::identity(Self) -> Permutation
+pub fn PermutationGroup::new(Array[Permutation]) -> Self
+pub fn PermutationGroup::order(Self) -> Int
+pub fn PermutationGroup::schreier_sims(Self) -> Self
 
 // Type aliases
 
