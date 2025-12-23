@@ -20,19 +20,43 @@ pub fn compositepi(Int) -> Int
 
 pub fn compositepi_alt(Int) -> Int
 
+pub fn continued_fraction_convergents(Array[Int]) -> Array[(Int, Int)]
+
+pub fn continued_fraction_iterator(Int, d? : Int) -> Array[Int]
+
+pub fn continued_fraction_periodic(Int, Int, d? : Int, s? : Int) -> (Array[Int], Array[Int])
+
+pub fn continued_fraction_reduce(Array[Int]) -> (Int, Int)
+
+pub fn count_digits(Int, base? : Int) -> Map[Int, Int]
+
+pub fn crt(Array[Int], Array[Int], symmetric? : Bool, check? : Bool) -> (Int, Int)
+
+pub fn crt1(Array[Int]) -> (Int, Array[Int], Array[Int])
+
+pub fn crt2(Array[Int], Array[Int], Int, Array[Int], Array[Int], symmetric? : Bool) -> (Int, Int)
+
 pub fn cycle_length((Int) -> Int, Int, nmax? : Int, values? : Bool) -> Int
 
 pub fn cyclic_group(Int) -> PermutationGroup
 
+pub fn digits(Int, b? : Int, digits? : Int) -> Array[Int]
+
 pub fn dihedral_group(Int) -> PermutationGroup
 
 pub fn diophantine_linear(Int, Int, Int) -> (Int, Int, Int, Int)
+
+pub fn discrete_log(Int, Int, Int, order? : Int) -> Int
 
 pub fn divisor_count(Int) -> Int
 
 pub fn divisor_sigma(Int, power? : Int) -> Int
 
 pub fn divisors(Int) -> Array[Int]
+
+pub fn ecm(Int) -> Array[(Int, Int)]
+
+pub fn egyptian_fraction(Int, d? : Int, algorithm? : String) -> Array[Int]
 
 pub fn factorint(Int) -> Map[Int, Int]
 
@@ -53,6 +77,10 @@ pub fn graycode_subsets(Array[Int]) -> Array[Array[Int]]
 pub fn igcd(Int, Int) -> Int
 
 pub fn ilcm(Int, Int) -> Int
+
+pub fn invert(Int, Int) -> Int
+
+pub fn is_primitive_root(Int, Int) -> Bool
 
 pub fn is_quad_residue(Int, Int) -> Bool
 
@@ -77,6 +105,8 @@ pub fn lucas(Int) -> Int
 pub fn mobius(Int) -> Int
 
 pub fn mod_inverse(Int, Int) -> Int
+
+pub fn multinomial_coefficients(Int, Int) -> Array[(Array[Int], Int)]
 
 pub fn multiplicity(Int, Int) -> Int
 
@@ -140,9 +170,13 @@ pub fn nt_rand_prime(Int, Int, seed? : Int) -> Int
 
 pub fn nt_totient(Int) -> Int
 
+pub fn nthroot_mod(Int, Int, Int) -> Array[Int]
+
 pub fn pell_solutions(Int, count? : Int) -> Array[(Int, Int)]
 
 pub fn perfect_power(Int) -> Bool
+
+pub fn pi_hex_digits(Int, prec? : Int) -> String
 
 pub fn pollard_pm1(Int) -> Array[(Int, Int)]
 
@@ -166,9 +200,13 @@ pub fn primepi(Int) -> Int
 
 pub fn primerange(Int, Int) -> Array[Int]
 
+pub fn primitive_root(Int) -> Int
+
 pub fn primorial(Int, nth? : Bool) -> Int
 
 pub fn pythagorean_triples(Int) -> Array[(Int, Int, Int)]
+
+pub fn qs(Int) -> Array[(Int, Int)]
 
 pub fn quadratic_residues(Int) -> Array[Int]
 
@@ -197,6 +235,8 @@ pub fn solve_congruence(Array[(Int, Int)]) -> (Int, Int)
 pub fn sort_edges(Array[(Int, Int)]) -> Array[(Int, Int)]
 
 pub fn sqrt_mod(Int, Int) -> Array[Int]
+
+pub fn sqrt_mod_iter(Int, Int) -> Array[Int]
 
 pub fn stirling(Int, Int, kind? : Int) -> Int
 

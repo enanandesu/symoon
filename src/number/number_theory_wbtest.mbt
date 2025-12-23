@@ -42,6 +42,97 @@ test "mod_inverse and modular square roots" {
 }
 
 ///|
+test "invert and crt helpers" {
+  assert_eq(invert(3, 11), 4)
+  assert_eq(invert(2, 4), 0)
+  let (x1, m1) = crt([3, 5, 7], [2, 3, 2])
+  assert_eq((x1, m1), (23, 105))
+  let (x2, m2) = crt([5, 6], [-1, 1])
+  assert_eq((x2, m2), (19, 30))
+  let (x3, m3) = crt([3, 6], [2, 5])
+  assert_eq((x3, m3), (5, 6))
+  let (x4, m4) = crt([3, 5], [2, 3], symmetric=true)
+  assert_eq((x4, m4), (-7, 15))
+  let (mm, e, s) = crt1([99, 97, 95])
+  let (x5, m5) = crt2([99, 97, 95], [49, 76, 65], mm, e, s)
+  assert_eq((x5, m5), (639985, 912285))
+}
+
+///|
+test "sqrt_mod_iter nthroot_mod and discrete_log" {
+  assert_eq(sqrt_mod_iter(4, 7), [2, 5])
+  assert_eq(sqrt_mod_iter(3, 7).length(), 0)
+  let roots = nthroot_mod(2, 3, 5)
+  assert_eq(roots, [3])
+  let squares = nthroot_mod(1, 2, 8)
+  assert_eq(squares, [1, 3, 5, 7])
+  assert_eq(discrete_log(7, 3, 5), 5)
+  assert_eq(discrete_log(7, 3, 1), 0)
+  assert_eq(discrete_log(7, 2, 3), -1)
+}
+
+///|
+test "primitive roots and checks" {
+  assert_eq(primitive_root(7), 3)
+  assert_eq(primitive_root(5), 2)
+  assert_eq(primitive_root(2), 1)
+  assert_eq(primitive_root(8), 0)
+  assert_eq(is_primitive_root(3, 7), true)
+  assert_eq(is_primitive_root(2, 7), false)
+}
+
+///|
+test "continued fractions and digits" {
+  let cf = continued_fraction_iterator(3, d=8)
+  assert_eq(cf, [0, 2, 1, 2])
+  let neg = continued_fraction_iterator(-3, d=8)
+  assert_eq(neg, [-1, 1, 1, 1, 2])
+  let (pre, period) = continued_fraction_periodic(3, 2, d=7)
+  assert_eq(pre, [2])
+  assert_eq(period, [1, 4, 1, 1])
+  let (p2, per2) = continued_fraction_periodic(0, 1, d=2)
+  assert_eq(p2, [1])
+  assert_eq(per2, [2])
+  let conv = continued_fraction_convergents([0, 2, 1, 2])
+  assert_eq(conv, [(0, 1), (1, 2), (1, 3), (3, 8)])
+  let reduced = continued_fraction_reduce([0, 2, 1, 2])
+  assert_eq(reduced, (3, 8))
+  assert_eq(digits(1234), [1, 2, 3, 4])
+  assert_eq(digits(0), [0])
+  assert_eq(digits(5, b=2, digits=4), [0, 1, 0, 1])
+  let counts = count_digits(112233)
+  assert_eq(counts.get(1), Some(2))
+  assert_eq(counts.get(2), Some(2))
+  assert_eq(counts.get(3), Some(2))
+}
+
+///|
+test "pi_hex_digits and egyptian_fraction" {
+  assert_eq(pi_hex_digits(0, prec=3), "324")
+  assert_eq(pi_hex_digits(1, prec=4), "243f")
+  assert_eq(egyptian_fraction(3, d=2), [1, 2])
+  assert_eq(egyptian_fraction(4, d=13), [4, 18, 468])
+  assert_eq(egyptian_fraction(2, d=3), [2, 6])
+  assert_eq(egyptian_fraction(5, d=1), [1, 1, 1, 1, 1])
+  assert_eq(egyptian_fraction(3, d=2, algorithm="Other").length(), 0)
+}
+
+///|
+test "multinomial coefficients for small cases" {
+  let m2 = multinomial_coefficients(2, 3)
+  assert_eq(m2, [([0, 3], 1), ([1, 2], 3), ([2, 1], 3), ([3, 0], 1)])
+  let m3 = multinomial_coefficients(3, 2)
+  assert_eq(m3, [
+    ([0, 0, 2], 1),
+    ([0, 1, 1], 2),
+    ([0, 2, 0], 1),
+    ([1, 0, 1], 2),
+    ([1, 1, 0], 2),
+    ([2, 0, 0], 1),
+  ])
+}
+
+///|
 test "quadratic_residues lists squares modulo n" {
   let residues = quadratic_residues(7)
   assert_eq(residues, [0, 1, 2, 4])
@@ -403,11 +494,22 @@ test "factor helpers primefactors and perfect_power" {
   assert_eq(perfect_power(27), true)
   assert_eq(perfect_power(16), true)
   assert_eq(perfect_power(18), false)
+  assert_eq(perfect_power(-8), true)
+  assert_eq(perfect_power(-27), true)
+  assert_eq(perfect_power(-16), false)
   assert_eq(trailing(40), 3)
+  assert_eq(trailing(-40), 3)
   let factors = pollard_rho(84)
   assert_eq(factors, [(2, 2), (3, 1), (7, 1)])
   let factors2 = pollard_pm1(45)
   assert_eq(factors2, [(3, 2), (5, 1)])
+}
+
+///|
+test "ecm and qs factorization wrappers" {
+  assert_eq(ecm(84), [(2, 2), (3, 1), (7, 1)])
+  assert_eq(qs(45), [(3, 2), (5, 1)])
+  assert_eq(ecm(1).length(), 0)
 }
 
 ///|
@@ -540,6 +642,20 @@ test "nt_is_prime checks small and composite numbers" {
 }
 
 ///|
+test "nt_is_prime handles larger primes and Carmichael numbers" {
+  assert_eq(nt_is_prime(-7), false)
+  assert_eq(nt_is_prime(0), false)
+  assert_eq(nt_is_prime(2147483647), true)
+  assert_eq(nt_is_prime(2147483645), false)
+  assert_eq(nt_is_prime(561), false)
+  assert_eq(nt_is_prime(1105), false)
+  assert_eq(nt_is_prime(1729), false)
+  assert_eq(nt_is_prime(2465), false)
+  assert_eq(nt_is_prime(2821), false)
+  assert_eq(nt_is_prime(6601), false)
+}
+
+///|
 test "nt_is_divisible_by covers zero and negatives" {
   assert_eq(nt_is_divisible_by(10, 2), true)
   assert_eq(nt_is_divisible_by(10, 3), false)
@@ -582,6 +698,8 @@ test "nt_nth_prime and nt_prime_pi" {
 test "prime helpers aliases" {
   assert_eq(isprime(17), true)
   assert_eq(isprime(1), false)
+  assert_eq(isprime(2147483647), true)
+  assert_eq(isprime(561), false)
   assert_eq(prime(6), 13)
   assert_eq(prime(0), 0)
   assert_eq(primepi(10), 4)

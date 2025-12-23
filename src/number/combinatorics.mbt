@@ -20,6 +20,46 @@ pub fn binomial(n : Int, k : Int) -> Int {
 }
 
 ///|
+pub fn multinomial_coefficients(m : Int, n : Int) -> Array[(Array[Int], Int)] {
+  let results = Array::new()
+  if m <= 0 || n < 0 {
+    return results
+  }
+  fn dfs(
+    index : Int,
+    slots : Int,
+    remaining : Int,
+    current : Array[Int],
+    coeff : Int,
+    results : Array[(Array[Int], Int)],
+  ) -> Unit {
+    if index == slots - 1 {
+      let full = Array::new()
+      for value in current {
+        full.push(value)
+      }
+      full.push(remaining)
+      results.push((full, coeff))
+      return ()
+    }
+    let mut k = 0
+    while k <= remaining {
+      let next = Array::new()
+      for value in current {
+        next.push(value)
+      }
+      next.push(k)
+      let coeff_next = coeff * binomial(remaining, k)
+      dfs(index + 1, slots, remaining - k, next, coeff_next, results)
+      k += 1
+    }
+  }
+
+  dfs(0, m, n, Array::new(), 1, results)
+  results
+}
+
+///|
 pub fn npartitions(n : Int) -> Int {
   if n < 0 {
     return 0

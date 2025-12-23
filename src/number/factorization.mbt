@@ -167,13 +167,13 @@ pub fn perfect_power(n : Int) -> Bool {
   let mut base = 2
   while base <= limit {
     let mut value = base
+    let mut exp = 1
     while value <= absn / base {
       value = value * base
+      exp += 1
       if value == absn {
-        if n < 0 {
-          if value / base % 2 == 0 {
-            continue
-          }
+        if n < 0 && exp % 2 == 0 {
+          break
         }
         return true
       }
@@ -195,6 +195,16 @@ pub fn pollard_rho(n : Int) -> Array[(Int, Int)] {
 
 ///|
 pub fn pollard_pm1(n : Int) -> Array[(Int, Int)] {
+  nt_prime_factors(n)
+}
+
+///|
+pub fn ecm(n : Int) -> Array[(Int, Int)] {
+  nt_prime_factors(n)
+}
+
+///|
+pub fn qs(n : Int) -> Array[(Int, Int)] {
   nt_prime_factors(n)
 }
 
