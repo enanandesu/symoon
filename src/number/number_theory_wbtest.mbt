@@ -260,6 +260,203 @@ test "permutation group with 3-cycle" {
 }
 
 ///|
+test "polyhedron basic transforms" {
+  let corners = [10, 20, 30, 40]
+  let faces = [[0, 1, 2], [0, 2, 3]]
+  let swap01 = Permutation::new([1, 0, 2, 3])
+  let poly = Polyhedron::new(corners, faces~, pgroup=[swap01])
+  assert_eq(poly.size(), 4)
+  assert_eq(poly.vertices(), [10, 20, 30, 40])
+  assert_eq(poly.corners(), [10, 20, 30, 40])
+  assert_eq(poly.faces(), [[0, 1, 2], [0, 2, 3]])
+  let edges = poly.edges()
+  assert_eq(edges.length() >= 4, true)
+  let rotated = poly.rotate_by_index(0)
+  assert_eq(rotated.corners(), [20, 10, 30, 40])
+  assert_eq(rotated.array_form(), [1, 0, 2, 3])
+  assert_eq(rotated.cyclic_form(), "(0 1)(2)(3)")
+  let reset = rotated.reset()
+  assert_eq(reset.corners(), [10, 20, 30, 40])
+  let by_perm = poly.rotate(Permutation::new([1, 2, 3, 0]))
+  assert_eq(by_perm.corners(), [20, 30, 40, 10])
+}
+
+///|
+test "prufer to_tree and to_prufer roundtrip" {
+  let seq = [0, 0]
+  let edges = to_tree(seq)
+  let expected = sort_edges([(0, 1), (0, 2), (0, 3)])
+  assert_eq(sort_edges(edges), expected)
+  let back = to_prufer(edges, 4)
+  assert_eq(back, seq)
+}
+
+///|
+test "prufer next prev rank and unrank" {
+  let p = Prufer::new([0, 0])
+  assert_eq(p.size(), 4)
+  assert_eq(p.nodes(), [0, 1, 2, 3])
+  let n1 = p.next()
+  assert_eq(n1.prufer_repr(), [0, 1])
+  let p_prev = p.prev()
+  assert_eq(p_prev.prufer_repr(), [3, 3])
+  assert_eq(p.prufer_rank(), 0)
+  let r = Prufer::unrank(6, 4)
+  assert_eq(r.prufer_repr(), [1, 2])
+  let rank_back = r.rank()
+  assert_eq(rank_back, 6)
+}
+
+///|
+test "prufer edges and tree representation" {
+  let p = Prufer::new([3, 3, 3])
+  let edges = p.edges()
+  let sorted = sort_edges(edges)
+  let expected = sort_edges([(0, 3), (1, 3), (2, 3), (3, 4)])
+  assert_eq(sorted, expected)
+  let tree_repr = p.tree_repr()
+  assert_eq(sort_edges(tree_repr), expected)
+}
+
+///|
+test "gray code basics and navigation" {
+  let g = GrayCode::new(3)
+  assert_eq(g.current(), "000")
+  let g1 = g.next()
+  assert_eq(g1.current(), "001")
+  let g2 = g1.next(delta=2)
+  assert_eq(g2.current(), "010")
+  let back = g2.skip(delta=-3)
+  assert_eq(back.current(), "000")
+}
+
+///|
+test "gray code rank and generate" {
+  let codes = generate_gray(2)
+  assert_eq(codes, ["00", "01", "11", "10"])
+  let g = GrayCode::new(2, rank=3)
+  assert_eq(g.rank(), 3)
+  assert_eq(g.current(), "10")
+  let u = GrayCode::unrank(2, 1)
+  assert_eq(u.current(), "01")
+}
+
+///|
+test "gray code helpers and subsets" {
+  let rand = random_bitstring(4, seed=5)
+  assert_eq(rand.length(), 4)
+  let gray = bin_to_gray("0101")
+  assert_eq(gray, "0111")
+  let bin = gray_to_bin(gray)
+  assert_eq(bin, "0101")
+  let subset = get_subset_from_bitstring([1, 2, 3, 4], "1010")
+  assert_eq(subset, [1, 3])
+  let subsets = graycode_subsets([10, 20])
+  assert_eq(subsets, [[], [20], [10, 20], [10]])
+}
+
+///|
+test "subset bitlist and rank conversions" {
+  let sup = [10, 20, 30]
+  let sub = [10, 30]
+  let bits = bitlist_from_subset(sub, sup)
+  assert_eq(bits, "101")
+  let back = subset_from_bitlist(sup, bits)
+  assert_eq(back, [10, 30])
+  assert_eq(rank_binary(sub, sup), 5)
+  assert_eq(unrank_binary(5, sup), [10, 30])
+  assert_eq(rank_gray(sub, sup), 7)
+  assert_eq(unrank_gray(7, sup), [10, 30])
+  assert_eq(rank_lexicographic(sub, sup), 5)
+  assert_eq(subset_indices(sub, sup), [0, 2])
+}
+
+///|
+test "subset iteration and navigation" {
+  let sup = [1, 2]
+  let all_bin = iterate_binary(sup)
+  assert_eq(all_bin, [[], [2], [1], [1, 2]])
+  let all_gray = iterate_graycode(sup)
+  assert_eq(all_gray, [[], [2], [1, 2], [1]])
+  let next = next_binary([1], sup)
+  assert_eq(next, [1, 2])
+  let prev = prev_binary([1], sup)
+  assert_eq(prev, [2])
+  let ng = next_gray([1], sup)
+  assert_eq(ng, [])
+  let pg = prev_gray([1], sup)
+  assert_eq(pg, [1, 2])
+}
+
+///|
+test "ksubsets generates combinations" {
+  let result = ksubsets([1, 2, 3], 2)
+  assert_eq(result, [[1, 2], [1, 3], [2, 3]])
+  let empty = ksubsets([1, 2], 3)
+  assert_eq(empty.length(), 0)
+}
+
+///|
+test "factor helpers primefactors and perfect_power" {
+  assert_eq(primefactors(84), [2, 3, 7])
+  assert_eq(primefactors(-45), [3, 5])
+  assert_eq(perfect_power(27), true)
+  assert_eq(perfect_power(16), true)
+  assert_eq(perfect_power(18), false)
+  assert_eq(trailing(40), 3)
+  let factors = pollard_rho(84)
+  assert_eq(factors, [(2, 2), (3, 1), (7, 1)])
+  let factors2 = pollard_pm1(45)
+  assert_eq(factors2, [(3, 2), (5, 1)])
+}
+
+///|
+test "named groups symmetric alternating cyclic dihedral" {
+  let s3 = symmetric_group(3)
+  assert_eq(s3.order(), 6)
+  let a3 = alternating_group(3)
+  assert_eq(a3.order(), 3)
+  let c4 = cyclic_group(4)
+  assert_eq(c4.order(), 4)
+  let d4 = dihedral_group(4)
+  assert_eq(d4.order(), 8)
+  let base = d4.base()
+  assert_eq(base, [0, 1, 2, 3])
+}
+
+///|
+test "prime generation helpers" {
+  assert_eq(prime(5), 11)
+  assert_eq(primepi(10), 4)
+  let primes = primerange(10, 20)
+  assert_eq(primes, [11, 13, 17, 19])
+  let r = randprime(20, 30, seed=5)
+  assert_eq(nt_is_prime(r), true)
+  assert_eq(primorial(5), 2310)
+  assert_eq(primorial(5, nth=false), 30)
+}
+
+///|
+test "composite counting and nth composite" {
+  assert_eq(compositepi(10), 4)
+  assert_eq(composite(1), 4)
+  assert_eq(composite(5), 10)
+}
+
+///|
+test "sieve basic usage and cycle length" {
+  let s = Sieve::new().extend(20)
+  let plist = s.primerange(2, 15)
+  assert_eq(plist, [2, 3, 5, 7, 11, 13])
+  fn f(x : Int) -> Int {
+    (x * x + 1) % 10
+  }
+
+  let len = cycle_length(f, 2)
+  assert_eq(len > 0, true)
+}
+
+///|
 test "linear diophantine solver returns parametric form" {
   let (x0, y0, sx, sy) = diophantine_linear(2, 3, 10)
   assert_eq(2 * x0 + 3 * y0, 10)

@@ -147,6 +147,58 @@ pub fn primeomega(n : Int) -> Int {
 }
 
 ///|
+pub fn primefactors(n : Int) -> Array[Int] {
+  let factors = nt_prime_factors(n)
+  let unique = Array::new()
+  for pair in factors {
+    let (p, _) = pair
+    unique.push(p)
+  }
+  unique
+}
+
+///|
+pub fn perfect_power(n : Int) -> Bool {
+  if n == 0 || n == 1 || n == -1 {
+    return true
+  }
+  let absn = if n < 0 { -n } else { n }
+  let limit = int_sqrt(absn)
+  let mut base = 2
+  while base <= limit {
+    let mut value = base
+    while value <= absn / base {
+      value = value * base
+      if value == absn {
+        if n < 0 {
+          if value / base % 2 == 0 {
+            continue
+          }
+        }
+        return true
+      }
+    }
+    base += 1
+  }
+  false
+}
+
+///|
+pub fn trailing(n : Int) -> Int {
+  nt_multiplicity(2, n)
+}
+
+///|
+pub fn pollard_rho(n : Int) -> Array[(Int, Int)] {
+  nt_prime_factors(n)
+}
+
+///|
+pub fn pollard_pm1(n : Int) -> Array[(Int, Int)] {
+  nt_prime_factors(n)
+}
+
+///|
 pub fn carmichael(n : Int) -> Int {
   if n == 0 {
     return 0

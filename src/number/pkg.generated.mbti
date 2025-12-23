@@ -2,9 +2,29 @@
 package "enanandesu/symoon/src/number"
 
 // Values
+pub fn alternating_group(Int) -> PermutationGroup
+
+pub fn bin_to_gray(String) -> String
+
 pub fn binomial(Int, Int) -> Int
 
+pub fn bitlist_from_subset(Array[Int], Array[Int]) -> String
+
+pub fn bitlist_to_int(String) -> Int
+
 pub fn carmichael(Int) -> Int
+
+pub fn composite(Int) -> Int
+
+pub fn compositepi(Int) -> Int
+
+pub fn compositepi_alt(Int) -> Int
+
+pub fn cycle_length((Int) -> Int, Int, nmax? : Int, values? : Bool) -> Int
+
+pub fn cyclic_group(Int) -> PermutationGroup
+
+pub fn dihedral_group(Int) -> PermutationGroup
 
 pub fn diophantine_linear(Int, Int, Int) -> (Int, Int, Int, Int)
 
@@ -22,6 +42,14 @@ pub fn gcd(Int, Int) -> Int
 
 pub fn gcdex(Int, Int) -> (Int, Int, Int)
 
+pub fn generate_gray(Int, start? : Int) -> Array[String]
+
+pub fn get_subset_from_bitstring(Array[Int], String) -> Array[Int]
+
+pub fn gray_to_bin(String) -> String
+
+pub fn graycode_subsets(Array[Int]) -> Array[Array[Int]]
+
 pub fn igcd(Int, Int) -> Int
 
 pub fn ilcm(Int, Int) -> Int
@@ -30,9 +58,15 @@ pub fn is_quad_residue(Int, Int) -> Bool
 
 pub fn isprime(Int) -> Bool
 
+pub fn iterate_binary(Array[Int]) -> Array[Array[Int]]
+
+pub fn iterate_graycode(Array[Int]) -> Array[Array[Int]]
+
 pub fn jacobi_symbol(Int, Int) -> Int
 
 pub fn kronecker_symbol(Int, Int) -> Int
+
+pub fn ksubsets(Array[Int], Int) -> Array[Array[Int]]
 
 pub fn lcm(Int, Int) -> Int
 
@@ -48,7 +82,13 @@ pub fn multiplicity(Int, Int) -> Int
 
 pub fn n_order(Int, Int) -> Int
 
+pub fn next_binary(Array[Int], Array[Int], delta? : Int) -> Array[Int]
+
+pub fn next_gray(Array[Int], Array[Int], delta? : Int) -> Array[Int]
+
 pub fn nextprime(Int) -> Int
+
+pub fn nodes_from_edges(Array[(Int, Int)]) -> Int
 
 pub fn npartitions(Int) -> Int
 
@@ -102,9 +142,21 @@ pub fn nt_totient(Int) -> Int
 
 pub fn pell_solutions(Int, count? : Int) -> Array[(Int, Int)]
 
+pub fn perfect_power(Int) -> Bool
+
+pub fn pollard_pm1(Int) -> Array[(Int, Int)]
+
+pub fn pollard_rho(Int) -> Array[(Int, Int)]
+
+pub fn prev_binary(Array[Int], Array[Int], delta? : Int) -> Array[Int]
+
+pub fn prev_gray(Array[Int], Array[Int], delta? : Int) -> Array[Int]
+
 pub fn prevprime(Int) -> Int
 
 pub fn prime(Int) -> Int
+
+pub fn primefactors(Int) -> Array[Int]
 
 pub fn primenu(Int) -> Int
 
@@ -114,11 +166,23 @@ pub fn primepi(Int) -> Int
 
 pub fn primerange(Int, Int) -> Array[Int]
 
+pub fn primorial(Int, nth? : Bool) -> Int
+
 pub fn pythagorean_triples(Int) -> Array[(Int, Int, Int)]
 
 pub fn quadratic_residues(Int) -> Array[Int]
 
+pub fn random_bitstring(Int, seed? : Int) -> String
+
 pub fn random_integer_partition(Int, seed? : Int) -> Array[Int]
+
+pub fn randprime(Int, Int, seed? : Int) -> Int
+
+pub fn rank_binary(Array[Int], Array[Int]) -> Int
+
+pub fn rank_gray(Array[Int], Array[Int]) -> Int
+
+pub fn rank_lexicographic(Array[Int], Array[Int]) -> Int
 
 pub fn rgs_enum(Int) -> Int
 
@@ -130,17 +194,50 @@ pub fn rgs_unrank(Int, Int) -> Array[Int]
 
 pub fn solve_congruence(Array[(Int, Int)]) -> (Int, Int)
 
+pub fn sort_edges(Array[(Int, Int)]) -> Array[(Int, Int)]
+
 pub fn sqrt_mod(Int, Int) -> Array[Int]
 
 pub fn stirling(Int, Int, kind? : Int) -> Int
 
+pub fn subset_from_bitlist(Array[Int], String) -> Array[Int]
+
+pub fn subset_indices(Array[Int], Array[Int]) -> Array[Int]
+
 pub fn sum_of_squares(Int) -> Int
 
+pub fn symmetric_group(Int) -> PermutationGroup
+
+pub fn to_prufer(Array[(Int, Int)], Int) -> Array[Int]
+
+pub fn to_tree(Array[Int]) -> Array[(Int, Int)]
+
 pub fn totient(Int) -> Int
+
+pub fn trailing(Int) -> Int
+
+pub fn unrank_binary(Int, Array[Int]) -> Array[Int]
+
+pub fn unrank_gray(Int, Array[Int]) -> Array[Int]
+
+pub fn unrank_lexicographic(Int, Array[Int]) -> Array[Int]
 
 // Errors
 
 // Types and methods
+pub struct GrayCode {
+  n : Int
+  rank : Int
+}
+pub fn GrayCode::current(Self) -> String
+pub fn GrayCode::n(Self) -> Int
+pub fn GrayCode::new(Int, start? : Int, rank? : Int) -> Self
+pub fn GrayCode::next(Self, delta? : Int) -> Self
+pub fn GrayCode::rank(Self) -> Int
+pub fn GrayCode::selections(Self) -> Int
+pub fn GrayCode::skip(Self, delta? : Int) -> Self
+pub fn GrayCode::unrank(Int, Int) -> Self
+
 pub struct IntegerPartition {
   parts : Array[Int]
 }
@@ -199,6 +296,59 @@ pub fn PermutationGroup::identity(Self) -> Permutation
 pub fn PermutationGroup::new(Array[Permutation]) -> Self
 pub fn PermutationGroup::order(Self) -> Int
 pub fn PermutationGroup::schreier_sims(Self) -> Self
+
+pub struct Polyhedron {
+  base_corners : Array[Int]
+  base_faces : Array[Array[Int]]
+  pgroup : Array[Permutation]
+  current : Permutation
+}
+pub fn Polyhedron::array_form(Self) -> Array[Int]
+pub fn Polyhedron::corners(Self) -> Array[Int]
+pub fn Polyhedron::cyclic_form(Self) -> String
+pub fn Polyhedron::edges(Self) -> Array[(Int, Int)]
+pub fn Polyhedron::faces(Self) -> Array[Array[Int]]
+pub fn Polyhedron::new(Array[Int], faces? : Array[Array[Int]], pgroup? : Array[Permutation]) -> Self
+pub fn Polyhedron::reset(Self) -> Self
+pub fn Polyhedron::rotate(Self, Permutation) -> Self
+pub fn Polyhedron::rotate_by_index(Self, Int) -> Self
+pub fn Polyhedron::size(Self) -> Int
+pub fn Polyhedron::vertices(Self) -> Array[Int]
+
+pub struct Prufer {
+  seq : Array[Int]
+}
+pub fn Prufer::edges(Self) -> Array[(Int, Int)]
+pub fn Prufer::new(Array[Int]) -> Self
+pub fn Prufer::next(Self, delta? : Int) -> Self
+pub fn Prufer::nodes(Self) -> Array[Int]
+pub fn Prufer::prev(Self, delta? : Int) -> Self
+pub fn Prufer::prufer_rank(Self) -> Int
+pub fn Prufer::prufer_repr(Self) -> Array[Int]
+pub fn Prufer::rank(Self) -> Int
+pub fn Prufer::size(Self) -> Int
+pub fn Prufer::tree_repr(Self) -> Array[(Int, Int)]
+pub fn Prufer::unrank(Int, Int) -> Self
+
+pub struct Sieve {
+  primes : Array[Int]
+  limit : Int
+}
+pub fn Sieve::extend(Self, Int) -> Self
+pub fn Sieve::new() -> Self
+pub fn Sieve::primerange(Self, Int, Int) -> Array[Int]
+pub fn Sieve::primes(Self) -> Array[Int]
+
+pub struct Subset {
+  subset : Array[Int]
+  superset : Array[Int]
+}
+pub fn Subset::cardinality(Self) -> Int
+pub fn Subset::new(Array[Int], Array[Int]) -> Self
+pub fn Subset::size(Self) -> Int
+pub fn Subset::subset(Self) -> Array[Int]
+pub fn Subset::superset(Self) -> Array[Int]
+pub fn Subset::superset_size(Self) -> Int
 
 // Type aliases
 

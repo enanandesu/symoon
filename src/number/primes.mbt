@@ -167,3 +167,105 @@ pub fn nt_rand_prime(start : Int, end : Int, seed? : Int = 0) -> Int {
   }
   primes[basis % count]
 }
+
+///|
+pub fn randprime(start : Int, end : Int, seed? : Int = 0) -> Int {
+  nt_rand_prime(start, end, seed~)
+}
+
+///|
+pub fn primorial(n : Int, nth? : Bool = true) -> Int {
+  if n <= 0 {
+    return 1
+  }
+  let primes = if nth { nt_first_n_primes(n) } else { nt_primes_up_to(n) }
+  let mut result = 1
+  for p in primes {
+    result = result * p
+  }
+  result
+}
+
+///|
+pub fn compositepi(n : Int) -> Int {
+  if n <= 4 {
+    return 0
+  }
+  let limit = n - 1
+  let primes = nt_prime_pi(limit)
+  let count_non_primes = limit - 1 - primes
+  if count_non_primes < 0 {
+    0
+  } else {
+    count_non_primes
+  }
+}
+
+///|
+pub fn composite(n : Int) -> Int {
+  if n <= 0 {
+    return 0
+  }
+  let mut count = 0
+  let mut x = 4
+  while true {
+    if !nt_is_prime(x) {
+      count += 1
+      if count == n {
+        return x
+      }
+    }
+    x += 1
+  }
+  abort("unreachable")
+}
+
+///|
+pub fn compositepi_alt(n : Int) -> Int {
+  compositepi(n)
+}
+
+///|
+pub struct Sieve {
+  primes : Array[Int]
+  limit : Int
+}
+
+///|
+pub fn Sieve::new() -> Sieve {
+  Sieve::{ primes: Array::new(), limit: 1 }
+}
+
+///|
+pub fn Sieve::extend(self : Sieve, n : Int) -> Sieve {
+  if n <= self.limit {
+    return self
+  }
+  let primes = self.primes
+  let mut current = self.limit + 1
+  if current < 2 {
+    current = 2
+  }
+  while current <= n {
+    if nt_is_prime(current) {
+      primes.push(current)
+    }
+    current += 1
+  }
+  Sieve::{ primes, limit: n }
+}
+
+///|
+pub fn Sieve::primerange(self : Sieve, start : Int, end : Int) -> Array[Int] {
+  let mut s = self
+  if end > s.limit {
+    s = s.extend(end)
+  }
+  let primes = nt_prime_range(start, end)
+  primes
+}
+
+///|
+pub fn Sieve::primes(self : Sieve) -> Array[Int] {
+  self.primes
+}

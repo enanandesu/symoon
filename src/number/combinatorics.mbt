@@ -878,6 +878,136 @@ fn pick_available(avail : Array[Int], index : Int) -> (Int, Array[Int]) {
 }
 
 ///|
+pub struct Polyhedron {
+  base_corners : Array[Int]
+  base_faces : Array[Array[Int]]
+  pgroup : Array[Permutation]
+  current : Permutation
+}
+
+///|
+pub fn Polyhedron::new(
+  corners : Array[Int],
+  faces? : Array[Array[Int]] = Array::new(),
+  pgroup? : Array[Permutation] = Array::new(),
+) -> Polyhedron {
+  let n = corners.length()
+  let current = Permutation::identity(n)
+  Polyhedron::{ base_corners: corners, base_faces: faces, pgroup, current }
+}
+
+///|
+pub fn Polyhedron::size(self : Polyhedron) -> Int {
+  self.base_corners.length()
+}
+
+///|
+pub fn Polyhedron::vertices(self : Polyhedron) -> Array[Int] {
+  self.corners()
+}
+
+///|
+pub fn Polyhedron::corners(self : Polyhedron) -> Array[Int] {
+  let n = self.base_corners.length()
+  let transformed = Array::new()
+  let mut i = 0
+  while i < n {
+    let target = self.current.apply(i)
+    if target < 0 || target >= n {
+      transformed.push(self.base_corners[i])
+    } else {
+      transformed.push(self.base_corners[target])
+    }
+    i += 1
+  }
+  transformed
+}
+
+///|
+pub fn Polyhedron::faces(self : Polyhedron) -> Array[Array[Int]] {
+  let mapped = Array::new()
+  for face in self.base_faces {
+    let transformed = Array::new()
+    for v in face {
+      let image = self.current.apply(v)
+      transformed.push(image)
+    }
+    mapped.push(transformed)
+  }
+  mapped
+}
+
+///|
+pub fn Polyhedron::edges(self : Polyhedron) -> Array[(Int, Int)] {
+  let edges = Array::new()
+  let seen : Map[String, Bool] = {}
+  for face in self.faces() {
+    let len = face.length()
+    if len < 2 {
+      continue
+    }
+    let mut i = 0
+    while i < len {
+      let a = face[i]
+      let b = face[(i + 1) % len]
+      let edge = if a < b { (a, b) } else { (b, a) }
+      let key = edge.0.to_string() + "-" + edge.1.to_string()
+      match seen.get(key) {
+        Some(_) => ()
+        None => {
+          seen.set(key, true)
+          edges.push(edge)
+        }
+      }
+      i += 1
+    }
+  }
+  edges
+}
+
+///|
+pub fn Polyhedron::array_form(self : Polyhedron) -> Array[Int] {
+  self.current.array_form()
+}
+
+///|
+pub fn Polyhedron::cyclic_form(self : Polyhedron) -> String {
+  self.current.cyclic_form()
+}
+
+///|
+pub fn Polyhedron::rotate(self : Polyhedron, perm : Permutation) -> Polyhedron {
+  let composed = perm.compose(self.current)
+  Polyhedron::{
+    base_corners: self.base_corners,
+    base_faces: self.base_faces,
+    pgroup: self.pgroup,
+    current: composed,
+  }
+}
+
+///|
+pub fn Polyhedron::rotate_by_index(
+  self : Polyhedron,
+  index : Int,
+) -> Polyhedron {
+  if index < 0 || index >= self.pgroup.length() {
+    return self
+  }
+  self.rotate(self.pgroup[index])
+}
+
+///|
+pub fn Polyhedron::reset(self : Polyhedron) -> Polyhedron {
+  Polyhedron::{
+    base_corners: self.base_corners,
+    base_faces: self.base_faces,
+    pgroup: self.pgroup,
+    current: Permutation::identity(self.size()),
+  }
+}
+
+///|
 fn closure(generators : Array[Permutation], degree : Int) -> Array[Permutation] {
   let perms = Array::new()
   let seen : Map[String, Bool] = {}
@@ -1033,4 +1163,875 @@ fn rgs_backtrack(
     next += 1
   }
   result
+}
+
+///|
+pub struct Prufer {
+  seq : Array[Int]
+}
+
+///|
+pub fn Prufer::new(seq : Array[Int]) -> Prufer {
+  Prufer::{ seq, }
+}
+
+///|
+pub fn Prufer::size(self : Prufer) -> Int {
+  self.seq.length() + 2
+}
+
+///|
+pub fn Prufer::nodes(self : Prufer) -> Array[Int] {
+  let n = self.size()
+  let nodes = Array::new()
+  let mut i = 0
+  while i < n {
+    nodes.push(i)
+    i += 1
+  }
+  nodes
+}
+
+///|
+pub fn Prufer::prufer_repr(self : Prufer) -> Array[Int] {
+  self.seq
+}
+
+///|
+pub fn Prufer::tree_repr(self : Prufer) -> Array[(Int, Int)] {
+  self.edges()
+}
+
+///|
+pub fn Prufer::edges(self : Prufer) -> Array[(Int, Int)] {
+  to_tree(self.seq)
+}
+
+///|
+pub fn Prufer::next(self : Prufer, delta? : Int = 1) -> Prufer {
+  let n = self.size()
+  let len = self.seq.length()
+  if len == 0 {
+    return self
+  }
+  let total = pow_int(n, len)
+  let rank = prufer_rank(self.seq, n)
+  let next_rank = (rank + delta) % total
+  Prufer::unrank(next_rank, n)
+}
+
+///|
+pub fn Prufer::prev(self : Prufer, delta? : Int = 1) -> Prufer {
+  let n = self.size()
+  let len = self.seq.length()
+  if len == 0 {
+    return self
+  }
+  let total = pow_int(n, len)
+  let rank = prufer_rank(self.seq, n)
+  let mut new_rank = rank - delta % total
+  if new_rank < 0 {
+    new_rank += total
+  }
+  Prufer::unrank(new_rank, n)
+}
+
+///|
+pub fn Prufer::prufer_rank(self : Prufer) -> Int {
+  prufer_rank(self.seq, self.size())
+}
+
+///|
+pub fn Prufer::rank(self : Prufer) -> Int {
+  self.prufer_rank()
+}
+
+///|
+pub fn Prufer::unrank(rank : Int, n : Int) -> Prufer {
+  let seq = unrank_prufer(rank, n)
+  Prufer::{ seq, }
+}
+
+///|
+pub fn to_tree(seq : Array[Int]) -> Array[(Int, Int)] {
+  let len = seq.length()
+  let n = len + 2
+  if n <= 1 {
+    return Array::new()
+  }
+  let degree = Array::new()
+  let mut i = 0
+  while i < n {
+    degree.push(1)
+    i += 1
+  }
+  for v in seq {
+    if v >= 0 && v < n {
+      degree[v] = degree[v] + 1
+    }
+  }
+  let edges = Array::new()
+  let mut seq_index = 0
+  while seq_index < len {
+    let v = seq[seq_index]
+    let leaf = find_smallest_leaf(degree)
+    let edge = if leaf < v { (leaf, v) } else { (v, leaf) }
+    edges.push(edge)
+    degree[leaf] = degree[leaf] - 1
+    degree[v] = degree[v] - 1
+    seq_index += 1
+  }
+  let mut u = -1
+  let mut w = -1
+  i = 0
+  while i < n {
+    if degree[i] == 1 {
+      if u == -1 {
+        u = i
+      } else {
+        w = i
+        break
+      }
+    }
+    i += 1
+  }
+  if u != -1 && w != -1 {
+    let edge = if u < w { (u, w) } else { (w, u) }
+    edges.push(edge)
+  }
+  edges
+}
+
+///|
+pub fn to_prufer(tree : Array[(Int, Int)], n : Int) -> Array[Int] {
+  if n <= 2 {
+    return Array::new()
+  }
+  let degree = Array::new()
+  let mut i = 0
+  while i < n {
+    degree.push(0)
+    i += 1
+  }
+  for edge in tree {
+    let (a, b) = edge
+    if a >= 0 && a < n && b >= 0 && b < n {
+      degree[a] = degree[a] + 1
+      degree[b] = degree[b] + 1
+    }
+  }
+  let seq = Array::new()
+  let used = Array::new()
+  let mut idx_init = 0
+  while idx_init < tree.length() {
+    used.push(false)
+    idx_init += 1
+  }
+  let mut step = 0
+  while step < n - 2 {
+    let leaf = find_smallest_leaf(degree)
+    let mut neighbor = -1
+    let mut idx = 0
+    while idx < tree.length() {
+      if !used[idx] {
+        let (a, b) = tree[idx]
+        if a == leaf {
+          neighbor = b
+          used[idx] = true
+          break
+        } else if b == leaf {
+          neighbor = a
+          used[idx] = true
+          break
+        }
+      }
+      idx += 1
+    }
+    if neighbor == -1 {
+      break
+    }
+    seq.push(neighbor)
+    degree[leaf] = degree[leaf] - 1
+    degree[neighbor] = degree[neighbor] - 1
+    step += 1
+  }
+  seq
+}
+
+///|
+pub fn nodes_from_edges(tree : Array[(Int, Int)]) -> Int {
+  let seen : Map[Int, Bool] = {}
+  for edge in tree {
+    let (a, b) = edge
+    seen.set(a, true)
+    seen.set(b, true)
+  }
+  seen.length()
+}
+
+///|
+fn find_smallest_leaf(degree : Array[Int]) -> Int {
+  let len = degree.length()
+  let mut i = 0
+  while i < len {
+    if degree[i] == 1 {
+      return i
+    }
+    i += 1
+  }
+  -1
+}
+
+///|
+fn prufer_rank(seq : Array[Int], n : Int) -> Int {
+  let len = seq.length()
+  let mut rank = 0
+  let mut i = 0
+  while i < len {
+    rank = rank * n + seq[i]
+    i += 1
+  }
+  rank
+}
+
+///|
+fn unrank_prufer(rank : Int, n : Int) -> Array[Int] {
+  if n <= 2 {
+    return Array::new()
+  }
+  let len = n - 2
+  let seq = Array::new()
+  let mut value = rank
+  let mut i = 0
+  while i < len {
+    seq.push(0)
+    i += 1
+  }
+  let mut pos = len - 1
+  while pos >= 0 {
+    seq[pos] = value % n
+    value = value / n
+    if pos == 0 {
+      break
+    }
+    pos -= 1
+  }
+  seq
+}
+
+///|
+pub fn sort_edges(edges : Array[(Int, Int)]) -> Array[(Int, Int)] {
+  let len = edges.length()
+  let mut i = 0
+  while i < len {
+    let mut min_index = i
+    let mut j = i + 1
+    while j < len {
+      let (a1, b1) = edges[min_index]
+      let (a2, b2) = edges[j]
+      if a2 < a1 || (a2 == a1 && b2 < b1) {
+        min_index = j
+      }
+      j += 1
+    }
+    if min_index != i {
+      let temp = edges[i]
+      edges[i] = edges[min_index]
+      edges[min_index] = temp
+    }
+    i += 1
+  }
+  edges
+}
+
+///|
+pub struct GrayCode {
+  n : Int
+  rank : Int
+}
+
+///|
+pub fn GrayCode::new(n : Int, start? : Int = 0, rank? : Int = 0) -> GrayCode {
+  let size = if n < 0 { 0 } else { n }
+  let total = pow_int(2, size)
+  let r = if rank != 0 { rank } else { start }
+  let mut rr = r
+  if total > 0 {
+    rr = (rr % total + total) % total
+  }
+  GrayCode::{ n: size, rank: rr }
+}
+
+///|
+pub fn GrayCode::current(self : GrayCode) -> String {
+  let value = self.rank ^ (self.rank >> 1)
+  int_to_bitstring(value, self.n)
+}
+
+///|
+pub fn GrayCode::n(self : GrayCode) -> Int {
+  self.n
+}
+
+///|
+pub fn GrayCode::selections(self : GrayCode) -> Int {
+  self.n
+}
+
+///|
+pub fn GrayCode::next(self : GrayCode, delta? : Int = 1) -> GrayCode {
+  if self.n == 0 {
+    return self
+  }
+  let total = pow_int(2, self.n)
+  let mut r = (self.rank + delta) % total
+  if r < 0 {
+    r += total
+  }
+  GrayCode::{ n: self.n, rank: r }
+}
+
+///|
+pub fn GrayCode::skip(self : GrayCode, delta? : Int = 1) -> GrayCode {
+  self.next(delta~)
+}
+
+///|
+pub fn GrayCode::rank(self : GrayCode) -> Int {
+  self.rank
+}
+
+///|
+pub fn GrayCode::unrank(n : Int, rank : Int) -> GrayCode {
+  GrayCode::new(n, rank~)
+}
+
+///|
+pub fn generate_gray(n : Int, start? : Int = 0) -> Array[String] {
+  let size = if n < 0 { 0 } else { n }
+  let total = pow_int(2, size)
+  let mut r = start
+  if total > 0 {
+    r = (r % total + total) % total
+  }
+  let codes = Array::new()
+  let mut i = 0
+  while i < total {
+    let gc = GrayCode::new(size, rank=r + i)
+    codes.push(gc.current())
+    i += 1
+  }
+  codes
+}
+
+///|
+pub fn random_bitstring(n : Int, seed? : Int = 0) -> String {
+  if n <= 0 {
+    return ""
+  }
+  let mut state = if seed != 0 { seed } else { n * 7919 + 11 }
+  if state < 0 {
+    state = -state
+  }
+  let mut i = 0
+  let mut bits = ""
+  while i < n {
+    state = (state * 1103515245 + 12345) & 0x7fffffff
+    let bit = state % 2
+    bits = bits + bit.to_string()
+    i += 1
+  }
+  bits
+}
+
+///|
+pub fn bin_to_gray(bitstring : String) -> String {
+  let n = bitstring.length()
+  if n == 0 {
+    return ""
+  }
+  let mut result = ""
+  let mut i = 0
+  while i < n {
+    let b = if bitstring.code_unit_at(i) == '1' { 1 } else { 0 }
+    let prev = if i == 0 {
+      0
+    } else if bitstring.code_unit_at(i - 1) == '1' {
+      1
+    } else {
+      0
+    }
+    let g = b ^ prev
+    result = result + g.to_string()
+    i += 1
+  }
+  result
+}
+
+///|
+pub fn gray_to_bin(bitstring : String) -> String {
+  let n = bitstring.length()
+  if n == 0 {
+    return ""
+  }
+  let mut result = ""
+  let mut current = 0
+  let mut i = 0
+  while i < n {
+    let g = if bitstring.code_unit_at(i) == '1' { 1 } else { 0 }
+    current = current ^ g
+    result = result + current.to_string()
+    i += 1
+  }
+  result
+}
+
+///|
+pub fn get_subset_from_bitstring(
+  items : Array[Int],
+  bitstring : String,
+) -> Array[Int] {
+  let subset = Array::new()
+  let len = bitstring.length()
+  let mut i = 0
+  while i < len && i < items.length() {
+    if bitstring.code_unit_at(i) == '1' {
+      subset.push(items[i])
+    }
+    i += 1
+  }
+  subset
+}
+
+///|
+pub fn graycode_subsets(items : Array[Int]) -> Array[Array[Int]] {
+  let n = items.length()
+  let codes = generate_gray(n)
+  let subsets = Array::new()
+  for code in codes {
+    subsets.push(get_subset_from_bitstring(items, code))
+  }
+  subsets
+}
+
+///|
+fn int_to_bitstring(value : Int, width : Int) -> String {
+  if width <= 0 {
+    return ""
+  }
+  let bits = Array::new()
+  let mut i = 0
+  while i < width {
+    bits.push('0')
+    i += 1
+  }
+  let mut v = value
+  i = width - 1
+  while i >= 0 {
+    let bit = v % 2
+    bits[i] = if bit == 0 { '0' } else { '1' }
+    v = v / 2
+    if i == 0 {
+      break
+    }
+    i -= 1
+  }
+  let mut s = ""
+  i = 0
+  while i < width {
+    s = s + bits[i].to_string()
+    i += 1
+  }
+  s
+}
+
+///|
+pub struct Subset {
+  subset : Array[Int]
+  superset : Array[Int]
+}
+
+///|
+pub fn Subset::new(subset : Array[Int], superset : Array[Int]) -> Subset {
+  let filtered = Array::new()
+  for v in subset {
+    let mut found = false
+    for s in superset {
+      if s == v {
+        found = true
+        break
+      }
+    }
+    if found {
+      filtered.push(v)
+    }
+  }
+  Subset::{ subset: filtered, superset }
+}
+
+///|
+pub fn Subset::subset(self : Subset) -> Array[Int] {
+  self.subset
+}
+
+///|
+pub fn Subset::superset(self : Subset) -> Array[Int] {
+  self.superset
+}
+
+///|
+pub fn Subset::size(self : Subset) -> Int {
+  self.subset.length()
+}
+
+///|
+pub fn Subset::superset_size(self : Subset) -> Int {
+  self.superset.length()
+}
+
+///|
+pub fn Subset::cardinality(self : Subset) -> Int {
+  self.size()
+}
+
+///|
+pub fn bitlist_from_subset(
+  subset : Array[Int],
+  superset : Array[Int],
+) -> String {
+  let mut bits = ""
+  let n = superset.length()
+  let mut i = 0
+  while i < n {
+    let v = superset[i]
+    let mut found = false
+    for s in subset {
+      if s == v {
+        found = true
+        break
+      }
+    }
+    let bit = if found { "1" } else { "0" }
+    bits = bits + bit
+    i += 1
+  }
+  bits
+}
+
+///|
+pub fn subset_from_bitlist(
+  superset : Array[Int],
+  bitlist : String,
+) -> Array[Int] {
+  let subset = Array::new()
+  let n = superset.length()
+  let len = bitlist.length()
+  let mut i = 0
+  while i < n && i < len {
+    if bitlist.code_unit_at(i) == '1' {
+      subset.push(superset[i])
+    }
+    i += 1
+  }
+  subset
+}
+
+///|
+pub fn subset_indices(subset : Array[Int], superset : Array[Int]) -> Array[Int] {
+  let idx = Array::new()
+  let n = superset.length()
+  let mut i = 0
+  while i < n {
+    for v in subset {
+      if v == superset[i] {
+        idx.push(i)
+        break
+      }
+    }
+    i += 1
+  }
+  idx
+}
+
+///|
+pub fn iterate_binary(superset : Array[Int]) -> Array[Array[Int]] {
+  let n = superset.length()
+  let total = pow_int(2, n)
+  let subsets = Array::new()
+  let mut rank = 0
+  while rank < total {
+    subsets.push(unrank_binary(rank, superset))
+    rank += 1
+  }
+  subsets
+}
+
+///|
+pub fn iterate_graycode(superset : Array[Int]) -> Array[Array[Int]] {
+  let n = superset.length()
+  let codes = generate_gray(n)
+  let subsets = Array::new()
+  for code in codes {
+    subsets.push(subset_from_bitlist(superset, code))
+  }
+  subsets
+}
+
+///|
+pub fn next_binary(
+  subset : Array[Int],
+  superset : Array[Int],
+  delta? : Int = 1,
+) -> Array[Int] {
+  let n = superset.length()
+  let total = pow_int(2, n)
+  let rank = rank_binary(subset, superset)
+  let mut r = (rank + delta) % total
+  if r < 0 {
+    r += total
+  }
+  unrank_binary(r, superset)
+}
+
+///|
+pub fn prev_binary(
+  subset : Array[Int],
+  superset : Array[Int],
+  delta? : Int = 1,
+) -> Array[Int] {
+  next_binary(subset, superset, delta=-delta)
+}
+
+///|
+pub fn next_gray(
+  subset : Array[Int],
+  superset : Array[Int],
+  delta? : Int = 1,
+) -> Array[Int] {
+  let n = superset.length()
+  let total = pow_int(2, n)
+  let rank = rank_gray(subset, superset)
+  let mut r = (rank + delta) % total
+  if r < 0 {
+    r += total
+  }
+  unrank_gray(r, superset)
+}
+
+///|
+pub fn prev_gray(
+  subset : Array[Int],
+  superset : Array[Int],
+  delta? : Int = 1,
+) -> Array[Int] {
+  next_gray(subset, superset, delta=-delta)
+}
+
+///|
+pub fn rank_binary(subset : Array[Int], superset : Array[Int]) -> Int {
+  let bits = bitlist_from_subset(subset, superset)
+  bitstring_to_int(bits)
+}
+
+///|
+pub fn unrank_binary(rank : Int, superset : Array[Int]) -> Array[Int] {
+  let n = superset.length()
+  let bitstring = int_to_bitstring(rank, n)
+  subset_from_bitlist(superset, bitstring)
+}
+
+///|
+pub fn rank_gray(subset : Array[Int], superset : Array[Int]) -> Int {
+  let rank_b = rank_binary(subset, superset)
+  rank_b ^ (rank_b >> 1)
+}
+
+///|
+pub fn unrank_gray(rank : Int, superset : Array[Int]) -> Array[Int] {
+  let n = superset.length()
+  let bin_value = gray_to_binary_int(rank, n)
+  unrank_binary(bin_value, superset)
+}
+
+///|
+pub fn rank_lexicographic(subset : Array[Int], superset : Array[Int]) -> Int {
+  rank_binary(subset, superset)
+}
+
+///|
+pub fn unrank_lexicographic(rank : Int, superset : Array[Int]) -> Array[Int] {
+  unrank_binary(rank, superset)
+}
+
+///|
+pub fn bitlist_to_int(bitstring : String) -> Int {
+  bitstring_to_int(bitstring)
+}
+
+///|
+fn bitstring_to_int(bits : String) -> Int {
+  let len = bits.length()
+  let mut value = 0
+  let mut i = 0
+  while i < len {
+    let bit = if bits.code_unit_at(i) == '1' { 1 } else { 0 }
+    value = value * 2 + bit
+    i += 1
+  }
+  value
+}
+
+///|
+fn gray_to_binary_int(gray : Int, width : Int) -> Int {
+  if width <= 0 {
+    return 0
+  }
+  let mut result = 0
+  let mut mask = gray
+  while mask > 0 {
+    result = result ^ mask
+    mask = mask >> 1
+  }
+  result
+}
+
+///|
+pub fn cycle_length(
+  f : (Int) -> Int,
+  x0 : Int,
+  nmax? : Int = -1,
+  values? : Bool = false,
+) -> Int {
+  let _ = values
+  let mut tortoise = f(x0)
+  let mut hare = f(f(x0))
+  let mut steps = 0
+  while tortoise != hare {
+    if nmax > 0 && steps >= nmax {
+      return 0
+    }
+    tortoise = f(tortoise)
+    hare = f(f(hare))
+    steps += 1
+  }
+  tortoise = x0
+  while tortoise != hare {
+    tortoise = f(tortoise)
+    hare = f(hare)
+  }
+  let mut lam = 1
+  hare = f(tortoise)
+  while tortoise != hare {
+    hare = f(hare)
+    lam += 1
+  }
+  lam
+}
+
+///|
+pub fn ksubsets(iterable : Array[Int], k : Int) -> Array[Array[Int]] {
+  let len = iterable.length()
+  if k < 0 || k > len {
+    return Array::new()
+  }
+  let result = Array::new()
+  let current = Array::new()
+  ksubsets_backtrack(iterable, k, 0, current, result)
+}
+
+///|
+fn ksubsets_backtrack(
+  iterable : Array[Int],
+  k : Int,
+  start : Int,
+  current : Array[Int],
+  acc : Array[Array[Int]],
+) -> Array[Array[Int]] {
+  if current.length() == k {
+    let base = acc
+    base.push(current)
+    return base
+  }
+  let len = iterable.length()
+  let mut acc_mut = acc
+  let mut i = start
+  while i < len {
+    let next = current.copy()
+    next.push(iterable[i])
+    acc_mut = ksubsets_backtrack(iterable, k, i + 1, next, acc_mut)
+    i += 1
+  }
+  acc_mut
+}
+
+///|
+pub fn symmetric_group(n : Int) -> PermutationGroup {
+  if n <= 0 {
+    return PermutationGroup::new([])
+  }
+  let gens : Array[Permutation] = Array::new()
+  let mut i = 0
+  while i + 1 < n {
+    let mapping : Array[Int] = Array::new()
+    let mut j = 0
+    while j < n {
+      mapping.push(j)
+      j += 1
+    }
+    let temp = mapping[i]
+    mapping[i] = mapping[i + 1]
+    mapping[i + 1] = temp
+    gens.push(Permutation::new(mapping))
+    i += 1
+  }
+  PermutationGroup::new(gens)
+}
+
+///|
+pub fn cyclic_group(n : Int) -> PermutationGroup {
+  if n <= 0 {
+    return PermutationGroup::new([])
+  }
+  let mapping : Array[Int] = Array::new()
+  let mut i = 0
+  while i < n {
+    mapping.push((i + 1) % n)
+    i += 1
+  }
+  let gen = Permutation::new(mapping)
+  PermutationGroup::new([gen])
+}
+
+///|
+pub fn dihedral_group(n : Int) -> PermutationGroup {
+  if n <= 0 {
+    return PermutationGroup::new([])
+  }
+  let rotation : Array[Int] = Array::new()
+  let reflection : Array[Int] = Array::new()
+  let mut i = 0
+  while i < n {
+    rotation.push((i + 1) % n)
+    reflection.push(n - 1 - i)
+    i += 1
+  }
+  let rot = Permutation::new(rotation)
+  let refp = Permutation::new(reflection)
+  PermutationGroup::new([rot, refp])
+}
+
+///|
+pub fn alternating_group(n : Int) -> PermutationGroup {
+  if n <= 0 {
+    return PermutationGroup::new([])
+  }
+  let sym = symmetric_group(n)
+  let all = closure(sym.generators, n)
+  let evens : Array[Permutation] = Array::new()
+  for p in all {
+    if p.parity() == 1 {
+      evens.push(p)
+    }
+  }
+  PermutationGroup::new(evens)
 }
