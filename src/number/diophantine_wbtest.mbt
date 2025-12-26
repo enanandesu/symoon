@@ -26,3 +26,14 @@ test "pythagorean triples generator yields primitive triples" {
   assert_eq(triples[0], (3, 4, 5))
   assert_eq(triples[1], (5, 12, 13))
 }
+
+///|
+test "diophantine_linear handles no-solution cases" {
+  assert_eq(diophantine_linear(4, 6, 5), (0, 0, 0, 0))
+  assert_eq(diophantine_linear(0, 0, 0), (0, 0, 0, 0))
+}
+
+///|
+test "pythagorean_triples handles zero count" {
+  assert_eq(pythagorean_triples(0).length(), 0)
+}

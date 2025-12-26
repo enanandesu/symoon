@@ -345,3 +345,9 @@ test "cycle length returns a positive value" {
   let len = cycle_length(f, 2)
   assert_eq(len > 0, true)
 }
+
+///|
+test "random_bitstring deterministic with seed" {
+  let bits = random_bitstring(5, seed=1)
+  assert_eq(bits, "01010")
+}

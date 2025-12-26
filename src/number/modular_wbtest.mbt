@@ -99,3 +99,16 @@ test "solve_congruence normalizes residues and negatives" {
   let (x2, m2) = solve_congruence([(4, 5), (4, 10)])
   assert_eq((x2, m2), (4, 10))
 }
+
+///|
+test "additional modular roots and logs" {
+  assert_eq(sqrt_mod(10, 13), [6, 7])
+  assert_eq(nthroot_mod(3, 1, 11), [3])
+  assert_eq(nthroot_mod(2, 2, 8).length(), 0)
+  assert_eq(discrete_log(11, 2, 9, order=10), 6)
+}
+
+///|
+test "solve_congruence handles empty input" {
+  assert_eq(solve_congruence([]), (0, 0))
+}

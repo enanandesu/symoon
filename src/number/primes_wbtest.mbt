@@ -126,3 +126,12 @@ test "sieve basic usage" {
   let plist = s.primerange(2, 15)
   assert_eq(plist, [2, 3, 5, 7, 11, 13])
 }
+
+///|
+test "prime edge cases" {
+  assert_eq(nt_prime_pi(-5), 0)
+  assert_eq(nt_next_prime(0), 2)
+  assert_eq(nt_prev_prime(1), 0)
+  let primes = nt_primes_up_to(2)
+  assert_eq(primes, [2])
+}

@@ -154,3 +154,13 @@ test "carmichael function computes lambda" {
   assert_eq(carmichael(21), 6)
   assert_eq(carmichael(0), 0)
 }
+
+///|
+test "prime divisors and sigma powers" {
+  assert_eq(nt_divisors(13), [1, 13])
+  assert_eq(nt_divisor_count(13), 2)
+  assert_eq(nt_divisor_sigma(13), 14)
+  assert_eq(nt_divisor_sigma(13, power=0), 2)
+  assert_eq(nt_multiplicity(1, 10), 0)
+  assert_eq(totient(13), 12)
+}

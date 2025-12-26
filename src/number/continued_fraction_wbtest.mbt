@@ -15,3 +15,11 @@ test "continued fraction helpers" {
   let reduced = continued_fraction_reduce([0, 2, 1, 2])
   assert_eq(reduced, (3, 8))
 }
+
+///|
+test "continued fraction with negative rational" {
+  let cf = continued_fraction_iterator(-10, d=7)
+  assert_eq(cf, [-2, 1, 1, 3])
+  let reduced = continued_fraction_reduce(cf)
+  assert_eq(reduced, (-10, 7))
+}

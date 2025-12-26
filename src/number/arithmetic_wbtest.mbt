@@ -30,3 +30,17 @@ test "gcdex alias matches nt_gcd_ex" {
   let (x, y, g) = gcdex(12, 18)
   assert_eq((x, y, g), (-1, 1, 6))
 }
+
+///|
+test "nt_gcd and lcm handle zero and larger values" {
+  assert_eq(nt_gcd(0, 0), 0)
+  assert_eq(nt_gcd(123456, 789012), 12)
+  assert_eq(nt_lcm(21, 6), 42)
+}
+
+///|
+test "nt_gcd_ex handles larger inputs" {
+  let (x, y, g) = nt_gcd_ex(123456, 789012)
+  assert_eq(123456 * x + 789012 * y, g)
+  assert_eq(g, 12)
+}

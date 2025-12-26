@@ -17,3 +17,10 @@ test "nt_is_divisible_by_all_and_any handle collections" {
   assert_eq(nt_is_divisible_by_any(25, [2, 4]), false)
   assert_eq(nt_is_divisible_by_any(10, []), false)
 }
+
+///|
+test "nt_is_divisible_by works with negatives in collections" {
+  assert_eq(nt_is_divisible_by_all(-30, [2, 3, 5]), true)
+  assert_eq(nt_is_divisible_by_any(0, [2, 3]), true)
+  assert_eq(nt_is_divisible_by_any(-25, [6, 7]), false)
+}

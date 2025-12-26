@@ -9,3 +9,9 @@ test "fibonacci and lucas sequences" {
   assert_eq(fibonacci(-1), 0)
   assert_eq(lucas(-1), 0)
 }
+
+///|
+test "fibonacci and lucas larger values" {
+  assert_eq(fibonacci(20), 6765)
+  assert_eq(lucas(20), 15127)
+}
