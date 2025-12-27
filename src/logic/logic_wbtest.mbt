@@ -269,7 +269,7 @@ test "logic_to_nnf_cnf_dnf and shape checks" {
   let z = logic_symbol("z")
   let expr = logic_and([
     logic_or([x.copy(), y.copy()]),
-    logic_implies(z.copy(), x.copy()),
+    logic_or([z.copy(), logic_and([x.copy(), y.copy()])]),
   ])
   let cnf = logic_to_cnf(expr.copy())
   let dnf = logic_to_dnf(expr.copy())
@@ -279,10 +279,76 @@ test "logic_to_nnf_cnf_dnf and shape checks" {
   assert_equivalent(nnf.copy(), expr.copy())
   assert_eq(logic_is_cnf(cnf), true)
   assert_eq(logic_is_dnf(dnf), true)
+  assert_eq(logic_is_nnf(nnf), true)
   assert_eq(logic_is_cnf(dnf), false)
   assert_eq(logic_is_dnf(cnf), false)
   assert_eq(logic_is_cnf(nnf), false)
-  assert_eq(logic_is_dnf(nnf), true)
+  assert_eq(logic_is_dnf(nnf), false)
+}
+
+///|
+test "logic_to_anf produces algebraic normal form" {
+  let a = logic_symbol("A")
+  let b = logic_symbol("B")
+  let c = logic_symbol("C")
+  let expr = logic_equivalent(
+    logic_or([a.copy(), logic_not(b.copy())]),
+    logic_xor([b.copy(), c.copy()]),
+  )
+  let anf = logic_to_anf(expr.copy())
+  assert_equivalent(anf.copy(), expr.copy())
+  assert_eq(logic_is_anf(anf), true)
+  let anf_alias = to_anf(expr.copy())
+  assert_eq(anf_alias, anf)
+  assert_eq(is_anf(anf_alias), true)
+  assert_eq(logic_is_anf(expr), false)
+  assert_eq(logic_is_anf(logic_not(a.copy())), true)
+}
+
+///|
+test "logic_is_nnf respects simplified flag" {
+  let nested = LogicExpr::And([
+    logic_symbol("A"),
+    LogicExpr::And([logic_symbol("B"), logic_symbol("C")]),
+  ])
+  assert_eq(logic_is_nnf(nested, simplified=false), true)
+  assert_eq(logic_is_nnf(nested, simplified=true), false)
+  let flattened = logic_normalize(nested.copy())
+  assert_eq(logic_is_nnf(flattened, simplified=true), true)
+  let nnf = to_nnf(logic_implies(logic_symbol("P"), logic_symbol("Q")))
+  assert_eq(is_nnf(nnf), true)
+}
+
+///|
+test "logic_gate_input_count tallies circuit inputs" {
+  let a = logic_symbol("A")
+  let b = logic_symbol("B")
+  let c = logic_symbol("C")
+  let d = logic_symbol("D")
+  let expr = logic_ite(
+    logic_and([a.copy(), b.copy()]),
+    logic_or([c.copy(), logic_not(d.copy())]),
+    logic_xor([a.copy(), c.copy(), logic_not(b.copy())]),
+  )
+  assert_eq(logic_gate_input_count(expr.copy()), 12)
+  assert_eq(gateinputcount(expr), 12)
+}
+
+///|
+test "normal form alias helpers match logic checks" {
+  let expr = logic_implies(logic_symbol("A"), logic_not(logic_symbol("B")))
+  let cnf = to_cnf(expr.copy())
+  let dnf = to_dnf(expr.copy())
+  let nnf = to_nnf(expr.copy(), simplify=true)
+  let anf = to_anf(expr.copy())
+  assert_equivalent(cnf.copy(), expr.copy())
+  assert_equivalent(dnf.copy(), expr.copy())
+  assert_equivalent(nnf.copy(), expr.copy())
+  assert_equivalent(anf.copy(), expr.copy())
+  assert_eq(is_cnf(cnf), true)
+  assert_eq(is_dnf(dnf), true)
+  assert_eq(is_nnf(nnf), true)
+  assert_eq(is_anf(anf), true)
 }
 
 ///|

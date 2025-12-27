@@ -282,6 +282,94 @@ pub fn logic_collect_subexpressions(expr : LogicExpr) -> Array[LogicExpr] {
 }
 
 ///|
+pub fn logic_to_anf(expr : LogicExpr) -> LogicExpr {
+  let normalized = logic_normalize(expr)
+  let variables = logic_collect_variables(normalized.copy())
+  let variable_count = variables.length()
+  let total = pow_two(variable_count)
+  let values = Array::new(capacity=total)
+  let symbols = Array::new(capacity=variable_count)
+  for name in variables {
+    symbols.push(logic_symbol(name))
+  }
+  let mut index = 0
+  while index < total {
+    let assignment = assignment_from_index(index, variable_count)
+    let env = Array::new(capacity=variable_count)
+    let mut i = 0
+    while i < variable_count {
+      env.push((variables[i], assignment[i]))
+      i += 1
+    }
+    let value = match logic_eval(normalized.copy(), env) {
+      Some(true) => true
+      _ => false
+    }
+    values.push(value)
+    index += 1
+  }
+  let coeffs = anf_coefficients_from_values(values, variable_count)
+  let terms = Array::new()
+  let mut mask = 0
+  while mask < total {
+    if coeffs[mask] {
+      terms.push(anf_term_from_mask(symbols, mask))
+    }
+    mask += 1
+  }
+  if terms.length() == 0 {
+    logic_false()
+  } else if terms.length() == 1 {
+    terms[0]
+  } else {
+    logic_xor(terms)
+  }
+}
+
+///|
+fn anf_coefficients_from_values(
+  values : Array[Bool],
+  variable_count : Int,
+) -> Array[Bool] {
+  let coeffs = values
+  let total = coeffs.length()
+  let mut i = 0
+  while i < variable_count {
+    let bit = 1 << i
+    let mut mask = 0
+    while mask < total {
+      if (mask & bit) != 0 {
+        coeffs[mask] = coeffs[mask] != coeffs[mask ^ bit]
+      }
+      mask += 1
+    }
+    i += 1
+  }
+  coeffs
+}
+
+///|
+fn anf_term_from_mask(symbols : Array[LogicExpr], mask : Int) -> LogicExpr {
+  if mask == 0 {
+    return logic_true()
+  }
+  let factors = Array::new()
+  let len = symbols.length()
+  let mut i = 0
+  while i < len {
+    if (mask & (1 << i)) != 0 {
+      factors.push(symbols[i].copy())
+    }
+    i += 1
+  }
+  if factors.length() == 1 {
+    factors[0]
+  } else {
+    logic_and(factors)
+  }
+}
+
+///|
 pub fn logic_to_dnf(expr : LogicExpr) -> LogicExpr {
   let normalized = logic_normalize(expr)
   let variables = logic_collect_variables(normalized.copy())
@@ -307,9 +395,14 @@ pub fn logic_to_dnf(expr : LogicExpr) -> LogicExpr {
 }
 
 ///|
-pub fn logic_to_nnf(expr : LogicExpr) -> LogicExpr {
-  // DNF output contains only Bool/Symbol/And/Or/Not(Symbol), which is NNF.
-  logic_to_dnf(expr)
+pub fn logic_to_nnf(expr : LogicExpr, simplify? : Bool = true) -> LogicExpr {
+  let normalized = logic_normalize(expr)
+  let nnf = logic_to_nnf_internal(normalized, false, simplify)
+  if simplify {
+    logic_normalize(nnf)
+  } else {
+    nnf
+  }
 }
 
 ///|
@@ -344,6 +437,142 @@ pub fn logic_to_cnf(expr : LogicExpr) -> LogicExpr {
   } else {
     logic_and(clauses)
   }
+}
+
+///|
+fn logic_to_nnf_internal(
+  expr : LogicExpr,
+  negate : Bool,
+  simplify : Bool,
+) -> LogicExpr {
+  match expr {
+    Bool(value) => LogicExpr::Bool(if negate { !value } else { value })
+    Symbol(name) => {
+      let symbol = LogicExpr::Symbol(name)
+      if negate {
+        if simplify {
+          logic_not_canonical(symbol)
+        } else {
+          LogicExpr::Not(symbol)
+        }
+      } else {
+        symbol
+      }
+    }
+    Not(inner) => logic_to_nnf_internal(inner, !negate, simplify)
+    And(terms) => {
+      let mapped = nnf_map_terms(terms, negate, simplify)
+      if negate {
+        nnf_build_or(mapped, simplify)
+      } else {
+        nnf_build_and(mapped, simplify)
+      }
+    }
+    Or(terms) => {
+      let mapped = nnf_map_terms(terms, negate, simplify)
+      if negate {
+        nnf_build_and(mapped, simplify)
+      } else {
+        nnf_build_or(mapped, simplify)
+      }
+    }
+    Xor(terms) => {
+      let expanded = xor_expand_terms(terms)
+      logic_to_nnf_internal(expanded, negate, simplify)
+    }
+    Implies(lhs, rhs) => {
+      let expanded = LogicExpr::Or([LogicExpr::Not(lhs), rhs])
+      logic_to_nnf_internal(expanded, negate, simplify)
+    }
+    Equivalent(lhs, rhs) => {
+      let lhs_copy = lhs.copy()
+      let rhs_copy = rhs.copy()
+      let expanded = LogicExpr::Or([
+        LogicExpr::And([lhs_copy, rhs_copy]),
+        LogicExpr::And([LogicExpr::Not(lhs), LogicExpr::Not(rhs)]),
+      ])
+      logic_to_nnf_internal(expanded, negate, simplify)
+    }
+    Ite(condition, then_branch, else_branch) => {
+      let cond_copy = condition.copy()
+      let expanded = LogicExpr::Or([
+        LogicExpr::And([cond_copy, then_branch]),
+        LogicExpr::And([LogicExpr::Not(condition), else_branch]),
+      ])
+      logic_to_nnf_internal(expanded, negate, simplify)
+    }
+  }
+}
+
+///|
+fn nnf_map_terms(
+  terms : Array[LogicExpr],
+  negate : Bool,
+  simplify : Bool,
+) -> Array[LogicExpr] {
+  let len = terms.length()
+  let mapped = Array::new(capacity=len)
+  let mut i = 0
+  while i < len {
+    mapped.push(logic_to_nnf_internal(terms[i], negate, simplify))
+    i += 1
+  }
+  mapped
+}
+
+///|
+fn nnf_build_and(terms : Array[LogicExpr], simplify : Bool) -> LogicExpr {
+  if simplify {
+    logic_and(terms)
+  } else {
+    let len = terms.length()
+    if len == 0 {
+      LogicExpr::Bool(true)
+    } else if len == 1 {
+      terms[0]
+    } else {
+      LogicExpr::And(terms)
+    }
+  }
+}
+
+///|
+fn nnf_build_or(terms : Array[LogicExpr], simplify : Bool) -> LogicExpr {
+  if simplify {
+    logic_or(terms)
+  } else {
+    let len = terms.length()
+    if len == 0 {
+      LogicExpr::Bool(false)
+    } else if len == 1 {
+      terms[0]
+    } else {
+      LogicExpr::Or(terms)
+    }
+  }
+}
+
+///|
+fn xor_expand_terms(terms : Array[LogicExpr]) -> LogicExpr {
+  let len = terms.length()
+  if len == 0 {
+    return LogicExpr::Bool(false)
+  }
+  let mut acc = terms[0].copy()
+  let mut i = 1
+  while i < len {
+    acc = xor_expand_binary(acc, terms[i].copy())
+    i += 1
+  }
+  acc
+}
+
+///|
+fn xor_expand_binary(lhs : LogicExpr, rhs : LogicExpr) -> LogicExpr {
+  LogicExpr::Or([
+    LogicExpr::And([lhs.copy(), LogicExpr::Not(rhs.copy())]),
+    LogicExpr::And([LogicExpr::Not(lhs), rhs]),
+  ])
 }
 
 ///|
@@ -442,6 +671,47 @@ pub fn logic_op_count(expr : LogicExpr) -> Int {
 }
 
 ///|
+pub fn logic_gate_input_count(expr : LogicExpr) -> Int {
+  logic_gate_input_count_internal(logic_normalize(expr))
+}
+
+///|
+fn logic_gate_input_count_internal(expr : LogicExpr) -> Int {
+  match expr {
+    Bool(_) => 0
+    Symbol(_) => 0
+    Not(inner) => 1 + logic_gate_input_count_internal(inner)
+    And(terms) => terms.length() + gate_input_count_terms(terms)
+    Or(terms) => terms.length() + gate_input_count_terms(terms)
+    Xor(terms) => terms.length() + gate_input_count_terms(terms)
+    Ite(condition, then_branch, else_branch) => {
+      let mut total = 3
+      total += logic_gate_input_count_internal(condition)
+      total += logic_gate_input_count_internal(then_branch)
+      total += logic_gate_input_count_internal(else_branch)
+      total
+    }
+    Implies(lhs, rhs) =>
+      2 +
+      logic_gate_input_count_internal(lhs) +
+      logic_gate_input_count_internal(rhs)
+    Equivalent(lhs, rhs) =>
+      2 +
+      logic_gate_input_count_internal(lhs) +
+      logic_gate_input_count_internal(rhs)
+  }
+}
+
+///|
+fn gate_input_count_terms(terms : Array[LogicExpr]) -> Int {
+  let mut total = 0
+  for term in terms {
+    total += logic_gate_input_count_internal(term)
+  }
+  total
+}
+
+///|
 pub fn logic_is_literal(expr : LogicExpr) -> Bool {
   match expr {
     Bool(_) => true
@@ -492,6 +762,97 @@ pub fn logic_is_dnf(expr : LogicExpr) -> Bool {
 }
 
 ///|
+pub fn logic_is_nnf(expr : LogicExpr, simplified? : Bool = true) -> Bool {
+  if !logic_is_nnf_internal(expr) {
+    return false
+  }
+  if simplified {
+    let normalized = logic_normalize(expr.copy())
+    normalized == expr
+  } else {
+    true
+  }
+}
+
+///|
+fn logic_is_nnf_internal(expr : LogicExpr) -> Bool {
+  match expr {
+    Bool(_) => true
+    Symbol(_) => true
+    Not(inner) =>
+      match inner {
+        Bool(_) => true
+        Symbol(_) => true
+        _ => false
+      }
+    And(terms) => {
+      for term in terms {
+        if !logic_is_nnf_internal(term) {
+          return false
+        }
+      }
+      true
+    }
+    Or(terms) => {
+      for term in terms {
+        if !logic_is_nnf_internal(term) {
+          return false
+        }
+      }
+      true
+    }
+    _ => false
+  }
+}
+
+///|
+pub fn logic_is_anf(expr : LogicExpr) -> Bool {
+  match expr {
+    Not(inner) => logic_is_anf_core(inner)
+    _ => logic_is_anf_core(expr)
+  }
+}
+
+///|
+fn logic_is_anf_core(expr : LogicExpr) -> Bool {
+  match expr {
+    Bool(_) => true
+    Symbol(_) => true
+    And(terms) => logic_is_anf_monomial_terms(terms)
+    Xor(terms) => {
+      for term in terms {
+        if !logic_is_anf_monomial(term) {
+          return false
+        }
+      }
+      true
+    }
+    _ => false
+  }
+}
+
+///|
+fn logic_is_anf_monomial(expr : LogicExpr) -> Bool {
+  match expr {
+    Bool(_) => true
+    Symbol(_) => true
+    And(terms) => logic_is_anf_monomial_terms(terms)
+    _ => false
+  }
+}
+
+///|
+fn logic_is_anf_monomial_terms(terms : Array[LogicExpr]) -> Bool {
+  for term in terms {
+    match term {
+      Symbol(_) => ()
+      _ => return false
+    }
+  }
+  true
+}
+
+///|
 fn logic_is_clause(expr : LogicExpr) -> Bool {
   match expr {
     Or(terms) => {
@@ -519,6 +880,61 @@ fn logic_is_conjunction_of_literals(expr : LogicExpr) -> Bool {
     }
     _ => logic_is_literal(expr)
   }
+}
+
+///|
+pub fn to_anf(expr : LogicExpr) -> LogicExpr {
+  logic_to_anf(expr)
+}
+
+///|
+pub fn to_cnf(expr : LogicExpr, simplify? : Bool = false) -> LogicExpr {
+  let result = logic_to_cnf(expr)
+  if simplify {
+    logic_normalize(result)
+  } else {
+    result
+  }
+}
+
+///|
+pub fn to_dnf(expr : LogicExpr, simplify? : Bool = false) -> LogicExpr {
+  let result = logic_to_dnf(expr)
+  if simplify {
+    logic_normalize(result)
+  } else {
+    result
+  }
+}
+
+///|
+pub fn to_nnf(expr : LogicExpr, simplify? : Bool = true) -> LogicExpr {
+  logic_to_nnf(expr, simplify~)
+}
+
+///|
+pub fn is_anf(expr : LogicExpr) -> Bool {
+  logic_is_anf(expr)
+}
+
+///|
+pub fn is_cnf(expr : LogicExpr) -> Bool {
+  logic_is_cnf(expr)
+}
+
+///|
+pub fn is_dnf(expr : LogicExpr) -> Bool {
+  logic_is_dnf(expr)
+}
+
+///|
+pub fn is_nnf(expr : LogicExpr, simplified? : Bool = true) -> Bool {
+  logic_is_nnf(expr, simplified~)
+}
+
+///|
+pub fn gateinputcount(expr : LogicExpr) -> Int {
+  logic_gate_input_count(expr)
 }
 
 ///|

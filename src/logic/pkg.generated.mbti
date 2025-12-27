@@ -46,6 +46,16 @@ pub fn gate_xnor(Array[Bool]) -> Bool
 
 pub fn gate_xor(Array[Bool]) -> Bool
 
+pub fn gateinputcount(LogicExpr) -> Int
+
+pub fn is_anf(LogicExpr) -> Bool
+
+pub fn is_cnf(LogicExpr) -> Bool
+
+pub fn is_dnf(LogicExpr) -> Bool
+
+pub fn is_nnf(LogicExpr, simplified? : Bool) -> Bool
+
 pub fn logic_all_satisfying_assignments(LogicExpr, variables? : Array[String]) -> Array[Array[(String, Bool)]]
 
 pub fn logic_and(Array[LogicExpr]) -> LogicExpr
@@ -90,6 +100,8 @@ pub fn logic_full_adder(LogicExpr, LogicExpr, LogicExpr) -> (LogicExpr, LogicExp
 
 pub fn logic_func(LogicExpr) -> String
 
+pub fn logic_gate_input_count(LogicExpr) -> Int
+
 pub fn logic_gate_model() -> LogicExpr
 
 pub fn logic_half_adder(LogicExpr, LogicExpr) -> (LogicExpr, LogicExpr)
@@ -98,11 +110,15 @@ pub fn logic_implies(LogicExpr, LogicExpr) -> LogicExpr
 
 pub fn logic_infer(Array[LogicExpr], LogicExpr) -> Bool
 
+pub fn logic_is_anf(LogicExpr) -> Bool
+
 pub fn logic_is_cnf(LogicExpr) -> Bool
 
 pub fn logic_is_dnf(LogicExpr) -> Bool
 
 pub fn logic_is_literal(LogicExpr) -> Bool
+
+pub fn logic_is_nnf(LogicExpr, simplified? : Bool) -> Bool
 
 pub fn logic_is_tautology(LogicExpr, variables? : Array[String]) -> Bool
 
@@ -140,13 +156,15 @@ pub fn logic_simplify_with_assignments(LogicExpr, Array[(String, Bool)]) -> Logi
 
 pub fn logic_symbol(String) -> LogicExpr
 
+pub fn logic_to_anf(LogicExpr) -> LogicExpr
+
 pub fn logic_to_cnf(LogicExpr) -> LogicExpr
 
 pub fn logic_to_dnf(LogicExpr) -> LogicExpr
 
 pub fn logic_to_latex(LogicExpr) -> String
 
-pub fn logic_to_nnf(LogicExpr) -> LogicExpr
+pub fn logic_to_nnf(LogicExpr, simplify? : Bool) -> LogicExpr
 
 pub fn logic_true() -> LogicExpr
 
@@ -183,6 +201,14 @@ pub fn ltl_symbol(String) -> LTLExpr
 pub fn ltl_true() -> LTLExpr
 
 pub fn ltl_until(LTLExpr, LTLExpr) -> LTLExpr
+
+pub fn to_anf(LogicExpr) -> LogicExpr
+
+pub fn to_cnf(LogicExpr, simplify? : Bool) -> LogicExpr
+
+pub fn to_dnf(LogicExpr, simplify? : Bool) -> LogicExpr
+
+pub fn to_nnf(LogicExpr, simplify? : Bool) -> LogicExpr
 
 // Errors
 
